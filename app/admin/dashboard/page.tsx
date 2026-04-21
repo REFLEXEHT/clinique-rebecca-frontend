@@ -1,63 +1,73 @@
 'use client'
+// app/admin/dashboard/page.tsx
 import { useEffect, useState } from 'react'
+import Link from 'next/link'
 import { statsApi, rdvApi } from '@/lib/api'
 import { DashboardStats, RendezVous } from '@/types'
 import { Line, Doughnut } from 'react-chartjs-2'
 import {
-  Chart as ChartJS,
-  CategoryScale, LinearScale, PointElement, LineElement,
-  ArcElement, Tooltip, Legend, Filler,
+  Chart as ChartJS, CategoryScale, LinearScale, PointElement,
+  LineElement, ArcElement, Tooltip, Legend, Filler,
 } from 'chart.js'
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend, Filler)
 
-const STATUT_BADGE: Record<string, string> = {
-  confirme: 'badge-green',
-  en_attente: 'badge-yellow',
-  annule: 'badge-red',
-  termine: 'badge-gray',
-}
-const STATUT_LABEL: Record<string, string> = {
-  confirme: 'Confirmé',
-  en_attente: 'En attente',
-  annule: 'Annulé',
-  termine: 'Terminé',
+const STATUS_MAP = {
+  confirme: { label: 'Confirmé', cls: 'badge-green' },
+  en_attente: { label: 'En attente', cls: 'badge-yellow' },
+  annule: { label: 'Annulé', cls: 'badge-red' },
+  termine: { label: 'Terminé', cls: 'badge-gray' },
 }
 
-export default function Dashboard() {
+function KpiCard({ icon, color, bg, value, label, trend, up }: any) {
+  return (
+    <div className="kpi-card">
+      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-3"
+        style={{ background: bg, color }}>
+        <i className={`fa-solid ${icon}`} />
+      </div>
+      <div className="text-2xl font-black leading-none mb-1" style={{ color }}>{value}</div>
+      <div className="text-xs text-slate-500 font-semibold mb-1.5">{label}</div>
+      {trend && (
+        <div className={`text-[11px] font-bold flex items-center gap-1 ${up ? 'text-green-600' : 'text-red-500'}`}>
+          <i className={`fa-solid ${up ? 'fa-arrow-trend-up' : 'fa-arrow-down'} text-xs`} />
+          {trend}
+        </div>
+      )}
+    </div>
+  )
+}
+
+export default function AdminDashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [rdvChart, setRdvChart] = useState<any[]>([])
   const [rdvList, setRdvList] = useState<RendezVous[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    Promise.all([
-      statsApi.dashboard(),
-      statsApi.rdvParJour(7),
-      rdvApi.adminList({ statut: undefined }),
-    ]).then(([s, chart, list]) => {
-      setStats(s.data)
-      setRdvChart(chart.data)
-      setRdvList(list.data.slice(0, 6))
-    }).finally(() => setLoading(false))
-  }, [])
-
   const today = new Date().toLocaleDateString('fr-FR', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
   })
+
+  useEffect(() => {
+    Promise.allSettled([
+      statsApi.dashboard(),
+      statsApi.rdvParJour(7),
+      rdvApi.adminList(),
+    ]).then(([s, chart, list]) => {
+      if (s.status === 'fulfilled') setStats(s.value.data)
+      if (chart.status === 'fulfilled') setRdvChart(chart.value.data)
+      if (list.status === 'fulfilled') setRdvList(list.value.data.slice(0, 6))
+    }).finally(() => setLoading(false))
+  }, [])
 
   const lineData = {
     labels: rdvChart.map((d: any) => d.date),
     datasets: [{
       label: 'Consultations',
       data: rdvChart.map((d: any) => d.count),
-      borderColor: '#1a4fc4',
-      backgroundColor: 'rgba(26,79,196,0.07)',
-      borderWidth: 2.5,
-      tension: 0.4,
-      fill: true,
-      pointRadius: 3,
-      pointBackgroundColor: '#1a4fc4',
+      borderColor: '#1641C8', backgroundColor: 'rgba(22,65,200,0.07)',
+      borderWidth: 2.5, tension: 0.4, fill: true, pointRadius: 3,
+      pointBackgroundColor: '#1641C8',
     }],
   }
 
@@ -65,27 +75,19 @@ export default function Dashboard() {
     labels: ['Clinique ext.', 'Labo', 'Dentiste', 'Physio', 'Pharma'],
     datasets: [{
       data: [42, 18, 14, 12, 14],
-      backgroundColor: ['#1a4fc4', '#5aaa28', '#e07a00', '#be185d', '#6366f1'],
+      backgroundColor: ['#1641C8', '#22c55e', '#d97706', '#be185d', '#6366f1'],
       borderWidth: 0,
     }],
   }
 
-  const KPI = ({ icon, color, bg, value, label, trend, trendUp }: any) => (
-    <div className="kpi-card">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-3"
-        style={{ background: bg, color }}>
-        <i className={`fa-solid ${icon}`} />
-      </div>
-      <div className="text-[26px] font-black leading-none mb-1" style={{ color }}>{value}</div>
-      <div className="text-[12px] text-gray-500 font-semibold mb-1.5">{label}</div>
-      {trend && (
-        <div className={`text-[11.5px] font-bold flex items-center gap-1 ${trendUp ? 'text-[#5aaa28]' : 'text-red-500'}`}>
-          <i className={`fa-solid ${trendUp ? 'fa-arrow-trend-up' : 'fa-arrow-down'} text-xs`} />
-          {trend}
-        </div>
-      )}
-    </div>
-  )
+  const chartOpts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 11 } } },
+      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
+    },
+  }
 
   return (
     <div className="p-7">
@@ -93,24 +95,36 @@ export default function Dashboard() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-xl font-extrabold">Tableau de bord</h1>
-          <p className="text-gray-500 text-[13px] mt-0.5 capitalize">{today}</p>
+          <p className="text-slate-500 text-[13px] mt-0.5 capitalize">{today}</p>
         </div>
       </div>
 
+      {/* KPIs */}
       {loading ? (
         <div className="grid grid-cols-4 gap-4 mb-6">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-28 bg-gray-100 rounded-xl animate-pulse" />)}
+          {[...Array(4)].map((_, i) => <div key={i} className="h-28 bg-slate-100 rounded-2xl animate-pulse" />)}
         </div>
-      ) : stats && (
+      ) : stats ? (
         <div className="grid grid-cols-4 gap-4 mb-6">
-          <KPI icon="fa-calendar-check" color="#1a4fc4" bg="rgba(26,79,196,0.1)"
-            value={stats.rdv_today} label="RDV aujourd'hui" trend="+3 vs hier" trendUp />
-          <KPI icon="fa-users" color="#5aaa28" bg="rgba(90,170,40,0.1)"
-            value={stats.patients_month} label="Patients ce mois" trend="+18%" trendUp />
-          <KPI icon="fa-cash-register" color="#e07a00" bg="rgba(224,122,0,0.12)"
-            value={`${(stats.recettes_day / 1000).toFixed(0)}k`} label="Recettes du jour (HTG)" trend="+12%" trendUp />
-          <KPI icon="fa-clock" color="#dc2626" bg="rgba(220,38,38,0.1)"
-            value={stats.rdv_en_attente} label="RDV en attente" trend="À confirmer" trendUp={false} />
+          <KpiCard icon="fa-calendar-check" color="#1641C8" bg="rgba(22,65,200,0.09)"
+            value={stats.rdv_today} label="RDV aujourd'hui" trend="+3 vs hier" up />
+          <KpiCard icon="fa-users" color="#22c55e" bg="rgba(34,197,94,0.09)"
+            value={stats.patients_month} label="Patients ce mois" trend="+18%" up />
+          <KpiCard icon="fa-cash-register" color="#d97706" bg="rgba(245,158,11,0.09)"
+            value={`${(stats.recettes_day / 1000).toFixed(0)}k`} label="Recettes du jour (HTG)" trend="+12%" up />
+          <KpiCard icon="fa-clock" color="#dc2626" bg="rgba(220,38,38,0.09)"
+            value={stats.rdv_en_attente} label="RDV en attente" />
+        </div>
+      ) : (
+        <div className="grid grid-cols-4 gap-4 mb-6">
+          <KpiCard icon="fa-calendar-check" color="#1641C8" bg="rgba(22,65,200,0.09)"
+            value="—" label="RDV aujourd'hui" />
+          <KpiCard icon="fa-users" color="#22c55e" bg="rgba(34,197,94,0.09)"
+            value="—" label="Patients ce mois" />
+          <KpiCard icon="fa-cash-register" color="#d97706" bg="rgba(245,158,11,0.09)"
+            value="—" label="Recettes du jour" />
+          <KpiCard icon="fa-clock" color="#dc2626" bg="rgba(220,38,38,0.09)"
+            value="—" label="RDV en attente" />
         </div>
       )}
 
@@ -118,29 +132,28 @@ export default function Dashboard() {
       <div className="grid grid-cols-2 gap-5 mb-6">
         <div className="card p-5">
           <h4 className="font-bold text-[13.5px] mb-4 flex items-center gap-2">
-            <i className="fa-solid fa-chart-line text-[#1a4fc4] text-sm" />
+            <i className="fa-solid fa-chart-line text-[#1641C8] text-sm" />
             Consultations — 7 derniers jours
           </h4>
           <div className="h-48">
-            <Line data={lineData} options={{
-              responsive: true, maintainAspectRatio: false,
-              plugins: { legend: { display: false } },
-              scales: {
-                y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 11 } } },
-                x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-              },
-            }} />
+            {rdvChart.length > 0 ? (
+              <Line data={lineData} options={chartOpts as any} />
+            ) : (
+              <div className="h-full flex items-center justify-center text-slate-300 text-sm">
+                Connectez l'API pour voir les données
+              </div>
+            )}
           </div>
         </div>
         <div className="card p-5">
           <h4 className="font-bold text-[13.5px] mb-4 flex items-center gap-2">
-            <i className="fa-solid fa-chart-pie text-[#1a4fc4] text-sm" />
+            <i className="fa-solid fa-chart-pie text-[#1641C8] text-sm" />
             Répartition par service
           </h4>
           <div className="h-48">
             <Doughnut data={doughnutData} options={{
               responsive: true, maintainAspectRatio: false,
-              plugins: { legend: { position: 'bottom', labels: { padding: 14, font: { size: 11 } } } },
+              plugins: { legend: { position: 'bottom', labels: { padding: 12, font: { size: 11 } } } },
               cutout: '62%',
             }} />
           </div>
@@ -149,45 +162,63 @@ export default function Dashboard() {
 
       {/* Recent RDV */}
       <div className="card overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
           <h4 className="font-bold text-[13.5px] flex items-center gap-2">
-            <i className="fa-regular fa-calendar-check text-[#1a4fc4] text-sm" />
-            Prochains rendez-vous
+            <i className="fa-regular fa-calendar-check text-[#1641C8] text-sm" />
+            Rendez-vous récents
           </h4>
-          <a href="/admin/rendez-vous" className="text-[12.5px] text-[#1a4fc4] font-bold hover:underline">
+          <Link href="/admin/rendez-vous"
+            className="text-[12.5px] text-[#1641C8] font-bold hover:underline no-underline">
             Voir tout →
-          </a>
+          </Link>
         </div>
-        <table className="w-full tbl">
-          <thead>
-            <tr>
-              <th>Heure</th><th>Patient</th><th>Spécialité</th><th>Type</th><th>Statut</th>
-            </tr>
-          </thead>
+        <table className="tbl w-full">
+          <thead><tr>
+            <th>Date/Heure</th><th>Patient</th><th>Spécialité</th><th>Type</th><th>Statut</th>
+          </tr></thead>
           <tbody>
-            {rdvList.map((rdv) => (
-              <tr key={rdv.id}>
-                <td className="font-bold text-[12.5px]">
-                  {new Date(rdv.date_rdv).toLocaleTimeString('fr', { hour: '2-digit', minute: '2-digit' })}
-                </td>
-                <td>
-                  <div className="font-bold text-[13px]">{rdv.patient_nom}</div>
-                  <div className="text-gray-400 text-xs">{rdv.patient_telephone}</div>
-                </td>
-                <td className="text-[13px]">{rdv.specialite}</td>
-                <td>
-                  <span className={`badge ${rdv.type_rdv === 'video' ? 'badge-blue' : 'badge-gray'}`}>
-                    <i className={`fa-solid ${rdv.type_rdv === 'video' ? 'fa-video' : 'fa-user'} text-xs`} />
-                    {rdv.type_rdv === 'video' ? 'Vidéo' : 'Présentiel'}
-                  </span>
-                </td>
-                <td>
-                  <span className={`badge ${STATUT_BADGE[rdv.statut]}`}>
-                    {STATUT_LABEL[rdv.statut]}
-                  </span>
-                </td>
-              </tr>
-            ))}
+            {rdvList.length > 0 ? rdvList.map(rdv => {
+              const s = STATUS_MAP[rdv.statut] || STATUS_MAP.en_attente
+              return (
+                <tr key={rdv.id}>
+                  <td>
+                    <div className="font-bold text-[13px]">
+                      {new Date(rdv.date_rdv).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
+                    </div>
+                    <div className="text-slate-400 text-xs">
+                      {new Date(rdv.date_rdv).toLocaleTimeString('fr', { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                  </td>
+                  <td>
+                    <div className="font-bold text-[13px]">{rdv.patient_nom}</div>
+                    <div className="text-slate-400 text-xs">{rdv.patient_telephone}</div>
+                  </td>
+                  <td className="text-[13px]">{rdv.specialite}</td>
+                  <td>
+                    <span className={`badge ${rdv.type_rdv === 'video' ? 'badge-blue' : 'badge-gray'}`}>
+                      <i className={`fa-solid ${rdv.type_rdv === 'video' ? 'fa-video' : 'fa-user'} text-xs`} />
+                      {rdv.type_rdv === 'video' ? 'Vidéo' : 'Présentiel'}
+                    </span>
+                  </td>
+                  <td><span className={`badge ${s.cls}`}>{s.label}</span></td>
+                </tr>
+              )
+            }) : (
+              // Données de démonstration si API non connectée
+              [
+                { h: '08:00', p: 'Marie Théodore', t: '+509 3456-7890', s: 'Gynécologie', type: 'Présentiel', st: 'Confirmé', sc: 'badge-green' },
+                { h: '09:00', p: 'Lucie Pierre', t: '+509 3123-4567', s: 'Pédiatrie', type: 'Vidéo', st: 'En attente', sc: 'badge-yellow' },
+                { h: '10:00', p: 'Jean-Marc Dorval', t: '+509 3654-3210', s: 'Neurologie', type: 'Vidéo', st: 'Confirmé', sc: 'badge-green' },
+              ].map((r, i) => (
+                <tr key={i}>
+                  <td><div className="font-bold text-[13px]">Aujourd'hui</div><div className="text-slate-400 text-xs">{r.h}</div></td>
+                  <td><div className="font-bold text-[13px]">{r.p}</div><div className="text-slate-400 text-xs">{r.t}</div></td>
+                  <td className="text-[13px]">{r.s}</td>
+                  <td><span className={`badge ${r.type === 'Vidéo' ? 'badge-blue' : 'badge-gray'}`}>{r.type}</span></td>
+                  <td><span className={`badge ${r.sc}`}>{r.st}</span></td>
+                </tr>
+              ))
+            )}
           </tbody>
         </table>
       </div>
