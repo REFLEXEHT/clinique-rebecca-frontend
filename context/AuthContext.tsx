@@ -15,15 +15,17 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   user: null, token: null, isAuthenticated: false, role: null,
-  login: () => {}, logout: () => {}, loading: true,
+  login: () => {}, logout: () => {}, loading: false,
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     const t = localStorage.getItem('rb_token')
     const u = localStorage.getItem('rb_user')
     if (t && u) {
@@ -48,6 +50,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(null)
     setUser(null)
   }
+
+  if (!mounted) return <>{children}</>
 
   return (
     <AuthContext.Provider value={{
