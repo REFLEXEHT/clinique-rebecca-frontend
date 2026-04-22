@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Nécessaire pour Vercel — output standalone pour Docker/Render
-  output: process.env.DOCKER_BUILD === 'true' ? 'standalone' : undefined,
-
   // Variables d'environnement exposées au navigateur
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
@@ -15,7 +12,7 @@ const nextConfig = {
     ],
   },
 
-  // Proxy API calls vers le backend en production (évite CORS)
+  // Proxy API calls vers le backend (évite CORS)
   async rewrites() {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
     return [
@@ -24,11 +21,6 @@ const nextConfig = {
         destination: `${apiUrl}/api/:path*`,
       },
     ]
-  },
-
-  // 👇 Ajout pour corriger l’avertissement Turbopack
-  turbopack: {
-    root: __dirname,
   },
 }
 

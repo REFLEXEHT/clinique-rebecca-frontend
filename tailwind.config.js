@@ -22,8 +22,8 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['var(--font-nunito)', 'sans-serif'],
-        serif: ['var(--font-playfair)', 'serif'],
+        sans: ['Inter', 'sans-serif'],
+        serif: ['Georgia', 'serif'],
       },
     },
   },

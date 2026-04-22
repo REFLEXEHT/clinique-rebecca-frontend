@@ -15,7 +15,7 @@
 
 @layer base {
   * { @apply scroll-smooth; }
-  body { font-family: var(--font-inter), 'Inter', sans-serif; }
+  body { font-family: 'Inter', var(--font-inter), sans-serif; }
 }
 
 @layer components {

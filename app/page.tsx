@@ -1,421 +1,164 @@
 'use client'
-// app/page.tsx — Page d'accueil publique
-import { useState, useEffect } from 'react'
+// app/specialistes/[id]/page.tsx — Profil public du spécialiste
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
+import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import RdvModal from '@/components/ui/RdvModal'
-import AiChat from '@/components/ui/AiChat'
-import Link from 'next/link'
-import { horairesApi } from '@/lib/api'
-import { Horaire } from '@/types'
-import { RECEPTION_SRC } from '@/lib/images'
+import { specialistesApi } from '@/lib/api'
+import { Specialiste } from '@/types'
 
-const SVC_PRINCIPAL = [
-  { icon: 'fa-stethoscope', color: '#1641C8', bg: 'rgba(22,65,200,0.09)',
-    title: 'Clinique Externe', desc: '12 spécialistes : chirurgie, neurologie, pédiatrie, gynécologie, ORL et plus.',
-    link: '/specialites', cta: 'Voir les spécialistes' },
-  { icon: 'fa-flask-vial', color: '#16a34a', bg: 'rgba(34,197,94,0.09)',
-    title: 'Laboratoire', desc: 'Analyses complètes avec résultats envoyés automatiquement par WhatsApp et email.',
-    link: '/services/laboratoire', cta: 'Prendre RDV labo' },
-  { icon: 'fa-pills', color: '#d97706', bg: 'rgba(245,158,11,0.09)',
-    title: 'Pharmacie', desc: 'Médicaments génériques et de marque, conseils pharmaceutiques personnalisés.',
-    link: '/services/pharmacie', cta: 'Voir les produits' },
-]
+// Données statiques enrichies (fallback)
+const SPECS_DATA: Record<number, Specialiste & { tags: string[]; bio: string }> = {
+  1: { id:1, nom:'Dr. Michel Dubois', specialite:'Chirurgie générale', description:'Chirurgien senior', emoji:'🔬', categorie:'chirurgie', email:'m.dubois@cliniquerebecca.ht', telephone:'+509 3456-0001', actif:true, ordre:0, bio:'Spécialiste en chirurgie générale et digestive avec plus de 15 ans d\'expérience dans les interventions chirurgicales complexes. Formé à Paris et Port-au-Prince.', tags:['Chirurgie digestive','Laparoscopie','Urgences chirurgicales'] },
+  2: { id:2, nom:'Dr. Anne-Marie Pierre', specialite:'Neurochirurgie', description:'Neurochirurgie pédiatrique', emoji:'🧠', categorie:'neurochirurgie', email:'am.pierre@cliniquerebecca.ht', telephone:'+509 3456-0002', actif:true, ordre:0, bio:'Experte en neurochirurgie pédiatrique et adulte. Spécialisée dans le traitement des tumeurs cérébrales et de la colonne vertébrale.', tags:['Tumeurs cérébrales','Colonne vertébrale','Neurochirurgie pédiatrique'] },
+  3: { id:3, nom:'Dr. Jean-Claude Étienne', specialite:'Neurologie', description:'Épilepsie, AVC', emoji:'🧬', categorie:'neurologie', email:'jc.etienne@cliniquerebecca.ht', telephone:'+509 3456-0003', actif:true, ordre:0, bio:'Neurologue expérimenté spécialisé dans le traitement de l\'épilepsie, des accidents vasculaires cérébraux et des maladies démyélinisantes.', tags:['Épilepsie','AVC','Sclérose en plaques'] },
+  4: { id:4, nom:'Dr. Sophie Lamour', specialite:'Orthopédie', description:'Traumatologie', emoji:'🦴', categorie:'orthopedie', email:'s.lamour@cliniquerebecca.ht', telephone:'+509 3456-0004', actif:true, ordre:0, bio:'Orthopédiste spécialisée en traumatologie et chirurgie prothétique. Prise en charge des fractures complexes et des arthroses sévères.', tags:['Prothèse de hanche','Fractures','Arthroscopie'] },
+  5: { id:5, nom:'Dr. Paul Désir', specialite:'Pédiatrie', description:'Néonatologie', emoji:'👶', categorie:'pediatrie', email:'p.desir@cliniquerebecca.ht', telephone:'+509 3456-0005', actif:true, ordre:0, bio:'Pédiatre dévoué spécialisé en néonatologie et pédiatrie générale. Prise en charge des nourrissons et adolescents.', tags:['Néonatologie','Pédiatrie générale','Vaccinations'] },
+  6: { id:6, nom:'Dr. Isabelle François', specialite:'Dermatologie', description:'Maladies de peau', emoji:'🌸', categorie:'dermatologie', email:'i.francois@cliniquerebecca.ht', telephone:'+509 3456-0006', actif:true, ordre:0, bio:'Dermatologue spécialisée dans les maladies inflammatoires de la peau, les infections cutanées et la dermatologie cosmétique.', tags:['Eczéma','Psoriasis','Dermatologie cosmétique'] },
+  7: { id:7, nom:'Dr. Henri Nazaire', specialite:'Urologie', description:'Prostate, système urinaire', emoji:'💊', categorie:'urologie', email:'h.nazaire@cliniquerebecca.ht', telephone:'+509 3456-0007', actif:true, ordre:0, bio:'Urologue expérimenté. Traitement des affections du système urinaire, la prostate et les troubles de la fertilité masculine.', tags:['Prostate','Lithiase urinaire','Fertilité masculine'] },
+  8: { id:8, nom:'Dr. Marie-Rose Cajuste', specialite:'ORL', description:'Oreille, nez, gorge', emoji:'👂', categorie:'orl', email:'mr.cajuste@cliniquerebecca.ht', telephone:'+509 3456-0008', actif:true, ordre:0, bio:'Spécialiste en oto-rhino-laryngologie. Prise en charge des pathologies de l\'oreille, du nez, de la gorge et de la voix.', tags:['Sinusite','Surdité','Chirurgie ORL'] },
+  9: { id:9, nom:'Dr. Claudette Joseph', specialite:'Gynécologie', description:'Suivi grossesse', emoji:'🌺', categorie:'gynecologie', email:'c.joseph@cliniquerebecca.ht', telephone:'+509 3456-0009', actif:true, ordre:0, bio:'Gynécologue-obstétricienne assurant le suivi de grossesse, les accouchements et la santé reproductive de la femme.', tags:['Grossesse','Accouchement','Santé reproductive'] },
+  10: { id:10, nom:'Dr. Patrick Dorival', specialite:'Chirurgie pédiatrique', description:'Chirurgie nourrissons', emoji:'🏥', categorie:'chir-ped', email:'p.dorival@cliniquerebecca.ht', telephone:'+509 3456-0010', actif:true, ordre:0, bio:'Chirurgien pédiatrique spécialisé dans les interventions chez les nourrissons et les jeunes enfants.', tags:['Chirurgie néonatale','Hernies','Appendicite pédiatrique'] },
+  11: { id:11, nom:'Dr. Réginald Louis', specialite:'Médecine interne', description:'Diabète, hypertension', emoji:'❤️', categorie:'medecine-interne', email:'r.louis@cliniquerebecca.ht', telephone:'+509 3456-0011', actif:true, ordre:0, bio:'Interniste expérimenté. Prise en charge des maladies chroniques complexes incluant le diabète, l\'hypertension et les maladies auto-immunes.', tags:['Diabète','Hypertension','Maladies auto-immunes'] },
+  12: { id:12, nom:'Dr. Nathalie Vincent', specialite:'Ophtalmologie', description:'Chirurgie oculaire', emoji:'👁️', categorie:'ophtalmologie', email:'n.vincent@cliniquerebecca.ht', telephone:'+509 3456-0012', actif:true, ordre:0, bio:'Ophtalmologue spécialisée en chirurgie de la cataracte, du glaucome et des pathologies rétiniennes.', tags:['Cataracte','Glaucome','Rétine'] },
+}
 
-const SVC_INFO = [
-  { icon: 'fa-tooth', label: 'Dentisterie' },
-  { icon: 'fa-person-walking', label: 'Physiothérapie' },
-  { icon: 'fa-glasses', label: 'Optométrie' },
-  { icon: 'fa-scalpel', label: "Salle d'Opération (SOP)" },
-  { icon: 'fa-baby', label: "Salle d'Accouchement" },
-  { icon: 'fa-syringe', label: 'Gestes médicaux' },
-]
+const JOURS = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim']
+const HEURES_RDV = ['07h-17h','07h-17h','07h-17h','07h-17h','07h-17h','07h-13h','07h-15h']
 
-const SPECS_PREVIEW = [
-  { icon: 'fa-scalpel', label: 'Chirurgie générale', slug: 'chirurgie' },
-  { icon: 'fa-brain', label: 'Neurologie', slug: 'neurologie' },
-  { icon: 'fa-bone', label: 'Orthopédie', slug: 'orthopedie' },
-  { icon: 'fa-child', label: 'Pédiatrie', slug: 'pediatrie' },
-  { icon: 'fa-venus', label: 'Gynécologie', slug: 'gynecologie' },
-  { icon: 'fa-heart-pulse', label: 'Médecine interne', slug: 'medecine-interne' },
-]
-
-export default function HomePage() {
+export default function SpecialistePage() {
+  const params = useParams()
+  const id = Number(params.id)
   const [rdvOpen, setRdvOpen] = useState(false)
-  const [horaires, setHoraires] = useState<Horaire[]>([])
+  const [spec, setSpec] = useState(SPECS_DATA[id] || null)
 
   useEffect(() => {
-    horairesApi.list().then(r => setHoraires(r.data)).catch(() => {})
-  }, [])
+    if (id) {
+      specialistesApi.getById(id)
+        .then(r => setSpec({ ...r.data, tags: SPECS_DATA[id]?.tags || [], bio: SPECS_DATA[id]?.bio || r.data.description || '' }))
+        .catch(() => setSpec(SPECS_DATA[id] || null))
+    }
+  }, [id])
+
+  if (!spec) return (
+    <div className="min-h-screen flex items-center justify-center text-slate-400">
+      Spécialiste introuvable
+    </div>
+  )
+
+  const slugMap: Record<string, string> = {
+    chirurgie:'chirurgie', neurochirurgie:'neurochirurgie', neurologie:'neurologie',
+    orthopedie:'orthopedie', pediatrie:'pediatrie', dermatologie:'dermatologie',
+    urologie:'urologie', orl:'orl', gynecologie:'gynecologie',
+    'chir-ped':'chir-ped', 'medecine-interne':'medecine-interne', ophtalmologie:'ophtalmologie'
+  }
 
   return (
     <>
       <Navbar onRdvClick={() => setRdvOpen(true)} />
-      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
+      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} defaultSpec={spec.specialite} />
 
-      {/* ══ HERO ══════════════════════════════════════════════════════════ */}
-      <section className="min-h-screen grid grid-cols-2 items-center pt-[70px]
-        bg-white gap-0 overflow-hidden">
-        {/* Left */}
-        <div className="px-[7%] py-16">
-          <div className="inline-flex items-center gap-2 bg-blue-50 text-[#1641C8]
-            text-xs font-bold px-3.5 py-1.5 rounded-full mb-6">
-            <span className="w-2 h-2 bg-green-500 rounded-full animate-blink" />
-            Clinique certifiée · Haïti
-          </div>
-
-          <h1 className="font-serif text-[clamp(32px,3.8vw,50px)] font-bold
-            leading-[1.15] text-slate-900 mb-4">
-            Votre santé,<br />
-            <em className="italic text-[#1641C8]">notre engagement</em>
-          </h1>
-
-          <p className="text-slate-500 text-[16px] leading-[1.7] mb-8 max-w-[450px]">
-            La Clinique de la Rebecca offre des soins spécialisés de qualité,
-            des consultations en ligne et un suivi personnalisé — pour toute la famille.
-          </p>
-
-          <div className="flex gap-3.5 flex-wrap mb-10">
-            <button className="btn-primary" onClick={() => setRdvOpen(true)}>
-              <i className="fa-regular fa-calendar-check" />
-              Prendre rendez-vous
-            </button>
-            <Link href="/consultation" className="btn-secondary">
-              <i className="fa-solid fa-video" />
-              Consultation en ligne
-            </Link>
-          </div>
-
-          <div className="flex gap-9">
-            {[
-              { n: '12+', l: 'Spécialités' },
-              { n: '9', l: 'Services' },
-              { n: '7j/7', l: 'Disponibilité' },
-            ].map(s => (
-              <div key={s.l}>
-                <div className="text-[26px] font-black text-[#1641C8] leading-none">{s.n}</div>
-                <div className="text-xs text-slate-400 font-medium mt-1">{s.l}</div>
-              </div>
-            ))}
-          </div>
+      <div className="page-header">
+        <div className="breadcrumb">
+          <Link href="/">Accueil</Link> /
+          <Link href="/specialites">Spécialités</Link> /
+          <Link href={`/specialites/${spec.categorie}`}>{spec.specialite}</Link> /
+          <span>{spec.nom}</span>
         </div>
+        <h1>{spec.nom}</h1>
+        <p>{spec.specialite}</p>
+      </div>
 
-        {/* Right — Clinic photo */}
-        <div className="relative h-screen overflow-hidden flex items-center">
-          <div className="hero-img-container w-full">
-            <img src={RECEPTION_SRC} alt="Réception Clinique de la Rebecca" />
-            <div className="hero-img-overlay">
-              <p className="text-white text-sm font-semibold">Accueil — Clinique de la Rebecca</p>
-              <p className="text-white/65 text-xs mt-1">Haïti · Soins de qualité</p>
+      <div className="py-14 px-[5%] max-w-5xl mx-auto">
+        {/* Profile header */}
+        <div className="grid grid-cols-[240px_1fr] gap-10 card p-8 mb-6">
+          <div className="text-center">
+            <div className="w-44 h-44 rounded-2xl bg-gradient-to-br from-blue-50 to-green-50
+              border-2 border-slate-200 flex items-center justify-center text-7xl mx-auto mb-3">
+              {spec.emoji}
+            </div>
+            <div className="badge badge-green">
+              <i className="fa-solid fa-circle text-[8px]" /> Disponible
             </div>
           </div>
-          {/* Float cards */}
-          <div className="hero-float-card animate-float top-[16%] right-[-16px]
-            w-52 absolute">
-            <div className="w-9 h-9 rounded-[9px] bg-blue-100 text-[#1641C8]
-              flex items-center justify-center text-base flex-shrink-0">
-              <i className="fa-solid fa-video" />
+          <div>
+            <h1 className="text-2xl font-extrabold mb-1">{spec.nom}</h1>
+            <div className="text-[#1641C8] text-[16px] font-bold mb-4">{spec.specialite}</div>
+            <div className="flex flex-wrap gap-2 mb-4">
+              {(spec as any).tags?.map((t: string) => (
+                <span key={t} className="px-3 py-1 rounded-full text-[12.5px] font-semibold
+                  bg-blue-50 text-[#1641C8]">{t}</span>
+              ))}
             </div>
-            <div>
-              <div className="text-[12.5px] font-extrabold">Consultation en ligne</div>
-              <div className="text-[11px] text-slate-400">7j/7 disponible</div>
-            </div>
-          </div>
-          <div className="hero-float-card animate-float-delay bottom-[24%] right-[-16px]
-            w-48 absolute">
-            <div className="w-9 h-9 rounded-[9px] bg-green-100 text-green-600
-              flex items-center justify-center text-base flex-shrink-0">
-              <i className="fa-brands fa-whatsapp" />
-            </div>
-            <div>
-              <div className="text-[12.5px] font-extrabold">Résultats WhatsApp</div>
-              <div className="text-[11px] text-slate-400">Envoi automatique</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ══ SERVICES ══════════════════════════════════════════════════════ */}
-      <section className="py-20 px-[5%] bg-slate-50" id="services">
-        <div className="text-center mb-12">
-          <div className="section-tag"><i className="fa-solid fa-grid-2" /> Nos services</div>
-          <h2 className="section-title">Une prise en charge <em>complète</em></h2>
-          <p className="section-sub max-w-lg mx-auto">
-            9 services médicaux sous un même toit pour toute la famille.
-          </p>
-        </div>
-
-        {/* 3 services principaux */}
-        <div className="grid grid-cols-3 gap-5 mb-5">
-          {SVC_PRINCIPAL.map(s => (
-            <Link key={s.title} href={s.link}
-              className="card p-7 cursor-pointer group relative overflow-hidden
-              hover:-translate-y-1 hover:shadow-md hover:border-[#1641C8]/20
-              transition-all duration-200 no-underline">
-              <div className="absolute bottom-0 left-0 right-0 h-[3px] rounded-b-2xl
-                scale-x-0 group-hover:scale-x-100 transition-transform duration-200"
-                style={{ background: s.color }} />
-              <div className="w-[50px] h-[50px] rounded-[13px] flex items-center
-                justify-center text-xl mb-4"
-                style={{ background: s.bg, color: s.color }}>
-                <i className={`fa-solid ${s.icon}`} />
-              </div>
-              <h3 className="font-extrabold text-[16px] mb-2">{s.title}</h3>
-              <p className="text-slate-500 text-[13px] leading-relaxed mb-3">{s.desc}</p>
-              <span className="text-sm font-bold flex items-center gap-1.5
-                transition-all group-hover:gap-2.5"
-                style={{ color: s.color }}>
-                {s.cta} <i className="fa-solid fa-arrow-right text-xs" />
-              </span>
-            </Link>
-          ))}
-        </div>
-
-        {/* 6 autres services — informatif seulement */}
-        <div className="grid grid-cols-3 gap-3 mb-10">
-          {SVC_INFO.map(s => (
-            <div key={s.label} className="flex items-center gap-3 bg-white
-              rounded-xl p-3.5 border border-slate-200 text-[13.5px] font-semibold
-              text-slate-600">
-              <i className={`fa-solid ${s.icon} text-[#1641C8] w-4.5 text-center`} />
-              {s.label}
-            </div>
-          ))}
-        </div>
-
-        <div className="text-center">
-          <button className="btn-primary" onClick={() => setRdvOpen(true)}>
-            <i className="fa-regular fa-calendar-check" /> Prendre rendez-vous
-          </button>
-        </div>
-      </section>
-
-      {/* ══ CONSULTATION CTA ══════════════════════════════════════════════ */}
-      <section className="py-20 px-[5%] bg-gradient-to-br from-[#0f1e3d] to-[#1641C8]
-        grid grid-cols-2 gap-14 items-center">
-        <div>
-          <div className="inline-flex items-center gap-1.5 bg-green-500/15 text-green-400
-            text-xs font-bold uppercase tracking-widest px-3 py-1.5 rounded-full mb-5">
-            <i className="fa-solid fa-video" /> Téléconsultation
-          </div>
-          <h2 className="font-serif text-[clamp(26px,3vw,40px)] text-white font-bold
-            leading-[1.2] mb-3">
-            Consultez depuis <em className="italic text-[#93c5fd]">chez vous</em>
-          </h2>
-          <p className="text-white/70 text-[15.5px] leading-[1.7] mb-7">
-            Prenez RDV en ligne, consultez par vidéo, recevez votre ordonnance.
-            Patient et médecin notifiés automatiquement.
-          </p>
-          <div className="flex gap-3.5">
-            <Link href="/consultation" className="btn-green">
-              <i className="fa-solid fa-video" /> Démarrer
-            </Link>
-            <button className="btn-outline-white" onClick={() => setRdvOpen(true)}>
-              <i className="fa-regular fa-calendar-check" /> RDV en personne
-            </button>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3.5">
-          {[
-            { ic: 'fa-video', bg: 'rgba(22,65,200,0.25)', col: '#93c5fd',
-              t: 'Vidéoconsultation sécurisée', d: 'Lien envoyé par WhatsApp 30 min avant.' },
-            { ic: 'fa-bell', bg: 'rgba(34,197,94,0.2)', col: '#4ade80',
-              t: 'Rappel automatique 6h avant', d: 'Patient ET médecin notifiés.' },
-            { ic: 'fa-credit-card', bg: 'rgba(245,158,11,0.2)', col: '#fcd34d',
-              t: 'Paiement en ligne sécurisé', d: 'Moncash, Natcash, carte ou virement.' },
-          ].map(f => (
-            <div key={f.t} className="flex gap-3.5 bg-white/5 border border-white/8
-              rounded-xl p-4">
-              <div className="w-9 h-9 rounded-[9px] flex items-center justify-center
-                text-base flex-shrink-0" style={{ background: f.bg, color: f.col }}>
-                <i className={`fa-solid ${f.ic}`} />
-              </div>
-              <div>
-                <h4 className="text-white font-extrabold text-sm mb-0.5">{f.t}</h4>
-                <p className="text-white/55 text-xs leading-[1.5]">{f.d}</p>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ══ HORAIRES + SPECSPREVIEW ═══════════════════════════════════════ */}
-      <section className="py-20 px-[5%] bg-white grid grid-cols-[1fr_300px] gap-12">
-        <div>
-          <div className="section-tag mb-3">
-            <i className="fa-solid fa-user-doctor" /> Nos spécialités
-          </div>
-          <h2 className="section-title mb-8">Consultez un <em>spécialiste</em></h2>
-          <div className="grid grid-cols-3 gap-3">
-            {SPECS_PREVIEW.map(s => (
-              <Link key={s.slug} href={`/specialites/${s.slug}`}
-                className="flex items-center gap-3 bg-slate-50 hover:bg-blue-50
-                  rounded-xl p-4 border border-slate-200 hover:border-[#1641C8]
-                  text-slate-700 hover:text-[#1641C8] font-semibold text-sm
-                  transition-all no-underline hover:-translate-y-0.5">
-                <div className="w-9 h-9 rounded-[9px] bg-blue-100 text-[#1641C8]
-                  flex items-center justify-center flex-shrink-0 text-base">
-                  <i className={`fa-solid ${s.icon}`} />
-                </div>
-                {s.label}
+            <p className="text-slate-500 text-sm leading-relaxed mb-5 max-w-lg">
+              {(spec as any).bio || spec.description}
+            </p>
+            <div className="flex gap-3">
+              <button className="btn-primary" onClick={() => setRdvOpen(true)}>
+                <i className="fa-regular fa-calendar-check" /> Prendre rendez-vous
+              </button>
+              <Link href="/consultation" className="btn-secondary">
+                <i className="fa-solid fa-video" /> Consultation en ligne
               </Link>
-            ))}
+            </div>
           </div>
-          <div className="mt-5">
-            <Link href="/specialites" className="text-sm font-bold text-[#1641C8]
-              hover:underline flex items-center gap-1.5">
-              Voir les 12 spécialités <i className="fa-solid fa-arrow-right text-xs" />
-            </Link>
-          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="grid grid-cols-3 gap-4 mb-6">
+          {[
+            { n: '15+', l: "Années d'expérience", c: '#1641C8' },
+            { n: '500+', l: 'Patients traités', c: '#22c55e' },
+            { n: '4.9/5', l: 'Note moyenne', c: '#f59e0b' },
+          ].map(s => (
+            <div key={s.l} className="card p-5 text-center">
+              <div className="text-3xl font-black mb-1.5" style={{ color: s.c }}>{s.n}</div>
+              <div className="text-slate-500 text-sm font-semibold">{s.l}</div>
+            </div>
+          ))}
         </div>
 
         {/* Horaires */}
-        <div className="card p-5 h-fit sticky top-24">
-          <div className="text-[11px] font-bold text-slate-400 uppercase tracking-widest mb-3">
-            Horaires d'ouverture
-          </div>
-          {horaires.length === 0 ? (
-            // Fallback statique
-            [
-              { j: 'Lundi', h: '07h00 – 17h00', open: true },
-              { j: 'Mardi', h: '07h00 – 17h00', open: true },
-              { j: 'Mercredi', h: '07h00 – 17h00', open: true },
-              { j: 'Jeudi', h: '07h00 – 17h00', open: true },
-              { j: 'Vendredi', h: '07h00 – 17h00', open: true },
-              { j: 'Samedi', h: '07h00 – 17h00', open: true },
-              { j: 'Dimanche', h: '07h00 – 15h00', open: true },
-            ].map(h => (
-              <div key={h.j} className="flex justify-between items-center px-3 py-2
-                rounded-lg bg-slate-50 border border-slate-100 text-[13px] mb-1.5">
-                <span className="font-bold flex items-center gap-2">
-                  <i className={`fa-regular fa-sun text-orange-400 text-xs`} />
-                  {h.j}
-                </span>
-                <span className="font-extrabold text-[12px] text-green-600">{h.h}</span>
-              </div>
-            ))
-          ) : (
-            horaires.map(h => (
-              <div key={h.jour} className="flex justify-between items-center px-3 py-2
-                rounded-lg bg-slate-50 border border-slate-100 text-[13px] mb-1.5">
-                <span className="font-bold flex items-center gap-2">
-                  <i className={`fa-regular ${h.ouvert ? 'fa-sun text-orange-400' : 'fa-moon text-slate-400'} text-xs`} />
-                  {h.jour}
-                </span>
-                <span className={`font-extrabold text-[12px] ${h.ouvert ? 'text-green-600' : 'text-slate-400'}`}>
-                  {h.ouvert ? `${h.heure_ouverture} – ${h.heure_fermeture}` : 'Fermé'}
-                </span>
-              </div>
-            ))
-          )}
-        </div>
-      </section>
-
-      {/* ══ AI CHAT ═══════════════════════════════════════════════════════ */}
-      <section className="py-20 px-[5%] bg-slate-50 grid grid-cols-[420px_1fr] gap-12 items-center">
-        <AiChat />
-        <div>
-          <div className="section-tag"><i className="fa-solid fa-robot" /> Assistant IA</div>
-          <h2 className="section-title">Rebecca, votre <em>assistante médicale</em></h2>
-          <p className="section-sub mb-7">Disponible 24h/24 pour répondre à vos questions.</p>
-          <div className="space-y-4">
-            {[
-              { n: '1', c: '#1641C8', t: 'Orientation médicale', d: "Décrivez vos symptômes — Rebecca vous oriente." },
-              { n: '2', c: '#22c55e', t: 'Prise de rendez-vous', d: 'Réservez avec le bon médecin.' },
-              { n: '3', c: '#d97706', t: 'Résultats de labo', d: 'Vérifiez la disponibilité de vos résultats.' },
-              { n: '4', c: '#be185d', t: 'Informations clinique', d: 'Horaires, services, spécialistes.' },
-            ].map(f => (
-              <div key={f.t} className="flex items-start gap-3.5">
-                <div className="w-8 h-8 rounded-lg flex items-center justify-center
-                  text-[13px] font-extrabold text-white flex-shrink-0"
-                  style={{ background: f.c }}>{f.n}</div>
-                <div>
-                  <h4 className="font-extrabold text-sm mb-0.5">{f.t}</h4>
-                  <p className="text-slate-500 text-[13px]">{f.d}</p>
-                </div>
+        <div className="card p-6 mb-6">
+          <h3 className="font-bold text-[15px] mb-4 flex items-center gap-2">
+            <i className="fa-solid fa-clock text-[#1641C8] text-sm" />
+            Horaires de consultation
+          </h3>
+          <div className="grid grid-cols-7 gap-2">
+            {JOURS.map((j, i) => (
+              <div key={j} className={`text-center py-2.5 px-2 rounded-lg text-xs font-bold
+                ${i < 5 ? 'bg-green-100 text-green-700' : i === 5 ? 'bg-blue-100 text-[#1641C8]' : 'bg-slate-100 text-slate-500'}`}>
+                <div>{j}</div>
+                <div className="text-[10px] mt-0.5">{HEURES_RDV[i]}</div>
               </div>
             ))}
           </div>
         </div>
-      </section>
 
-      {/* ══ TESTIMONIALS ═════════════════════════════════════════════════ */}
-      <section className="py-20 px-[5%] bg-white">
-        <div className="text-center mb-12">
-          <div className="section-tag"><i className="fa-solid fa-star" /> Témoignages</div>
-          <h2 className="section-title">Ce que disent <em>nos patients</em></h2>
-        </div>
-        <div className="grid grid-cols-3 gap-5">
-          {[
-            { av: 'M', nom: 'Marie Théodore', svc: 'Gynécologie',
-              txt: '"Service exceptionnel. Les médecins sont très professionnels et attentionnés. J\'ai reçu mes résultats de laboratoire sur WhatsApp en moins de 2 heures."' },
-            { av: 'P', nom: 'Paul Jean-Baptiste', svc: 'Orthopédie',
-              txt: '"La consultation en ligne est très pratique. J\'ai pu voir un spécialiste depuis mon domicile et recevoir mon ordonnance par email le même jour."' },
-            { av: 'R', nom: 'Rose-Marie Étienne', svc: 'Pédiatrie',
-              txt: '"Clinique moderne avec un personnel chaleureux. Le système de rappel par WhatsApp est très utile pour ne pas oublier ses rendez-vous."' },
-          ].map(t => (
-            <div key={t.nom} className="card p-7">
-              <div className="text-yellow-400 text-sm mb-3 tracking-widest">★★★★★</div>
-              <p className="text-slate-500 text-sm leading-[1.7] mb-4 italic">{t.txt}</p>
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-full bg-blue-100 text-[#1641C8]
-                  flex items-center justify-center font-bold text-base">
-                  {t.av}
-                </div>
-                <div>
-                  <div className="font-bold text-[13.5px]">{t.nom}</div>
-                  <div className="text-xs text-slate-400">{t.svc}</div>
-                </div>
-              </div>
+        {/* Contact */}
+        {(spec.email || spec.telephone) && (
+          <div className="card p-6">
+            <h3 className="font-bold text-[15px] mb-4">Contact professionnel</h3>
+            <div className="flex gap-4">
+              {spec.telephone && (
+                <a href={`tel:${spec.telephone}`} className="flex items-center gap-2
+                  text-sm text-slate-600 hover:text-[#1641C8] transition-colors no-underline">
+                  <i className="fa-solid fa-phone text-[#1641C8]" /> {spec.telephone}
+                </a>
+              )}
+              {spec.email && (
+                <a href={`mailto:${spec.email}`} className="flex items-center gap-2
+                  text-sm text-slate-600 hover:text-[#1641C8] transition-colors no-underline">
+                  <i className="fa-solid fa-envelope text-[#1641C8]" /> {spec.email}
+                </a>
+              )}
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ══ CONTACT ══════════════════════════════════════════════════════ */}
-      <section className="py-16 px-[5%] bg-slate-50">
-        <div className="mb-8">
-          <div className="section-tag"><i className="fa-solid fa-location-dot" /> Contact</div>
-          <h2 className="section-title">Nous sommes <em>là pour vous</em></h2>
-        </div>
-        <div className="grid grid-cols-2 gap-4 max-w-2xl">
-          {[
-            { ic: 'fa-phone', bg: 'rgba(22,65,200,0.09)', col: '#1641C8', t: 'Téléphone', v: '+509 3888-0000', s: 'Standard — Lun à Dim' },
-            { ic: 'fa-brands fa-whatsapp', bg: 'rgba(34,197,94,0.09)', col: '#16a34a', t: 'WhatsApp', v: '+509 3888-0000', s: 'Résultats, suivi, questions' },
-            { ic: 'fa-envelope', bg: 'rgba(34,197,94,0.09)', col: '#16a34a', t: 'Email', v: 'contact@cliniquerebecca.ht', s: 'Dossiers, documents' },
-            { ic: 'fa-location-dot', bg: 'rgba(245,158,11,0.09)', col: '#d97706', t: 'Localisation', v: 'Clinique de la Rebecca', s: 'Haïti' },
-          ].map(c => (
-            <div key={c.t} className="card-hover flex gap-3.5 p-5">
-              <div className="w-11 h-11 rounded-xl flex items-center justify-center
-                text-[18px] flex-shrink-0" style={{ background: c.bg, color: c.col }}>
-                <i className={`fa-solid ${c.ic}`} />
-              </div>
-              <div>
-                <div className="font-extrabold text-sm mb-0.5">{c.t}</div>
-                <div className="text-[#1641C8] font-bold text-[13px]">{c.v}</div>
-                <div className="text-slate-400 text-xs">{c.s}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      <Footer />
-
-      {/* Float buttons */}
-      <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2.5 items-end">
-        <a href="https://wa.me/50938880000" target="_blank" rel="noreferrer"
-          className="w-12 h-12 rounded-full bg-green-500 text-white flex items-center
-            justify-center text-xl shadow-lg hover:scale-110 transition-transform">
-          <i className="fa-brands fa-whatsapp" />
-        </a>
-        <button onClick={() => setRdvOpen(true)}
-          className="w-12 h-12 rounded-full bg-[#1641C8] text-white flex items-center
-            justify-center text-lg shadow-lg hover:scale-110 transition-transform border-none">
-          <i className="fa-regular fa-calendar-check" />
-        </button>
+          </div>
+        )}
       </div>
+      <Footer />
     </>
   )
 }
