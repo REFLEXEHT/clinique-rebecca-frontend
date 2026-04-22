@@ -7,7 +7,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { comptaApi } from '@/lib/api'
-import { Mouvement } from '@/types'
+import { Mouvement, MouvementCreate } from '@/types'
 import { Plus } from 'lucide-react'
 
 const MODES = ['Espèces','Mobile Money (Moncash)','Natcash','Carte de crédit','Virement']
@@ -20,8 +20,8 @@ export default function CaissierPage() {
   const [mouvements, setMouvements] = useState<Mouvement[]>([])
   const [activeTab, setActiveTab]   = useState<'recette'|'depense'>('recette')
   const [showForm, setShowForm]     = useState(false)
-  const { register, handleSubmit, reset } = useForm({
-    defaultValues: { type:'recette', mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16) }
+  const { register, handleSubmit, reset } = useForm<MouvementCreate>({
+    defaultValues: { type:'recette', mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16), categorie:'' }
   })
 
   useEffect(() => {

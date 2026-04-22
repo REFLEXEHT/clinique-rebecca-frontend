@@ -25,6 +25,11 @@ const nextConfig = {
       },
     ]
   },
+
+  // 👇 Ajout pour corriger l’avertissement Turbopack
+  turbopack: {
+    root: __dirname,
+  },
 }
 
 module.exports = nextConfig
