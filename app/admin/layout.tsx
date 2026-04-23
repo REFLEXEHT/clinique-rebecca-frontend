@@ -26,6 +26,7 @@ const NAV_GROUPS = [
   { label: 'Rapports', items: [
     { href: '/admin/statistiques', icon: 'fa-chart-bar', label: 'Statistiques' },
     { href: '/admin/patients', icon: 'fa-users', label: 'Patients' },
+    { href: '/admin/utilisateurs', icon: 'fa-user-shield', label: 'Utilisateurs' },
   ]},
 ]
 

@@ -1,166 +1,235 @@
 'use client'
-// app/patient/dashboard/page.tsx — Espace patient
+// app/patient/dashboard/page.tsx — Espace patient : RDV, résultats labo, consultation vidéo
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import toast from 'react-hot-toast'
 import { rdvApi, laboApi } from '@/lib/api'
 import { RendezVous, ResultatLabo } from '@/types'
-import RdvModal from '@/components/ui/RdvModal'
+import { Video, FlaskConical, Calendar, LogOut } from 'lucide-react'
+
+const STATUS_RDV: Record<string, {label:string; cls:string}> = {
+  en_attente: { label:'En attente', cls:'badge-yellow' },
+  confirme: { label:'Confirmé ✓', cls:'badge-green' },
+  annule: { label:'Annulé', cls:'badge-red' },
+  termine: { label:'Terminé', cls:'badge-gray' },
+}
 
 export default function PatientDashboard() {
-  const { user, isAuthenticated, loading } = useAuth()
+  const { user, isAuthenticated, loading, logout } = useAuth()
   const router = useRouter()
-  const [rdvs, setRdvs]         = useState<RendezVous[]>([])
+  const [rdvs, setRdvs] = useState<RendezVous[]>([])
   const [resultats, setResultats] = useState<ResultatLabo[]>([])
-  const [rdvOpen, setRdvOpen]   = useState(false)
-  const [activeTab, setActiveTab] = useState<'rdv'|'resultats'>('rdv')
+  const [activeTab, setActiveTab] = useState<'rdv'|'labo'|'video'>('rdv')
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== 'patient')) router.push('/login')
   }, [isAuthenticated, user, loading])
 
   useEffect(() => {
-    if (isAuthenticated && user?.role === 'patient') {
-      rdvApi.patientList().then(r=>setRdvs(r.data)).catch(()=>{})
+    if (!isAuthenticated) return
+    rdvApi.patientList().then(r => setRdvs(r.data)).catch(() => {})
+    if (user?.id) {
+      laboApi.patientResultats(String(user.id)).then(r => setResultats(r.data)).catch(() => {})
     }
   }, [isAuthenticated, user])
 
+  const rdvVideo = rdvs.filter(r => (r as any).type_rdv === 'video' && (r as any).lien_video)
+  const rdvNormal = rdvs.filter(r => (r as any).type_rdv !== 'video')
+
+  const prochainRdv = rdvs.find(r => new Date(r.date_rdv) > new Date() && r.statut !== 'annule')
+
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"/></div>
-
-  const demoRdvs: RendezVous[] = [
-    { id:1, patient_nom:user?.nom||'Patient', patient_telephone:'+509 3456-7890', patient_email:null, specialite:'Gynécologie', date_rdv: new Date(Date.now()+7*24*3600*1000).toISOString(), type_rdv:'presentiel', statut:'confirme', motif:'Suivi annuel', notes_admin:null, mode_paiement:'À la clinique', rappel_envoye:false, created_at: new Date().toISOString() },
-  ]
-  const displayRdvs = rdvs.length > 0 ? rdvs : demoRdvs
-
-  const upcoming = displayRdvs.filter(r=>r.statut==='confirme'&&new Date(r.date_rdv)>new Date())
-  const past     = displayRdvs.filter(r=>r.statut==='termine'||new Date(r.date_rdv)<new Date())
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <RdvModal open={rdvOpen} onClose={()=>setRdvOpen(false)} />
-
       {/* Header */}
       <div className="bg-[#0f172a] h-[70px] flex items-center px-6 gap-4">
-        <Link href="/" className="text-white/60 hover:text-white text-sm no-underline transition-colors">
-          <i className="fa-solid fa-arrow-left mr-2"/>Accueil
+        <Link href="/" className="text-white/60 hover:text-white text-sm no-underline">
+          <i className="fa-solid fa-plus mr-2 text-[#1641C8]"/>Clinique de la Rebecca
         </Link>
         <div className="ml-auto flex items-center gap-3">
-          <div className="w-8 h-8 bg-[#1641C8]/40 rounded-lg flex items-center justify-center text-white/80 text-sm font-bold">
-            {user?.nom?.[0]?.toUpperCase()}
-          </div>
-          <span className="text-white font-semibold text-sm">{user?.nom}</span>
+          <span className="text-white/70 text-sm"><i className="fa-regular fa-user mr-1.5"/>{user?.nom}</span>
+          <button onClick={() => { logout(); router.push('/') }}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/60 hover:text-red-400 text-xs font-medium border-none bg-transparent cursor-pointer transition-colors">
+            <LogOut size={13}/> Déconnexion
+          </button>
         </div>
       </div>
 
-      <div className="p-7">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-xl font-extrabold">Mon espace patient</h1>
-            <p className="text-slate-500 text-[13px] mt-0.5">Gérez vos rendez-vous et consultez vos résultats</p>
-          </div>
-          <button className="btn-primary" onClick={()=>setRdvOpen(true)}>
-            <i className="fa-regular fa-calendar-check"/> Prendre RDV
-          </button>
+      <div className="max-w-[900px] mx-auto py-10 px-5">
+        {/* Bonjour */}
+        <div className="mb-7">
+          <h1 className="text-2xl font-extrabold text-slate-800">Bonjour, {user?.nom?.split(' ')[0]} 👋</h1>
+          <p className="text-slate-400 text-sm mt-1">Votre espace santé personnel</p>
         </div>
 
-        {/* Quick stats */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="kpi-card">
-            <div className="text-2xl font-black text-[#1641C8] mb-1">{upcoming.length}</div>
-            <div className="text-xs text-slate-500 font-semibold">RDV à venir</div>
-          </div>
-          <div className="kpi-card">
-            <div className="text-2xl font-black text-green-600 mb-1">{past.length}</div>
-            <div className="text-xs text-slate-500 font-semibold">Consultations passées</div>
-          </div>
-          <div className="kpi-card">
-            <div className="text-2xl font-black text-[#d97706] mb-1">{resultats.length}</div>
-            <div className="text-xs text-slate-500 font-semibold">Résultats de labo</div>
-          </div>
-        </div>
-
-        {/* Prochain RDV banner */}
-        {upcoming[0] && (
-          <div className="bg-gradient-to-r from-[#1641C8] to-[#0f2fa3] rounded-2xl p-5 mb-6 text-white flex items-center justify-between">
-            <div>
-              <div className="text-white/70 text-xs font-bold uppercase tracking-wide mb-1">Prochain rendez-vous</div>
-              <div className="text-xl font-extrabold mb-0.5">
-                {new Date(upcoming[0].date_rdv).toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}
+        {/* Prochain RDV */}
+        {prochainRdv && (
+          <div className="card p-5 mb-7 border-2 border-[#1641C8]/20 bg-blue-50/30">
+            <div className="text-[11px] font-extrabold text-[#1641C8] uppercase tracking-widest mb-2">Prochain rendez-vous</div>
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="font-extrabold text-lg text-slate-800">{prochainRdv.specialite}</div>
+                <div className="text-slate-500 text-sm mt-1">
+                  <i className="fa-regular fa-calendar mr-1.5"/>
+                  {new Date(prochainRdv.date_rdv).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' })}
+                </div>
               </div>
-              <div className="text-white/80 text-sm">
-                {new Date(upcoming[0].date_rdv).toLocaleTimeString('fr',{hour:'2-digit',minute:'2-digit'})} ·
-                {upcoming[0].specialite} ·
-                {upcoming[0].type_rdv==='video'?' En ligne 🎥':' En personne 🏥'}
+              <div className="flex items-center gap-3">
+                <span className={STATUS_RDV[prochainRdv.statut]?.cls || 'badge-gray'}>
+                  {STATUS_RDV[prochainRdv.statut]?.label || prochainRdv.statut}
+                </span>
+                {(prochainRdv as any).lien_video && (
+                  <a href={(prochainRdv as any).lien_video} target="_blank" rel="noreferrer"
+                    className="flex items-center gap-2 px-4 py-2 bg-[#1641C8] text-white text-sm font-bold rounded-xl no-underline hover:bg-[#0f2fa3] transition-colors">
+                    <Video size={14}/> Rejoindre la vidéo
+                  </a>
+                )}
               </div>
-            </div>
-            <div className="badge bg-green-500/20 text-green-300 text-sm px-3 py-1.5">
-              <i className="fa-solid fa-circle text-[8px]"/> Confirmé
             </div>
           </div>
         )}
 
-        {/* Tabs */}
-        <div className="flex gap-2 mb-4">
-          {(['rdv','resultats'] as const).map(t=>(
-            <button key={t} onClick={()=>setActiveTab(t)}
-              className={`px-5 py-2 rounded-full font-bold text-sm border cursor-pointer transition-all
-              ${activeTab===t?'bg-[#1641C8] text-white border-[#1641C8]':'bg-white text-slate-600 border-slate-200'}`}>
-              {t==='rdv'?'📅 Mes rendez-vous':'🔬 Mes résultats de labo'}
+        {/* Onglets */}
+        <div className="flex gap-2 mb-6">
+          {([
+            { key:'rdv', icon:<Calendar size={14}/>, label:'Mes rendez-vous' },
+            { key:'labo', icon:<FlaskConical size={14}/>, label:'Résultats labo' },
+            { key:'video', icon:<Video size={14}/>, label:'Consultations vidéo' },
+          ] as const).map(t => (
+            <button key={t.key} onClick={() => setActiveTab(t.key)}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm border-2 cursor-pointer transition-all
+              ${activeTab===t.key ? 'bg-[#1641C8] text-white border-[#1641C8]' : 'bg-white text-slate-600 border-slate-200 hover:border-[#1641C8]'}`}>
+              {t.icon} {t.label}
             </button>
           ))}
         </div>
 
-        {activeTab==='rdv' && (
-          <div className="card overflow-hidden">
-            <table className="tbl w-full">
-              <thead><tr><th>Date</th><th>Spécialité</th><th>Type</th><th>Motif</th><th>Statut</th></tr></thead>
-              <tbody>
-                {displayRdvs.map(r=>(
-                  <tr key={r.id}>
-                    <td>
-                      <div className="font-bold text-[13px]">{new Date(r.date_rdv).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'})}</div>
-                      <div className="text-slate-400 text-xs">{new Date(r.date_rdv).toLocaleTimeString('fr',{hour:'2-digit',minute:'2-digit'})}</div>
-                    </td>
-                    <td className="font-semibold text-[13px]">{r.specialite}</td>
-                    <td><span className={`badge ${r.type_rdv==='video'?'badge-blue':'badge-gray'}`}>{r.type_rdv==='video'?'Vidéo':'Présentiel'}</span></td>
-                    <td className="text-[12.5px] text-slate-500">{r.motif||'—'}</td>
-                    <td><span className={`badge ${r.statut==='confirme'?'badge-green':r.statut==='en_attente'?'badge-yellow':'badge-gray'}`}>{r.statut==='confirme'?'Confirmé':r.statut==='en_attente'?'En attente':'Terminé'}</span></td>
-                  </tr>
-                ))}
-                {displayRdvs.length===0&&<tr><td colSpan={5} className="text-center text-slate-400 py-8 text-sm">Aucun rendez-vous</td></tr>}
-              </tbody>
-            </table>
+        {/* Mes RDV */}
+        {activeTab === 'rdv' && (
+          <div className="space-y-3">
+            {rdvs.length === 0 ? (
+              <div className="card p-10 text-center">
+                <Calendar size={32} className="text-slate-200 mx-auto mb-3"/>
+                <p className="text-slate-400 text-sm">Vous n'avez pas encore de rendez-vous</p>
+                <Link href="/consultation" className="btn-primary inline-flex mt-4 text-sm no-underline">
+                  Prendre un rendez-vous
+                </Link>
+              </div>
+            ) : rdvs.map(r => (
+              <div key={r.id} className="card p-4 flex items-center gap-4 hover:shadow-md transition-all">
+                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0 text-[#1641C8]">
+                  {(r as any).type_rdv === 'video' ? <Video size={18}/> : <Calendar size={18}/>}
+                </div>
+                <div className="flex-1">
+                  <div className="font-extrabold text-slate-800">{r.specialite}</div>
+                  <div className="text-slate-400 text-xs mt-0.5">
+                    {new Date(r.date_rdv).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' })}
+                    {(r as any).type_rdv === 'video' && <span className="ml-2 badge-blue">Vidéo</span>}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={STATUS_RDV[r.statut]?.cls || 'badge-gray'}>{STATUS_RDV[r.statut]?.label || r.statut}</span>
+                  {(r as any).lien_video && (
+                    <a href={(r as any).lien_video} target="_blank" rel="noreferrer"
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1641C8] text-white text-xs font-bold rounded-lg no-underline hover:bg-[#0f2fa3]">
+                      <Video size={11}/> Rejoindre
+                    </a>
+                  )}
+                </div>
+              </div>
+            ))}
           </div>
         )}
 
-        {activeTab==='resultats' && (
-          <div className="card p-6">
-            {resultats.length===0 ? (
-              <div className="text-center py-10 text-slate-400">
-                <i className="fa-solid fa-flask-vial text-4xl mb-3 block opacity-20"/>
-                <p className="text-sm">Aucun résultat disponible. Vos résultats de laboratoire apparaîtront ici dès qu'ils seront disponibles.</p>
-                <p className="text-xs mt-2">Ils vous sont également envoyés automatiquement par WhatsApp et email.</p>
+        {/* Résultats labo */}
+        {activeTab === 'labo' && (
+          <div className="space-y-3">
+            {resultats.length === 0 ? (
+              <div className="card p-10 text-center">
+                <FlaskConical size={32} className="text-slate-200 mx-auto mb-3"/>
+                <p className="text-slate-400 text-sm">Aucun résultat de laboratoire disponible</p>
               </div>
-            ) : (
-              <table className="tbl w-full">
-                <thead><tr><th>Date</th><th>Examen</th><th>Résultats</th><th>Notes</th><th>Statut</th></tr></thead>
-                <tbody>
-                  {resultats.map(r=>(
-                    <tr key={r.id}>
-                      <td className="text-xs text-slate-500">{new Date(r.date_examen).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric'})}</td>
-                      <td className="font-semibold text-[13px]">{r.type_examen}</td>
-                      <td className="text-[12.5px] text-slate-600 max-w-[250px]">{r.resultats}</td>
-                      <td className="text-[12px] text-slate-400">{r.notes||'—'}</td>
-                      <td><span className={`badge ${r.status==='envoye'?'badge-green':r.status==='disponible'?'badge-blue':'badge-yellow'}`}>{r.status==='envoye'?'Envoyé':r.status==='disponible'?'Disponible':'En attente'}</span></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
+            ) : resultats.map(r => (
+              <div key={r.id} className="card p-5 hover:shadow-md transition-all">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <div className="font-extrabold text-slate-800 text-[15px]">{r.type_examen}</div>
+                    <div className="text-slate-400 text-xs mt-0.5">
+                      {new Date(r.date_examen).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' })}
+                    </div>
+                  </div>
+                  <span className={r.status==='envoye' ? 'badge-green' : r.status==='disponible' ? 'badge-blue' : 'badge-yellow'}>
+                    {r.status==='envoye' ? 'Envoyé ✓' : r.status==='disponible' ? 'Disponible' : 'En attente'}
+                  </span>
+                </div>
+                {r.resultats && (
+                  <div className="bg-slate-50 rounded-xl p-3 text-sm text-slate-700 font-medium">
+                    {r.resultats}
+                  </div>
+                )}
+                {r.notes && <p className="text-xs text-slate-400 italic mt-2">{r.notes}</p>}
+              </div>
+            ))}
           </div>
         )}
+
+        {/* Consultations vidéo */}
+        {activeTab === 'video' && (
+          <div>
+            {rdvVideo.length === 0 ? (
+              <div className="card p-10 text-center">
+                <Video size={32} className="text-slate-200 mx-auto mb-3"/>
+                <p className="text-slate-400 text-sm mb-4">Vous n'avez pas de consultation vidéo programmée</p>
+                <Link href="/consultation" className="btn-primary inline-flex text-sm no-underline">
+                  <Video size={14}/> Réserver une consultation vidéo
+                </Link>
+              </div>
+            ) : rdvVideo.map(r => (
+              <div key={r.id} className="card p-5 mb-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="font-extrabold text-lg">{r.specialite}</div>
+                    <div className="text-slate-400 text-sm mt-0.5">
+                      {new Date(r.date_rdv).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' })}
+                    </div>
+                  </div>
+                  <a href={(r as any).lien_video} target="_blank" rel="noreferrer"
+                    className="flex items-center gap-2 px-6 py-3 bg-[#1641C8] text-white font-bold rounded-xl no-underline hover:bg-[#0f2fa3] transition-colors">
+                    <Video size={16}/> Rejoindre la consultation
+                  </a>
+                </div>
+                <div className="mt-4 p-3 bg-blue-50 rounded-xl text-xs text-[#1641C8] font-medium">
+                  <i className="fa-solid fa-link mr-1.5"/>{(r as any).lien_video}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Actions rapides */}
+        <div className="grid grid-cols-2 gap-4 mt-8">
+          <Link href="/consultation" className="card p-5 flex items-center gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all no-underline">
+            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-[#1641C8] text-xl">
+              <i className="fa-regular fa-calendar-plus"/>
+            </div>
+            <div>
+              <div className="font-extrabold text-slate-800">Nouveau rendez-vous</div>
+              <div className="text-slate-400 text-xs">En personne ou en vidéo</div>
+            </div>
+          </Link>
+          <a href="https://wa.me/50938880000" target="_blank" rel="noreferrer"
+            className="card p-5 flex items-center gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all no-underline">
+            <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-green-600 text-xl">
+              <i className="fa-brands fa-whatsapp"/>
+            </div>
+            <div>
+              <div className="font-extrabold text-slate-800">Contacter la clinique</div>
+              <div className="text-slate-400 text-xs">WhatsApp · +509 3888 0000</div>
+            </div>
+          </a>
+        </div>
       </div>
     </div>
   )

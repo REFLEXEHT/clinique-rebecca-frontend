@@ -1,27 +1,64 @@
-// types/index.ts — Tous les types TypeScript du projet
+// types/index.ts — Types complets v3
 
 export type Role = 'patient' | 'medecin' | 'admin' | 'caissier' | 'labo' | 'pharmacie'
-
 export type StatutRDV = 'en_attente' | 'confirme' | 'annule' | 'termine'
 export type TypeRDV = 'presentiel' | 'video'
 export type TypeMouvement = 'recette' | 'depense'
 export type TypeActe = 'consultation' | 'geste' | 'intervention' | 'observation' | 'hospitalisation'
 
-// ─── Auth ─────────────────────────────────────────────────────────────────────
+// ─── Auth ──────────────────────────────────────────────────────────────────────
 export interface User {
   id: number
   nom: string
   email: string
   role: Role
+  specialite?: string
+  telephone?: string
 }
 
-export interface AuthState {
-  user: User | null
-  token: string | null
-  isAuthenticated: boolean
+// ─── Patient complet ──────────────────────────────────────────────────────────
+export interface PatientComplet {
+  // Champs obligatoires
+  id?: number
+  code_unique: string          // Ex: #RB-00142 — généré automatiquement
+  nom: string
+  telephone: string            // Obligatoire
+  // Champs obligatoires pour tout service (hors pharmacie)
+  date_naissance?: string
+  age?: number                 // Calculé automatiquement
+  sexe?: 'M' | 'F' | 'Autre'
+  contact_urgence_nom?: string
+  contact_urgence_tel?: string  // Avec WhatsApp
+  // Champs optionnels
+  email?: string
+  adresse?: string
+  created_at?: string
 }
 
-// ─── Service ─────────────────────────────────────────────────────────────────
+// ─── Transaction / Reçu ───────────────────────────────────────────────────────
+export interface Transaction {
+  id?: number
+  numero_recu: string          // Ex: REC-20260422-001
+  code_patient: string         // Code unique patient
+  patient_nom: string
+  patient_telephone: string
+  service: string
+  detail: string
+  montant: number
+  mode_paiement: string
+  date: string
+  caissier_nom: string
+  type: 'vente_pharmacie' | 'consultation' | 'labo' | 'autre_service'
+  items?: TransactionItem[]    // Pour pharmacie (panier)
+}
+export interface TransactionItem {
+  nom: string
+  quantite: number
+  prix_unitaire: number
+  sous_total: number
+}
+
+// ─── Service ──────────────────────────────────────────────────────────────────
 export interface Service {
   id: number
   nom: string
@@ -32,7 +69,7 @@ export interface Service {
   actif: boolean
 }
 
-// ─── Spécialiste ─────────────────────────────────────────────────────────────
+// ─── Spécialiste ──────────────────────────────────────────────────────────────
 export interface Specialiste {
   id: number
   nom: string
@@ -44,9 +81,12 @@ export interface Specialiste {
   telephone: string | null
   actif: boolean
   ordre: number
+  bio?: string
+  tags?: string[]
+  photo?: string
 }
 
-// ─── Horaire ─────────────────────────────────────────────────────────────────
+// ─── Horaire ──────────────────────────────────────────────────────────────────
 export interface Horaire {
   id: number
   jour: string
@@ -55,24 +95,13 @@ export interface Horaire {
   heure_fermeture: string
 }
 
-// ─── Patient ─────────────────────────────────────────────────────────────────
-export interface Patient {
-  id: number
-  numero: string
-  nom: string
-  prenom: string | null
-  telephone: string | null
-  email: string | null
-  adresse: string | null
-  created_at: string
-}
-
-// ─── Rendez-vous ─────────────────────────────────────────────────────────────
+// ─── Rendez-vous ──────────────────────────────────────────────────────────────
 export interface RendezVous {
   id: number
   patient_nom: string
   patient_telephone: string
   patient_email: string | null
+  code_patient?: string
   specialite: string
   date_rdv: string
   type_rdv: TypeRDV
@@ -81,6 +110,8 @@ export interface RendezVous {
   notes_admin: string | null
   mode_paiement: string | null
   rappel_envoye: boolean
+  lien_video?: string
+  numero_rdv?: string
   created_at: string
 }
 
@@ -94,9 +125,11 @@ export interface RendezVousCreate {
   motif?: string
   mode_paiement?: string
   reference_paiement?: string
+  lien_video?: string
+  numero_rdv?: string
 }
 
-// ─── Acte médical ────────────────────────────────────────────────────────────
+// ─── Acte médical ─────────────────────────────────────────────────────────────
 export interface Acte {
   id: number
   patient_id: string
@@ -145,7 +178,7 @@ export interface MouvementCreate {
   notes?: string
 }
 
-// ─── Stats dashboard ─────────────────────────────────────────────────────────
+// ─── Stats ────────────────────────────────────────────────────────────────────
 export interface DashboardStats {
   rdv_today: number
   rdv_month: number
@@ -156,7 +189,14 @@ export interface DashboardStats {
   taux_presence: number
 }
 
-// ─── Stock pharmacie ─────────────────────────────────────────────────────────
+export interface MedecinStats {
+  consultations_mois: number
+  patients_uniques: number
+  rdv_semaine: number
+  taux_presence: number
+}
+
+// ─── Stock pharmacie ──────────────────────────────────────────────────────────
 export interface StockItem {
   id: number
   nom: string
@@ -167,7 +207,7 @@ export interface StockItem {
   unite: string
 }
 
-// ─── Résultat labo ───────────────────────────────────────────────────────────
+// ─── Résultat labo ────────────────────────────────────────────────────────────
 export interface ResultatLabo {
   id: number
   patient_id: string
@@ -180,7 +220,7 @@ export interface ResultatLabo {
   status: 'en_attente' | 'disponible' | 'envoye'
 }
 
-// ─── Tarif ───────────────────────────────────────────────────────────────────
+// ─── Tarif ────────────────────────────────────────────────────────────────────
 export interface Tarif {
   id: number
   service: string
@@ -189,21 +229,22 @@ export interface Tarif {
   actif: boolean
 }
 
-// ─── Chat IA ─────────────────────────────────────────────────────────────────
+// ─── Chat IA ──────────────────────────────────────────────────────────────────
 export interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
 }
 
-// ─── Form helpers ─────────────────────────────────────────────────────────────
-export interface ApiResponse<T> {
-  data: T
-  message?: string
-}
-
-export interface PaginatedResponse<T> {
-  items: T[]
+// ─── Reçu imprimable ──────────────────────────────────────────────────────────
+export interface RecuData {
+  numero: string
+  date: string
+  patient_nom: string
+  patient_code: string
+  patient_tel: string
+  service: string
+  items: { label: string; prix: number }[]
   total: number
-  page: number
-  per_page: number
+  mode_paiement: string
+  caissier: string
 }
