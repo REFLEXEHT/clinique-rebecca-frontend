@@ -16,6 +16,21 @@ export interface User {
   telephone?: string
 }
 
+// ─── Patient (liste admin) ────────────────────────────────────────────────────
+export interface Patient {
+  id: number
+  nom: string
+  prenom?: string
+  email?: string | null
+  telephone?: string | null
+  code_unique?: string
+  age?: number
+  sexe?: 'M' | 'F' | 'Autre'
+  date_naissance?: string | null
+  adresse?: string | null
+  created_at?: string
+}
+
 // ─── Patient complet ──────────────────────────────────────────────────────────
 export interface PatientComplet {
   // Champs obligatoires
