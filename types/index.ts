@@ -19,6 +19,7 @@ export interface User {
 // ─── Patient (liste admin) ────────────────────────────────────────────────────
 export interface Patient {
   id: number
+  numero?: string
   nom: string
   prenom?: string
   email?: string | null
