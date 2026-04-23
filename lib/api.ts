@@ -114,3 +114,9 @@ export const caissierApi = {
   listRdv: (params?: any) => api.get('/caissier/rendez-vous', { params }),
   encaisser: (rdvId: number, data: any) => api.post(`/caissier/encaissement/${rdvId}`, data),
 }
+export const statsApi = {
+  dashboard: () => api.get('/admin/stats/dashboard'),
+  rdvParJour: (jours: number) => api.get('/admin/stats/rdv-par-jour', { params: { jours } }),
+  recettesParJour: (jours: number) => api.get('/admin/stats/recettes-par-jour', { params: { jours } }),
+  specialites: () => api.get('/admin/stats/specialites'),
+}
