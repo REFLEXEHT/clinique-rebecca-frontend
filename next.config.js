@@ -1,7 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://clinique-rebecca-api.onrender.com',
   },
 
   images: {
@@ -11,9 +11,9 @@ const nextConfig = {
     ],
   },
 
-  // Proxy toutes les requêtes /api/* vers le backend (résout CORS en production)
+  // Proxy /api/* vers le backend — résout les erreurs CORS en production
   async rewrites() {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'https://clinique-rebecca-api.onrender.com'
     return [
       {
         source: '/api/:path*',
@@ -22,15 +22,16 @@ const nextConfig = {
     ]
   },
 
-  // Headers CORS pour le développement local
+  // Headers CORS pour dev local
   async headers() {
     return [
       {
         source: '/api/:path*',
         headers: [
-          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Origin', value: process.env.ALLOWED_ORIGIN || '*' },
           { key: 'Access-Control-Allow-Methods', value: 'GET,POST,PUT,DELETE,OPTIONS,PATCH' },
           { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+          { key: 'Access-Control-Allow-Credentials', value: 'true' },
         ],
       },
     ]

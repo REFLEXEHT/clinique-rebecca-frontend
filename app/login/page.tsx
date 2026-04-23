@@ -31,6 +31,7 @@ interface FormData { email: string; password: string }
 export default function LoginPage() {
   const [selectedRole, setSelectedRole] = useState<Role>('patient')
   const [loading, setLoading] = useState(false)
+  const [showPwd, setShowPwd] = useState(false)
   const { login } = useAuth()
   const router = useRouter()
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>()
@@ -41,9 +42,11 @@ export default function LoginPage() {
       const res = await authApi.login(data.email, data.password)
       const { access_token, user } = res.data
 
-      // Vérifier que le rôle correspond
       if (user.role !== selectedRole) {
-        toast.error(`Ce compte est un compte "${user.role}". Veuillez sélectionner le bon rôle.`, { duration: 5000 })
+        toast.error(
+          `Ce compte est un compte "${user.role}". Veuillez sélectionner le bon rôle.`,
+          { duration: 5000 }
+        )
         setLoading(false)
         return
       }
@@ -53,9 +56,11 @@ export default function LoginPage() {
       router.push(ROLE_REDIRECTS[user.role as Role] || '/')
     } catch (err: any) {
       const detail = err.response?.data?.detail
-      if (typeof detail === 'string') {
+      if (err.code === 'ERR_NETWORK' || err.code === 'ECONNABORTED') {
+        toast.error('Impossible de contacter le serveur. Vérifiez votre connexion.', { duration: 6000 })
+      } else if (typeof detail === 'string') {
         if (detail.includes('inactif') || detail.includes('activé')) {
-          toast.error('Votre compte est en attente de validation par l\'administrateur.', { duration: 6000 })
+          toast.error("Votre compte est en attente de validation par l'administrateur.", { duration: 6000 })
         } else {
           toast.error('Email ou mot de passe incorrect.')
         }
@@ -70,7 +75,11 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f1e3d] to-[#1641C8] flex items-center justify-center p-4">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[440px] overflow-hidden">
+        {/* Header */}
         <div className="bg-[#0f172a] px-6 py-6 text-center">
+          <div className="w-12 h-12 bg-[#1641C8] rounded-xl flex items-center justify-center mx-auto mb-3">
+            <i className="fa-solid fa-hospital text-white text-xl" />
+          </div>
           <h1 className="text-white font-extrabold text-[17px]">Espace de connexion</h1>
           <p className="text-white/50 text-[12.5px] mt-1">Clinique de la Rebecca</p>
         </div>
@@ -79,14 +88,20 @@ export default function LoginPage() {
           <p className="text-sm text-slate-500 font-semibold mb-3">Sélectionnez votre rôle :</p>
           <div className="grid grid-cols-3 gap-2 mb-5">
             {ROLES.map(r => (
-              <button key={r.value} type="button" onClick={() => setSelectedRole(r.value as Role)}
+              <button
+                key={r.value}
+                type="button"
+                onClick={() => setSelectedRole(r.value as Role)}
                 className={`p-3 rounded-xl border-[1.5px] flex flex-col items-center gap-1.5
                   text-[12.5px] font-semibold cursor-pointer transition-all duration-150
                   ${selectedRole === r.value
                     ? 'border-[#1641C8] bg-blue-50 text-[#1641C8]'
-                    : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'}`}>
-                <i className={`fa-solid ${r.icon} text-xl`}
-                  style={selectedRole === r.value ? { color: r.color } : {}} />
+                    : 'border-slate-200 bg-white text-slate-500 hover:border-slate-300'}`}
+              >
+                <i
+                  className={`fa-solid ${r.icon} text-xl`}
+                  style={selectedRole === r.value ? { color: r.color } : {}}
+                />
                 {r.label}
               </button>
             ))}
@@ -95,17 +110,37 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="label">Adresse email</label>
-              <input {...register('email', {
-                required: 'Email requis',
-                pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Format email invalide' }
-              })} type="email" className="input" placeholder="votre@email.com" autoComplete="email" />
+              <input
+                {...register('email', {
+                  required: 'Email requis',
+                  pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Format email invalide' },
+                })}
+                type="email"
+                className="input"
+                placeholder="votre@email.com"
+                autoComplete="email"
+              />
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
             </div>
 
             <div>
               <label className="label">Mot de passe</label>
-              <input {...register('password', { required: 'Mot de passe requis' })}
-                type="password" className="input" placeholder="••••••••" autoComplete="current-password" />
+              <div className="relative">
+                <input
+                  {...register('password', { required: 'Mot de passe requis' })}
+                  type={showPwd ? 'text' : 'password'}
+                  className="input pr-10"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPwd(v => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 bg-transparent border-none cursor-pointer p-0"
+                >
+                  <i className={`fa-solid ${showPwd ? 'fa-eye-slash' : 'fa-eye'} text-sm`} />
+                </button>
+              </div>
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
             </div>
 
@@ -119,8 +154,8 @@ export default function LoginPage() {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                   </svg>
                   Connexion...
                 </span>
@@ -134,10 +169,6 @@ export default function LoginPage() {
             Pas de compte ?{' '}
             <Link href="/register" className="text-[#1641C8] font-bold hover:underline">S'inscrire</Link>
           </p>
-
-          <div className="mt-4 p-3 bg-slate-50 rounded-lg text-xs text-slate-400 text-center">
-            Admin: admin@cliniquerebecca.ht / rebecca2026
-          </div>
         </div>
       </div>
 

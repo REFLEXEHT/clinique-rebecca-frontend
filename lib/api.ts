@@ -1,11 +1,16 @@
 import axios from 'axios'
 
-const BASE = 'https://clinique-rebecca-api.onrender.com'
+// En production sur Vercel, on passe toujours par le proxy Next.js /api/*
+// Cela évite les erreurs CORS car les requêtes partent du même domaine
+const BASE = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  ? '' // Utilise le proxy /api/* configuré dans next.config.js
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000')
 
 export const api = axios.create({
   baseURL: `${BASE}/api`,
   headers: { 'Content-Type': 'application/json' },
   timeout: 20000,
+  withCredentials: false,
 })
 
 api.interceptors.request.use((config) => {
@@ -79,23 +84,33 @@ export const stocksApi = {
   update: (id: number, quantite: number) => api.put(`/admin/stocks/${id}`, { quantite }),
   create: (data: any) => api.post('/admin/stocks', data),
   delete: (id: number) => api.delete(`/admin/stocks/${id}`),
-  vente: (data: any) => api.post('/pharmacie/ventes', data),
-}
-export const laboApi = {
-  list: () => api.get('/labo/resultats'),
-  create: (data: any) => api.post('/labo/resultats', data),
-  update: (id: number, data: any) => api.put(`/labo/resultats/${id}`, data),
-  patientResultats: (patientId: string) => api.get(`/patient/resultats/${patientId}`),
-}
-export const statsApi = {
-  dashboard: () => api.get('/admin/stats/dashboard'),
-  rdvParJour: (jours = 7) => api.get('/admin/stats/rdv-par-jour', { params: { jours } }),
-  recettesParJour: (jours = 7) => api.get('/admin/stats/recettes-par-jour', { params: { jours } }),
 }
 export const patientsApi = {
-  list: (search?: string) => api.get('/admin/patients', { params: search ? { search } : {} }),
-  getById: (id: string) => api.get(`/admin/patients/${id}`),
+  list: (params?: any) => api.get('/admin/patients', { params }),
+  getById: (id: number) => api.get(`/admin/patients/${id}`),
+  create: (data: any) => api.post('/admin/patients', data),
+  update: (id: number, data: any) => api.put(`/admin/patients/${id}`, data),
+}
+export const depensesApi = {
+  list: (params?: any) => api.get('/admin/depenses', { params }),
+  create: (data: any) => api.post('/admin/depenses', data),
+  delete: (id: number) => api.delete(`/admin/depenses/${id}`),
+}
+export const usersApi = {
+  list: () => api.get('/admin/users'),
+  update: (id: number, data: any) => api.put(`/admin/users/${id}`, data),
+  delete: (id: number) => api.delete(`/admin/users/${id}`),
+  activate: (id: number) => api.put(`/admin/users/${id}/activate`),
 }
 export const chatApi = {
-  send: (message: string, historique: any[] = []) => api.post('/chat', { message, historique }),
+  send: (message: string, history: any[]) => api.post('/chat', { message, history }),
+}
+export const laboApi = {
+  list: () => api.get('/labo/analyses'),
+  create: (data: any) => api.post('/labo/analyses', data),
+  update: (id: number, data: any) => api.put(`/labo/analyses/${id}`, data),
+}
+export const caissierApi = {
+  listRdv: (params?: any) => api.get('/caissier/rendez-vous', { params }),
+  encaisser: (rdvId: number, data: any) => api.post(`/caissier/encaissement/${rdvId}`, data),
 }

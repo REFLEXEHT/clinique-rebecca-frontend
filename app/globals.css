@@ -198,68 +198,73 @@
 @keyframes blobPulse {
   0%, 100% { transform: scale(1) translate(0, 0); }
   33% { transform: scale(1.05) translate(10px, -15px); }
-  66% { transform: scale(0.96) translate(-8px, 10px); }
+  66% { transform: scale(0.97) translate(-8px, 10px); }
 }
 @keyframes fadeSlideIn {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
 }
+@keyframes chatSlideUp {
+  from { opacity: 0; transform: translateY(16px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
 
-.animate-float { animation: floatY 3.2s ease-in-out infinite; }
-.animate-float-delay { animation: floatY 3.2s ease-in-out infinite 0.9s; }
-.animate-blink { animation: blink 2s infinite; }
-.animate-modal { animation: modalIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1); }
+.animate-blink { animation: blink 1.8s ease-in-out infinite; }
+.animate-float { animation: floatY 4s ease-in-out infinite; }
 .animate-fade-in { animation: fadeSlideIn 0.6s ease both; }
+.animate-chat-up { animation: chatSlideUp 0.28s cubic-bezier(0.34,1.56,0.64,1) both; }
 
-/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
-::-webkit-scrollbar { width: 5px; height: 5px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+/* ─── Navbar ──────────────────────────────────────────────────────────────── */
+.nav-link {
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  text-decoration: none;
+  padding: 6px 4px;
+  transition: color 0.18s;
+  white-space: nowrap;
+}
+.nav-link:hover, .nav-link.active { color: #1641C8; }
 
-/* ─── Dropdown nav ───────────────────────────────────────────────────────── */
+.nav-dropdown-trigger {
+  position: relative;
+}
 .nav-dropdown {
+  display: none;
   position: absolute;
-  top: calc(100% + 10px);
+  top: calc(100% + 12px);
   left: 50%;
-  transform: translateX(-50%) translateY(-6px);
+  transform: translateX(-50%);
   background: white;
+  border-radius: 16px;
   border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  box-shadow: 0 12px 48px rgba(15,23,42,0.12);
-  padding: 8px;
-  opacity: 0;
-  visibility: hidden;
-  transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-  z-index: 200;
-  min-width: 220px;
-}
-.nav-item:hover .nav-dropdown {
-  opacity: 1;
-  visibility: visible;
-  transform: translateX(-50%) translateY(0);
-}
-.nav-dropdown.mega {
-  min-width: 660px;
+  box-shadow: 0 16px 48px rgba(15,23,42,0.14);
+  padding: 12px;
+  min-width: 540px;
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
   gap: 2px;
-  padding: 16px;
+  z-index: 200;
+  animation: toastUp 0.18s ease both;
+}
+.nav-dropdown-trigger:hover .nav-dropdown,
+.nav-dropdown-trigger:focus-within .nav-dropdown {
+  display: grid;
 }
 .nav-dropdown a {
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 9px 12px;
-  border-radius: 8px;
-  font-size: 13.5px;
-  font-weight: 500;
-  color: #0f172a;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #334155;
   text-decoration: none;
-  transition: all 0.12s;
+  transition: all 0.15s;
 }
 .nav-dropdown a:hover {
-  background: rgba(22,65,200,0.09);
+  background: #f0f4ff;
   color: #1641C8;
 }
 .nav-dropdown a i { width: 18px; text-align: center; color: #1641C8; }
@@ -456,7 +461,106 @@
   width: auto;
   object-fit: contain;
 }
-/* Sur fond sombre : logo blanc */
 .logo-on-dark {
   filter: brightness(0) invert(1);
+}
+
+/* ─── AI Chat Widget (flottant) ──────────────────────────────────────────── */
+.ai-chat-widget {
+  position: fixed;
+  bottom: 100px;
+  right: 24px;
+  z-index: 999;
+  width: 360px;
+}
+.ai-chat-window {
+  background: white;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 20px 60px rgba(15,23,42,0.18);
+  overflow: hidden;
+  animation: chatSlideUp 0.28s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.ai-chat-toggle {
+  width: 56px; height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #1641C8, #0f2fa3);
+  border: none;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 8px 28px rgba(22,65,200,0.4);
+  transition: all 0.2s;
+  margin-left: auto;
+  margin-top: 10px;
+  color: white;
+  font-size: 20px;
+}
+.ai-chat-toggle:hover { transform: scale(1.08); }
+
+/* ─── RESPONSIVE ──────────────────────────────────────────────────────────── */
+@media (max-width: 1024px) {
+  .hero-section {
+    grid-template-columns: 1fr;
+    min-height: auto;
+    padding-bottom: 40px;
+  }
+  .hero-right {
+    height: 50vw;
+    min-height: 320px;
+  }
+  .hero-photo-wrap {
+    border-radius: 0;
+  }
+  .ai-chat-widget {
+    width: calc(100vw - 32px);
+    right: 16px;
+    bottom: 90px;
+  }
+}
+
+@media (max-width: 768px) {
+  .hero-left {
+    padding: 40px 5% 20px;
+    text-align: center;
+  }
+  .hero-desc { max-width: 100%; }
+  .hero-stats { justify-content: center; gap: 24px; }
+  .hero-right { height: 56vw; min-height: 260px; }
+  .hero-float { display: none; }
+
+  /* Services grid */
+  .services-grid-3 { grid-template-columns: 1fr !important; }
+  .services-grid-2 { grid-template-columns: 1fr !important; }
+
+  /* Specialites */
+  .specs-grid { grid-template-columns: 1fr 1fr !important; }
+  .specs-horaires-grid { grid-template-columns: 1fr !important; }
+
+  /* Consultation */
+  .consultation-grid { grid-template-columns: 1fr !important; }
+
+  /* AI chat */
+  .ai-chat-widget {
+    width: calc(100vw - 24px);
+    right: 12px;
+    bottom: 80px;
+  }
+
+  /* Témoignages */
+  .temoignages-grid { grid-template-columns: 1fr !important; }
+
+  /* Page header */
+  .page-header { padding-top: 100px; }
+  .page-header h1 { font-size: 32px; }
+
+  /* Nav dropdown — disable on mobile */
+  .nav-dropdown { display: none !important; }
+}
+
+@media (max-width: 480px) {
+  .hero-stats { gap: 16px; }
+  .hero-stat-num { font-size: 22px; }
+  .section-title { font-size: 26px; }
+  .btn-primary, .btn-secondary { padding: 12px 20px; font-size: 14px; }
+  .specs-grid { grid-template-columns: 1fr !important; }
 }

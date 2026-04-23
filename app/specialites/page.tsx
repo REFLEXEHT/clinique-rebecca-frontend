@@ -1,54 +1,105 @@
 'use client'
-// app/specialites/page.tsx — Liste de toutes les spécialités
+// app/specialites/[slug]/page.tsx
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import RdvModal from '@/components/ui/RdvModal'
-import { useState } from 'react'
+import { specialistesApi } from '@/lib/api'
+import { Specialiste } from '@/types'
 
-const SPECIALITES = [
-  { slug: 'chirurgie', label: 'Chirurgie générale', icon: 'fa-scalpel', desc: 'Chirurgie digestive, laparoscopie, urgences chirurgicales' },
-  { slug: 'neurochirurgie', label: 'Neurochirurgie', icon: 'fa-brain', desc: 'Tumeurs cérébrales, chirurgie de la colonne vertébrale' },
-  { slug: 'neurologie', label: 'Neurologie', icon: 'fa-brain', desc: 'Épilepsie, AVC, sclérose en plaques' },
-  { slug: 'orthopedie', label: 'Orthopédie', icon: 'fa-bone', desc: 'Traumatologie, prothèse de hanche, arthroscopie' },
-  { slug: 'pediatrie', label: 'Pédiatrie', icon: 'fa-child', desc: 'Soins nourrissons, enfants et adolescents' },
-  { slug: 'dermatologie', label: 'Dermatologie', icon: 'fa-hand-dots', desc: 'Eczéma, psoriasis, dermatologie cosmétique' },
-  { slug: 'urologie', label: 'Urologie', icon: 'fa-kidneys', desc: 'Prostate, lithiase urinaire, fertilité masculine' },
-  { slug: 'orl', label: 'ORL', icon: 'fa-ear-listen', desc: 'Sinusite, surdité, chirurgie ORL' },
-  { slug: 'gynecologie', label: 'Gynécologie', icon: 'fa-venus', desc: 'Suivi grossesse, accouchement, santé féminine' },
-  { slug: 'chir-ped', label: 'Chirurgie pédiatrique', icon: 'fa-child-reaching', desc: 'Chirurgie néonatale, hernies, appendicite pédiatrique' },
-  { slug: 'medecine-interne', label: 'Médecine interne', icon: 'fa-heart-pulse', desc: 'Diabète, hypertension, maladies chroniques' },
-  { slug: 'ophtalmologie', label: 'Ophtalmologie', icon: 'fa-eye', desc: 'Cataracte, glaucome, chirurgie oculaire' },
-]
+const SPEC_META: Record<string, { label: string; icon: string; desc: string }> = {
+  chirurgie: { label: 'Chirurgie générale', icon: 'fa-scalpel', desc: 'Chirurgiens experts en interventions complexes' },
+  neurochirurgie: { label: 'Neurochirurgie', icon: 'fa-brain', desc: 'Spécialistes en neurochirurgie adulte et pédiatrique' },
+  neurologie: { label: 'Neurologie', icon: 'fa-brain', desc: 'Traitement des maladies du système nerveux' },
+  orthopedie: { label: 'Orthopédie', icon: 'fa-bone', desc: 'Traumatologie et chirurgie osseuse' },
+  pediatrie: { label: 'Pédiatrie', icon: 'fa-child', desc: 'Soins dédiés aux enfants de la naissance à 18 ans' },
+  dermatologie: { label: 'Dermatologie', icon: 'fa-hand-dots', desc: 'Maladies de peau et dermatologie cosmétique' },
+  urologie: { label: 'Urologie', icon: 'fa-kidneys', desc: 'Affections du système urinaire et reproducteur masculin' },
+  orl: { label: 'ORL', icon: 'fa-ear-listen', desc: 'Oreille, nez, gorge et chirurgie cervicale' },
+  gynecologie: { label: 'Gynécologie', icon: 'fa-venus', desc: 'Santé féminine et suivi de grossesse' },
+  'chir-ped': { label: 'Chirurgie pédiatrique', icon: 'fa-child-reaching', desc: 'Chirurgie spécialisée pour nourrissons et enfants' },
+  'medecine-interne': { label: 'Médecine interne', icon: 'fa-heart-pulse', desc: 'Maladies chroniques et pathologies complexes' },
+  ophtalmologie: { label: 'Ophtalmologie', icon: 'fa-eye', desc: 'Chirurgie oculaire et maladies de l\'œil' },
+}
 
-export default function SpecialitesPage() {
+// Données de fallback si l'API n'est pas disponible
+const SPECS_STATIC: Record<string, Specialiste[]> = {
+  chirurgie: [{ id:1, nom:'Dr. Michel Dubois', specialite:'Chirurgie générale', description:'Chirurgien senior, 15 ans d\'expérience. Spécialisé en chirurgie digestive et laparoscopie.', emoji:'🔬', categorie:'chirurgie', email:'m.dubois@cliniquerebecca.ht', telephone:'+509 3456-0001', actif:true, ordre:0 }],
+  gynecologie: [{ id:9, nom:'Dr. Claudette Joseph', specialite:'Gynécologie', description:'Gynécologue-obstétricienne. Suivi grossesse et santé féminine.', emoji:'🌺', categorie:'gynecologie', email:'c.joseph@cliniquerebecca.ht', telephone:'+509 3456-0009', actif:true, ordre:0 }],
+  pediatrie: [{ id:5, nom:'Dr. Paul Désir', specialite:'Pédiatrie', description:'Pédiatre spécialisé en néonatologie et pédiatrie générale.', emoji:'👶', categorie:'pediatrie', email:'p.desir@cliniquerebecca.ht', telephone:'+509 3456-0005', actif:true, ordre:0 }],
+}
+
+export default function SpecialitePage() {
+  const params = useParams()
+  const slug = params.slug as string
   const [rdvOpen, setRdvOpen] = useState(false)
+  const [selectedSpec, setSelectedSpec] = useState('')
+  const [specs, setSpecs] = useState<Specialiste[]>([])
+  const [loading, setLoading] = useState(true)
+
+  const meta = SPEC_META[slug] || { label: slug, icon: 'fa-user-doctor', desc: '' }
+
+  useEffect(() => {
+    setLoading(true)
+    specialistesApi.list(slug)
+      .then(r => setSpecs(r.data))
+      .catch(() => setSpecs(SPECS_STATIC[slug] || []))
+      .finally(() => setLoading(false))
+  }, [slug])
+
   return (
     <>
       <Navbar onRdvClick={() => setRdvOpen(true)} />
-      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
+      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} defaultSpec={selectedSpec || meta.label} />
+
       <div className="page-header">
-        <div className="breadcrumb"><Link href="/">Accueil</Link> / <span>Spécialités</span></div>
-        <h1>Nos 12 spécialités</h1>
-        <p>Des médecins experts à votre service dans toutes les disciplines médicales</p>
-      </div>
-      <div className="py-16 px-[5%]">
-        <div className="grid grid-cols-3 gap-5">
-          {SPECIALITES.map(s => (
-            <Link key={s.slug} href={`/specialites/${s.slug}`}
-              className="card-hover p-6 no-underline cursor-pointer block">
-              <div className="w-12 h-12 rounded-[13px] bg-blue-50 text-[#1641C8]
-                flex items-center justify-center text-xl mb-4">
-                <i className={`fa-solid ${s.icon}`} />
-              </div>
-              <h3 className="font-extrabold text-[16px] mb-2 text-slate-900">{s.label}</h3>
-              <p className="text-slate-500 text-[13px] leading-relaxed mb-3">{s.desc}</p>
-              <span className="text-sm font-bold text-[#1641C8] flex items-center gap-1.5">
-                Voir les spécialistes <i className="fa-solid fa-arrow-right text-xs" />
-              </span>
-            </Link>
-          ))}
+        <div className="breadcrumb">
+          <Link href="/">Accueil</Link> /
+          <Link href="/specialites">Spécialités</Link> /
+          <span>{meta.label}</span>
         </div>
+        <h1>{meta.label}</h1>
+        <p>{meta.desc}</p>
+      </div>
+
+      <div className="py-14 px-[5%]">
+        {loading ? (
+          <div className="grid grid-cols-4 gap-5">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="h-64 bg-slate-100 rounded-2xl animate-pulse" />
+            ))}
+          </div>
+        ) : specs.length === 0 ? (
+          <div className="text-center py-20 text-slate-400">
+            <i className="fa-solid fa-user-doctor text-5xl mb-4 block opacity-20" />
+            <p className="text-lg font-medium">Aucun spécialiste disponible pour cette spécialité.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-4 gap-5">
+            {specs.map(s => (
+              <Link key={s.id} href={`/specialistes/${s.id}`}
+                className="spec-card no-underline">
+                <div className="spec-card-photo text-5xl">{s.emoji}</div>
+                <div className="p-4">
+                  <h4 className="font-extrabold text-[14.5px] text-slate-900 mb-0.5">{s.nom}</h4>
+                  <div className="text-[#1641C8] text-[12px] font-bold mb-1.5">{s.specialite}</div>
+                  {s.description && (
+                    <p className="text-slate-400 text-xs leading-[1.5] mb-3 line-clamp-2">{s.description}</p>
+                  )}
+                  <button
+                    onClick={(e) => { e.preventDefault(); setSelectedSpec(s.specialite); setRdvOpen(true) }}
+                    className="w-full py-2 rounded-full bg-blue-50 text-[#1641C8]
+                      text-xs font-bold hover:bg-[#1641C8] hover:text-white
+                      transition-all border-none cursor-pointer">
+                    Prendre RDV
+                  </button>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
       <Footer />
     </>
