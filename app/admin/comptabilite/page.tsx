@@ -72,8 +72,8 @@ export default function AdminComptabilite() {
 
   const { register, handleSubmit, watch, reset } = useForm({ defaultValues: { type:'recette', mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16), categorie: '', description: '', montant: 0, notes: '' } })
   const { register: regActe, handleSubmit: subActe, watch: watchActe, reset: resetActe } = useForm()
-  const { register: regDec, handleSubmit: subDec, reset: resetDec } = useForm({ defaultValues: { mode_paiement:'Espèces' } })
-  const { register: regExplo, handleSubmit: subExplo, reset: resetExplo } = useForm({ defaultValues: { mode_paiement:'Espèces', flux_direct: false } })
+  const { register: regDec, handleSubmit: subDec, reset: resetDec } = useForm({ defaultValues: { medecin_id: '', medecin_nom: '', montant: 0, motif: '', mode_paiement:'Espèces' } })
+  const { register: regExplo, handleSubmit: subExplo, reset: resetExplo } = useForm({ defaultValues: { medecin_id: '', patient_nom: '', montant: 0, description: '', mode_paiement:'Espèces', flux_direct: false } })
 
   const typeW = watch('type')
   const catW = watch('categorie')
