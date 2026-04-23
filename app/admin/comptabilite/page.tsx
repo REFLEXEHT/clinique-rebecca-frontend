@@ -70,7 +70,7 @@ export default function AdminComptabilite() {
   const [optoData, setOptoData] = useState({ total_consultations: 0, total_montures: 0, mois: now.getMonth()+1, annee: now.getFullYear() })
   const [optoResultat, setOptoResultat] = useState<any>(null)
 
-  const { register, handleSubmit, watch, reset } = useForm({ defaultValues: { type:'recette', mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16), categorie: '' } })
+  const { register, handleSubmit, watch, reset } = useForm({ defaultValues: { type:'recette', mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16), categorie: '', description: '', montant: 0, notes: '' } })
   const { register: regActe, handleSubmit: subActe, watch: watchActe, reset: resetActe } = useForm()
   const { register: regDec, handleSubmit: subDec, reset: resetDec } = useForm({ defaultValues: { mode_paiement:'Espèces' } })
   const { register: regExplo, handleSubmit: subExplo, reset: resetExplo } = useForm({ defaultValues: { mode_paiement:'Espèces', flux_direct: false } })
