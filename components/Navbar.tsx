@@ -1,7 +1,7 @@
 'use client'
 // components/layout/Navbar.tsx — Navigation responsive avec menu mobile
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
+import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { LOGO_SRC } from '@/lib/images'
@@ -45,6 +45,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
   const [mounted, setMounted] = useState(false)
   const { user, isAuthenticated, logout } = useAuth()
   const router = useRouter()
+  const pathname = usePathname()
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -103,8 +104,8 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
         {/* Desktop nav */}
         {variant === 'public' && (
           <div className="hidden md:flex items-center gap-0.5 mx-auto">
-            <Link href="/" className="nav-item px-3.5 py-2 rounded-lg text-sm font-medium
-              text-slate-600 hover:text-[#1641C8] hover:bg-blue-50 transition-all">
+            <Link href="/" className={`nav-item px-3.5 py-2 rounded-lg text-sm font-medium
+              transition-all ${pathname === '/' ? 'text-[#1641C8] bg-blue-50 font-bold' : 'text-slate-600 hover:text-[#1641C8] hover:bg-blue-50'}`}>
               Accueil
             </Link>
 
@@ -140,8 +141,8 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
               </div>
             </div>
 
-            <Link href="/consultation" className="px-3.5 py-2 rounded-lg text-sm font-medium
-              text-slate-600 hover:text-[#1641C8] hover:bg-blue-50 transition-all">
+            <Link href="/consultation" className={`px-3.5 py-2 rounded-lg text-sm font-medium
+              transition-all ${pathname === '/consultation' ? 'text-[#1641C8] bg-blue-50 font-bold' : 'text-slate-600 hover:text-[#1641C8] hover:bg-blue-50'}`}>
               Consultation
             </Link>
           </div>
