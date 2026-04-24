@@ -1,5 +1,5 @@
 'use client'
-// context/AuthContext.tsx — Gestion de l'authentification globale
+// context/AuthContext.tsx
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { User, Role } from '@/types'
 
@@ -15,25 +15,23 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType>({
   user: null, token: null, isAuthenticated: false, role: null,
-  login: () => {}, logout: () => {}, loading: false,
+  login: () => {}, logout: () => {}, loading: true,
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
-  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
-    setMounted(true)
-    const t = localStorage.getItem('rb_token')
-    const u = localStorage.getItem('rb_user')
-    if (t && u) {
-      try {
+    try {
+      const t = localStorage.getItem('rb_token')
+      const u = localStorage.getItem('rb_user')
+      if (t && u) {
         setToken(t)
         setUser(JSON.parse(u))
-      } catch {}
-    }
+      }
+    } catch {}
     setLoading(false)
   }, [])
 
@@ -51,13 +49,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
-  if (!mounted) return <>{children}</>
-
+  // Always render Provider with consistent initial state (no hydration mismatch)
   return (
     <AuthContext.Provider value={{
       user, token,
       isAuthenticated: !!user && !!token,
-      role: user?.role || null,
+      role: user?.role ?? null,
       login, logout, loading,
     }}>
       {children}
@@ -67,7 +64,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 export const useAuth = () => useContext(AuthContext)
 
-// HOC de protection des routes
 export function withAuth(roles: Role[]) {
   return function(Component: React.ComponentType<any>) {
     return function ProtectedRoute(props: any) {
@@ -77,7 +73,11 @@ export function withAuth(roles: Role[]) {
           window.location.href = '/login'
         }
       }, [isAuthenticated, role, loading])
-      if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div>
+      if (loading) return (
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+        </div>
+      )
       return <Component {...props} />
     }
   }

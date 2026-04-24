@@ -1,4 +1,5 @@
 'use client'
+// components/ui/RdvModal.tsx — Modal prise de rendez-vous avec paiement
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
@@ -11,11 +12,17 @@ const SPECIALITES = [
   'Chirurgie pédiatrique', 'Médecine interne', 'Ophtalmologie',
   'Dentisterie', 'Physiothérapie', 'Optométrie', 'Laboratoire',
 ]
-
 const HEURES = [
-  '07:00', '07:30', '08:00', '08:30', '09:00', '09:30',
-  '10:00', '10:30', '11:00', '11:30', '13:00', '13:30',
-  '14:00', '14:30', '15:00', '15:30', '16:00', '16:30',
+  '07:00','07:30','08:00','08:30','09:00','09:30','10:00','10:30',
+  '11:00','11:30','13:00','13:30','14:00','14:30','15:00','15:30',
+  '16:00','16:30',
+]
+const MODES_PAIEMENT = [
+  'À la clinique',
+  'Mobile Money (Moncash)',
+  'Natcash',
+  'Carte de crédit',
+  'Virement bancaire',
 ]
 
 interface Props {
@@ -32,18 +39,26 @@ interface FormData {
   date: string
   heure: string
   type_rdv: 'presentiel' | 'video'
+  mode_paiement: string
+  reference_paiement: string
   motif: string
 }
 
 export default function RdvModal({ open, onClose, defaultSpec }: Props) {
   const [loading, setLoading] = useState(false)
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>({
-    defaultValues: { specialite: defaultSpec || '', type_rdv: 'presentiel' },
+  const { register, handleSubmit, watch, reset, formState: { errors } } = useForm<FormData>({
+    defaultValues: {
+      specialite: defaultSpec || '',
+      type_rdv: 'presentiel',
+      mode_paiement: 'À la clinique',
+    },
   })
 
-  if (!open) return null
-
+  const modePaiement = watch('mode_paiement')
+  const showPayDetail = modePaiement !== 'À la clinique'
   const today = new Date().toISOString().split('T')[0]
+
+  if (!open) return null
 
   const onSubmit = async (data: FormData) => {
     setLoading(true)
@@ -57,17 +72,17 @@ export default function RdvModal({ open, onClose, defaultSpec }: Props) {
         date_rdv: dateRdv.toISOString(),
         type_rdv: data.type_rdv,
         motif: data.motif || undefined,
+        mode_paiement: data.mode_paiement,
+        reference_paiement: data.reference_paiement || undefined,
       })
 
       const dateStr = dateRdv.toLocaleDateString('fr-FR', {
         weekday: 'long', day: 'numeric', month: 'long',
       })
-
       toast.success(`✅ RDV confirmé — ${dateStr} à ${data.heure}`)
-      setTimeout(() => toast.success(`📱 WhatsApp envoyé à ${data.patient_telephone}`, { icon: '💬' }), 700)
-      setTimeout(() => toast.success(`👨‍⚕️ Médecin (${data.specialite}) notifié par email`), 1400)
-      setTimeout(() => toast(`⏰ Rappel programmé 6h avant — patient & médecin`, { icon: '🔔' }), 2100)
-
+      setTimeout(() => toast.success(`📱 WhatsApp à ${data.patient_telephone}`, { icon: '💬' }), 700)
+      setTimeout(() => toast.success(`👨‍⚕️ Médecin notifié — ${data.specialite}`), 1400)
+      setTimeout(() => toast(`⏰ Rappel 6h avant programmé`, { icon: '🔔' }), 2100)
       reset()
       onClose()
     } catch (err: any) {
@@ -78,36 +93,37 @@ export default function RdvModal({ open, onClose, defaultSpec }: Props) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-[580px] max-h-[92vh] overflow-y-auto
-        animate-[modalIn_0.22s_cubic-bezier(0.34,1.56,0.64,1)]">
-
+    <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+      <div className="modal-box max-w-[580px]">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 pb-4 border-b border-gray-100">
-          <div className="flex items-center gap-2">
-            <i className="fa-regular fa-calendar-check text-[#1a4fc4]" />
-            <span className="text-[16px] font-extrabold">Prendre un rendez-vous</span>
-          </div>
-          <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 flex items-center
-            justify-center text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all">
+        <div className="flex items-center justify-between p-5 pb-4 border-b border-slate-100">
+          <h3 className="text-[16px] font-extrabold flex items-center gap-2">
+            <i className="fa-regular fa-calendar-check text-[#1641C8]" />
+            Prendre un rendez-vous
+          </h3>
+          <button onClick={onClose} className="w-8 h-8 rounded-full bg-slate-100 flex
+            items-center justify-center text-slate-400 hover:bg-red-50 hover:text-red-500
+            transition-all border-none cursor-pointer">
             <X size={15} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-5 space-y-3">
+          {/* Nom */}
           <div>
             <label className="label">Nom complet *</label>
-            <input {...register('patient_nom', { required: true })} className="input"
-              placeholder="Jean Paul Marie" />
-            {errors.patient_nom && <p className="text-red-500 text-xs mt-1">Champ requis</p>}
+            <input {...register('patient_nom', { required: 'Requis' })}
+              className="input" placeholder="Jean Paul Marie" />
+            {errors.patient_nom && <p className="text-red-500 text-xs mt-1">{errors.patient_nom.message}</p>}
           </div>
 
+          {/* Téléphone + Email */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">WhatsApp *</label>
-              <input {...register('patient_telephone', { required: true })} className="input"
-                placeholder="+509 3456-7890" />
-              {errors.patient_telephone && <p className="text-red-500 text-xs mt-1">Champ requis</p>}
+              <input {...register('patient_telephone', { required: 'Requis' })}
+                className="input" placeholder="+509 3456-7890" />
+              {errors.patient_telephone && <p className="text-red-500 text-xs mt-1">{errors.patient_telephone.message}</p>}
             </div>
             <div>
               <label className="label">Email</label>
@@ -116,31 +132,35 @@ export default function RdvModal({ open, onClose, defaultSpec }: Props) {
             </div>
           </div>
 
+          {/* Spécialité */}
           <div>
             <label className="label">Spécialité / Service *</label>
-            <select {...register('specialite', { required: true })} className="input">
-              <option value="">Sélectionner...</option>
-              {SPECIALITES.map(s => <option key={s} value={s}>{s}</option>)}
+            <select {...register('specialite', { required: 'Requis' })} className="input">
+              <option value="">Choisir...</option>
+              {SPECIALITES.map(s => <option key={s}>{s}</option>)}
             </select>
-            {errors.specialite && <p className="text-red-500 text-xs mt-1">Champ requis</p>}
+            {errors.specialite && <p className="text-red-500 text-xs mt-1">{errors.specialite.message}</p>}
           </div>
 
+          {/* Date + Heure */}
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="label">Date *</label>
-              <input {...register('date', { required: true })} type="date" min={today} className="input" />
-              {errors.date && <p className="text-red-500 text-xs mt-1">Champ requis</p>}
+              <input {...register('date', { required: 'Requis' })} type="date"
+                min={today} className="input" />
+              {errors.date && <p className="text-red-500 text-xs mt-1">{errors.date.message}</p>}
             </div>
             <div>
               <label className="label">Heure *</label>
-              <select {...register('heure', { required: true })} className="input">
-                <option value="">Choisir l'heure...</option>
-                {HEURES.map(h => <option key={h} value={h}>{h}</option>)}
+              <select {...register('heure', { required: 'Requis' })} className="input">
+                <option value="">Choisir...</option>
+                {HEURES.map(h => <option key={h}>{h}</option>)}
               </select>
-              {errors.heure && <p className="text-red-500 text-xs mt-1">Champ requis</p>}
+              {errors.heure && <p className="text-red-500 text-xs mt-1">{errors.heure.message}</p>}
             </div>
           </div>
 
+          {/* Type */}
           <div>
             <label className="label">Type de consultation</label>
             <select {...register('type_rdv')} className="input">
@@ -149,6 +169,31 @@ export default function RdvModal({ open, onClose, defaultSpec }: Props) {
             </select>
           </div>
 
+          {/* Mode paiement */}
+          <div>
+            <label className="label">Mode de paiement</label>
+            <select {...register('mode_paiement')} className="input">
+              {MODES_PAIEMENT.map(m => <option key={m}>{m}</option>)}
+            </select>
+          </div>
+
+          {/* Référence paiement (si en ligne) */}
+          {showPayDetail && (
+            <div className="pay-box">
+              <div className="pay-box-title">
+                <i className="fa-solid fa-mobile-screen" />
+                Paiement en ligne — Référence de transaction
+              </div>
+              <label className="label">Numéro / Référence *</label>
+              <input {...register('reference_paiement', { required: showPayDetail ? 'Requis pour le paiement en ligne' : false })}
+                className="input" placeholder="Ex: +509 3456-7890 ou référence Moncash" />
+              {errors.reference_paiement && (
+                <p className="text-red-500 text-xs mt-1">{errors.reference_paiement.message}</p>
+              )}
+            </div>
+          )}
+
+          {/* Motif */}
           <div>
             <label className="label">Motif (optionnel)</label>
             <textarea {...register('motif')} className="input resize-none" rows={2}
@@ -156,34 +201,21 @@ export default function RdvModal({ open, onClose, defaultSpec }: Props) {
           </div>
 
           {/* Notifications info */}
-          <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-sm">
-            <p className="font-bold text-green-700 mb-2 flex items-center gap-1.5">
-              <i className="fa-solid fa-bell text-xs" /> Notifications automatiques
-            </p>
-            <div className="space-y-1.5 text-green-600 text-xs">
-              <div className="flex items-start gap-2">
-                <i className="fa-brands fa-whatsapp mt-0.5" />
-                <span><strong>Immédiatement :</strong> WhatsApp + Email au patient</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <i className="fa-solid fa-user-doctor mt-0.5 text-[#1a4fc4]" />
-                <span><strong>Immédiatement :</strong> Email au médecin concerné</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <i className="fa-solid fa-clock mt-0.5 text-orange-500" />
-                <span><strong>6h avant :</strong> Rappel WhatsApp + Email — patient & médecin</span>
-              </div>
-            </div>
+          <div className="notif-box">
+            <i className="fa-solid fa-bell text-green-600 mr-1.5" />
+            <strong>Notifications automatiques :</strong> Confirmation WhatsApp + Email ·
+            Rappel 6h avant — patient & médecin
           </div>
 
+          {/* Actions */}
           <div className="flex gap-3 pt-1">
             <button type="button" onClick={onClose}
-              className="flex-1 py-2.5 border border-gray-200 text-gray-500 rounded-full
-              font-bold text-sm hover:bg-gray-50 transition-all">
+              className="flex-1 py-2.5 border border-slate-200 text-slate-500 rounded-full
+              font-bold text-sm hover:bg-slate-50 transition-all cursor-pointer bg-white">
               Annuler
             </button>
             <button type="submit" disabled={loading}
-              className="flex-1 btn-blue justify-center py-2.5 rounded-full">
+              className="flex-1 btn-primary justify-center py-2.5 rounded-full">
               {loading ? (
                 <span className="flex items-center gap-2">
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
@@ -193,22 +225,12 @@ export default function RdvModal({ open, onClose, defaultSpec }: Props) {
                   Envoi...
                 </span>
               ) : (
-                <>
-                  <i className="fa-regular fa-calendar-check text-sm" />
-                  Confirmer le RDV
-                </>
+                <><i className="fa-regular fa-calendar-check" /> Confirmer le RDV</>
               )}
             </button>
           </div>
         </form>
       </div>
-
-      <style>{`
-        @keyframes modalIn {
-          from { opacity: 0; transform: scale(0.94) translateY(8px); }
-          to { opacity: 1; transform: scale(1) translateY(0); }
-        }
-      `}</style>
     </div>
   )
 }

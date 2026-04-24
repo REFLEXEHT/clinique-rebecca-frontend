@@ -42,8 +42,11 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
   const [scrolled, setScrolled] = useState(false)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mobileSection, setMobileSection] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
   const { user, isAuthenticated, logout } = useAuth()
   const router = useRouter()
+
+  useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 60)
@@ -146,7 +149,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
 
         {/* Right side desktop */}
         <div className="hidden md:flex items-center gap-2.5 ml-auto">
-          {isAuthenticated ? (
+          {mounted && isAuthenticated ? (
             <>
               <Link href={getDashboardHref()}
                 className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50
@@ -268,7 +271,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
 
               {/* Auth buttons mobile */}
               <div className="pt-3 border-t border-slate-100 space-y-2">
-                {isAuthenticated ? (
+                {mounted && isAuthenticated ? (
                   <>
                     <Link href={getDashboardHref()}
                       className="flex items-center gap-2 justify-center px-4 py-3 rounded-xl

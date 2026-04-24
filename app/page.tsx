@@ -1,85 +1,266 @@
 'use client'
-// app/admin/depenses/page.tsx
-import { useEffect, useState } from 'react'
-import { useForm } from 'react-hook-form'
-import toast from 'react-hot-toast'
-import { comptaApi } from '@/lib/api'
-import { Mouvement } from '@/types'
-import { Plus, Trash2 } from 'lucide-react'
+// app/specialites/page.tsx — Liste des spécialités — design humain et chaleureux
+import Link from 'next/link'
+import Navbar from '@/components/layout/Navbar'
+import Footer from '@/components/layout/Footer'
+import RdvModal from '@/components/ui/RdvModal'
+import { useState } from 'react'
 
-const CATS = ['RH','Médical','Pharmacie','Infrastructure','Équipements','Télécom','Autre']
-const MODES = ['Espèces','Mobile Money','Virement','Chèque']
+const SPECIALITES = [
+  {
+    slug: 'chirurgie',
+    label: 'Chirurgie générale',
+    icon: 'fa-scalpel',
+    desc: 'Chirurgie digestive, laparoscopie, urgences chirurgicales',
+    medecins: 3,
+    color: '#1641C8',
+    bg: 'rgba(22,65,200,0.07)',
+  },
+  {
+    slug: 'neurochirurgie',
+    label: 'Neurochirurgie',
+    icon: 'fa-brain',
+    desc: 'Tumeurs cérébrales, chirurgie de la colonne vertébrale',
+    medecins: 2,
+    color: '#7c3aed',
+    bg: 'rgba(124,58,237,0.07)',
+  },
+  {
+    slug: 'neurologie',
+    label: 'Neurologie',
+    icon: 'fa-brain',
+    desc: 'Épilepsie, AVC, sclérose en plaques',
+    medecins: 2,
+    color: '#7c3aed',
+    bg: 'rgba(124,58,237,0.07)',
+  },
+  {
+    slug: 'orthopedie',
+    label: 'Orthopédie',
+    icon: 'fa-bone',
+    desc: 'Traumatologie, prothèse de hanche, arthroscopie',
+    medecins: 2,
+    color: '#d97706',
+    bg: 'rgba(217,119,6,0.07)',
+  },
+  {
+    slug: 'pediatrie',
+    label: 'Pédiatrie',
+    icon: 'fa-child',
+    desc: 'Soins nourrissons, enfants et adolescents',
+    medecins: 3,
+    color: '#16a34a',
+    bg: 'rgba(22,163,74,0.07)',
+  },
+  {
+    slug: 'dermatologie',
+    label: 'Dermatologie',
+    icon: 'fa-hand-dots',
+    desc: 'Eczéma, psoriasis, dermatologie cosmétique',
+    medecins: 1,
+    color: '#db2777',
+    bg: 'rgba(219,39,119,0.07)',
+  },
+  {
+    slug: 'urologie',
+    label: 'Urologie',
+    icon: 'fa-kidneys',
+    desc: 'Prostate, lithiase urinaire, fertilité masculine',
+    medecins: 1,
+    color: '#0891b2',
+    bg: 'rgba(8,145,178,0.07)',
+  },
+  {
+    slug: 'orl',
+    label: 'ORL',
+    icon: 'fa-ear-listen',
+    desc: 'Sinusite, surdité, chirurgie ORL',
+    medecins: 1,
+    color: '#059669',
+    bg: 'rgba(5,150,105,0.07)',
+  },
+  {
+    slug: 'gynecologie',
+    label: 'Gynécologie',
+    icon: 'fa-venus',
+    desc: 'Suivi grossesse, accouchement, santé féminine',
+    medecins: 3,
+    color: '#db2777',
+    bg: 'rgba(219,39,119,0.07)',
+  },
+  {
+    slug: 'chir-ped',
+    label: 'Chirurgie pédiatrique',
+    icon: 'fa-child-reaching',
+    desc: 'Chirurgie néonatale, hernies, appendicite pédiatrique',
+    medecins: 1,
+    color: '#16a34a',
+    bg: 'rgba(22,163,74,0.07)',
+  },
+  {
+    slug: 'medecine-interne',
+    label: 'Médecine interne',
+    icon: 'fa-heart-pulse',
+    desc: 'Diabète, hypertension, maladies chroniques',
+    medecins: 2,
+    color: '#e11d48',
+    bg: 'rgba(225,29,72,0.07)',
+  },
+  {
+    slug: 'ophtalmologie',
+    label: 'Ophtalmologie',
+    icon: 'fa-eye',
+    desc: 'Cataracte, glaucome, chirurgie oculaire',
+    medecins: 1,
+    color: '#1641C8',
+    bg: 'rgba(22,65,200,0.07)',
+  },
+]
 
-interface FormData { description:string; categorie:string; montant:number; date_mouvement:string; mode_paiement:string; notes:string }
+const STATS = [
+  { n: '12', label: 'Spécialités', icon: 'fa-stethoscope' },
+  { n: '22+', label: 'Spécialistes', icon: 'fa-user-doctor' },
+  { n: '7j/7', label: 'Disponibilité', icon: 'fa-clock' },
+  { n: '15+', label: 'Années d\'expérience', icon: 'fa-award' },
+]
 
-export default function AdminDepenses() {
-  const [mouvements, setMouvements] = useState<Mouvement[]>([])
-  const [showForm, setShowForm]     = useState(false)
-  const { register, handleSubmit, reset } = useForm<FormData>({
-    defaultValues: { mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16) }
-  })
-
-  const load = () => {
-    const now = new Date()
-    comptaApi.list({ type:'depense', mois: now.getMonth()+1, annee: now.getFullYear() }).then(r=>setMouvements(r.data)).catch(()=>setMouvements([]))
-  }
-  useEffect(()=>{ load() },[])
-
-  const total = mouvements.reduce((s,m)=>s+m.montant,0)
-
-  const onSubmit = async (data: FormData) => {
-    try {
-      await comptaApi.create({ type:'depense', categorie:data.categorie, description:data.description, montant:Number(data.montant), date_mouvement:new Date(data.date_mouvement).toISOString(), mode_paiement:data.mode_paiement, notes:data.notes||undefined })
-      toast.success('Dépense enregistrée')
-      reset({ mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16) })
-      setShowForm(false)
-      load()
-    } catch { toast.error('Erreur') }
-  }
-
-  const del = async (id: number) => {
-    if (!confirm('Supprimer ?')) return
-    try { await comptaApi.delete(id); toast.success('Supprimé'); load() }
-    catch { toast.error('Erreur') }
-  }
+export default function SpecialitesPage() {
+  const [rdvOpen, setRdvOpen] = useState(false)
 
   return (
-    <div className="p-7">
-      <div className="flex items-center justify-between mb-6">
-        <div><h1 className="text-xl font-extrabold">Dépenses</h1><p className="text-slate-500 text-[13px] mt-0.5">Charges du mois — {new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</p></div>
-        <button onClick={()=>setShowForm(!showForm)} className="btn-primary"><Plus size={15}/> Ajouter une dépense</button>
-      </div>
-      <div className="grid grid-cols-3 gap-4 mb-6">
-        <div className="kpi-card"><div className="text-xl font-black text-red-500 mb-1">−{total.toLocaleString('fr')} HTG</div><div className="text-xs text-slate-500 font-semibold">Total dépenses</div></div>
-        <div className="kpi-card"><div className="text-xl font-black text-[#1641C8] mb-1">{mouvements.length}</div><div className="text-xs text-slate-500 font-semibold">Transactions</div></div>
-        <div className="kpi-card"><div className="text-xl font-black text-[#d97706] mb-1">{mouvements.length>0?Math.round(total/mouvements.length).toLocaleString('fr'):0} HTG</div><div className="text-xs text-slate-500 font-semibold">Moyenne</div></div>
-      </div>
-      {showForm&&(
-        <div className="card p-5 mb-5">
-          <h3 className="font-extrabold text-sm mb-4 flex items-center gap-2"><i className="fa-solid fa-file-invoice text-[#1641C8]"/>Nouvelle dépense</h3>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <div className="grid grid-cols-2 gap-4 mb-3">
-              <div><label className="label">Description *</label><input {...register('description',{required:true})} className="input" placeholder="Ex: Fournitures médicales"/></div>
-              <div><label className="label">Catégorie *</label><select {...register('categorie',{required:true})} className="input"><option value="">Choisir...</option>{CATS.map(c=><option key={c}>{c}</option>)}</select></div>
-            </div>
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              <div><label className="label">Montant (HTG) *</label><input {...register('montant',{required:true,min:0})} type="number" className="input"/></div>
-              <div><label className="label">Date & heure</label><input {...register('date_mouvement')} type="datetime-local" className="input"/></div>
-              <div><label className="label">Mode de paiement</label><select {...register('mode_paiement')} className="input">{MODES.map(m=><option key={m}>{m}</option>)}</select></div>
-            </div>
-            <div className="mb-4"><label className="label">Notes</label><input {...register('notes')} className="input" placeholder="Optionnel"/></div>
-            <div className="flex gap-3"><button type="submit" className="btn-primary"><i className="fa-solid fa-save"/>Enregistrer</button><button type="button" onClick={()=>setShowForm(false)} className="btn-ghost">Annuler</button></div>
-          </form>
+    <>
+      <Navbar onRdvClick={() => setRdvOpen(true)} />
+      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
+
+      {/* ── EN-TÊTE HUMAINE ────────────────────────────────────────────── */}
+      <div style={{ background: 'linear-gradient(135deg, #0f1e3d 0%, #1641C8 100%)' }}
+        className="pt-[110px] pb-16 px-[5%] text-white relative overflow-hidden">
+
+        {/* Formes douces de fond */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden">
+          <div style={{
+            position: 'absolute', width: 400, height: 400, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(255,255,255,0.06) 0%, transparent 70%)',
+            top: -100, right: '10%',
+          }} />
+          <div style={{
+            position: 'absolute', width: 300, height: 300, borderRadius: '50%',
+            background: 'radial-gradient(circle, rgba(34,197,94,0.08) 0%, transparent 70%)',
+            bottom: -50, left: '20%',
+          }} />
         </div>
-      )}
-      <div className="card overflow-hidden">
-        <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between"><h4 className="font-bold text-[13.5px]">Dépenses du mois</h4><span className="badge badge-red">−{total.toLocaleString('fr')} HTG</span></div>
-        <table className="tbl w-full"><thead><tr><th>Date</th><th>Description</th><th>Catégorie</th><th>Mode</th><th>Montant</th><th></th></tr></thead>
-        <tbody>
-          {mouvements.map(m=><tr key={m.id}><td className="text-xs text-slate-500">{new Date(m.date_mouvement).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})}</td><td className="font-semibold text-[13px]">{m.description}</td><td><span className="badge badge-gray">{m.categorie}</span></td><td className="text-xs text-slate-500">{m.mode_paiement}</td><td><span className="font-extrabold font-mono text-[13px] text-red-500">−{m.montant.toLocaleString('fr')} HTG</span></td><td><button onClick={()=>del(m.id)} className="w-7 h-7 rounded-lg bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 transition-all border-none cursor-pointer"><Trash2 size={12}/></button></td></tr>)}
-          {mouvements.length===0&&<tr><td colSpan={6} className="text-center text-slate-400 py-8 text-sm">Aucune dépense ce mois</td></tr>}
-        </tbody></table>
+
+        <div className="relative z-10 max-w-3xl mx-auto text-center">
+          <nav className="flex items-center gap-2 justify-center text-sm text-white/50 mb-6">
+            <Link href="/" className="text-white/70 hover:text-white transition-colors">Accueil</Link>
+            <span>/</span>
+            <span className="text-white/80">Spécialités</span>
+          </nav>
+
+          <h1 className="font-serif text-4xl md:text-5xl font-bold mb-5 leading-tight">
+            Des médecins qui prennent<br />
+            <span className="italic text-blue-200">soin de vous</span>
+          </h1>
+          <p className="text-white/65 text-base md:text-lg leading-relaxed mb-10 max-w-xl mx-auto">
+            Chaque patient mérite une attention particulière. Nos 22 spécialistes vous accueillent
+            dans un environnement humain, moderne et bienveillant.
+          </p>
+
+          {/* Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-2xl mx-auto">
+            {STATS.map(s => (
+              <div key={s.label} className="bg-white/10 border border-white/15 rounded-2xl py-4 px-3 backdrop-blur-sm">
+                <div className="text-2xl font-extrabold text-white mb-1">{s.n}</div>
+                <div className="text-white/60 text-xs font-semibold">{s.label}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-    </div>
+
+      {/* ── INTRO HUMAINE ──────────────────────────────────────────────── */}
+      <div className="bg-blue-50 border-b border-blue-100 py-8 px-[5%]">
+        <div className="max-w-3xl mx-auto text-center">
+          <p className="text-slate-600 text-[15px] leading-relaxed">
+            Que vous veniez pour un suivi, une urgence, ou une consultation de prévention,
+            nos équipes sont formées pour vous écouter, vous expliquer et vous accompagner
+            à chaque étape de votre parcours de santé.
+          </p>
+        </div>
+      </div>
+
+      {/* ── GRILLE DES SPÉCIALITÉS ─────────────────────────────────────── */}
+      <div className="py-16 px-[5%] bg-white">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {SPECIALITES.map(s => (
+            <Link
+              key={s.slug}
+              href={`/specialites/${s.slug}`}
+              className="group block rounded-2xl border border-slate-200 bg-white p-6 no-underline
+                transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:border-opacity-50"
+              style={{ '--hover-border': s.color } as any}
+            >
+              {/* Icône */}
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center text-xl mb-4
+                  transition-transform duration-300 group-hover:scale-110"
+                style={{ background: s.bg, color: s.color }}
+              >
+                <i className={`fa-solid ${s.icon}`} />
+              </div>
+
+              {/* Contenu */}
+              <h3 className="font-extrabold text-[16px] text-slate-900 mb-2 group-hover:text-[#1641C8] transition-colors">
+                {s.label}
+              </h3>
+              <p className="text-slate-500 text-[13px] leading-relaxed mb-4">{s.desc}</p>
+
+              {/* Footer card */}
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-400 font-semibold">
+                  <i className="fa-solid fa-user-doctor mr-1" />
+                  {s.medecins} médecin{s.medecins > 1 ? 's' : ''}
+                </span>
+                <span
+                  className="text-sm font-bold flex items-center gap-1.5 transition-all group-hover:gap-3"
+                  style={{ color: s.color }}
+                >
+                  Consulter <i className="fa-solid fa-arrow-right text-xs" />
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </div>
+
+      {/* ── CTA BAS DE PAGE ────────────────────────────────────────────── */}
+      <div className="py-16 px-[5%] bg-slate-50">
+        <div className="max-w-2xl mx-auto text-center">
+          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-5 text-[#1641C8] text-2xl">
+            <i className="fa-regular fa-calendar-check" />
+          </div>
+          <h2 className="font-serif text-2xl font-bold text-slate-800 mb-3">
+            Prêt à prendre rendez-vous ?
+          </h2>
+          <p className="text-slate-500 text-[15px] mb-7 leading-relaxed">
+            Nos équipes sont disponibles du lundi au dimanche pour vous accueillir.
+            Consultation en personne ou par vidéo depuis chez vous.
+          </p>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <button
+              className="btn-primary"
+              onClick={() => setRdvOpen(true)}
+            >
+              <i className="fa-regular fa-calendar-check" /> Prendre un rendez-vous
+            </button>
+            <Link href="/consultation" className="btn-secondary">
+              <i className="fa-solid fa-video" /> Consultation en ligne
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <Footer />
+    </>
   )
 }
