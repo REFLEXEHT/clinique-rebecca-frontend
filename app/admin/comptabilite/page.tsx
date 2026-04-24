@@ -836,47 +836,206 @@ export default function AdminComptabilite() {
       {/* ── CONFIGURATION ── */}
       {onglet === 'config' && (
         <div>
-          <h2 className="font-extrabold text-[15px] mb-5">Configuration — Règles & Tarifs</h2>
-          <div className="grid grid-cols-2 gap-5">
-            {/* Règles de partage */}
-            <div className="card p-5">
-              <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><i className="fa-solid fa-percent text-[#1641C8]"/>Règles de partage médecins</h3>
+          <h2 className="font-extrabold text-[15px] mb-2">Configuration — Règles de répartition</h2>
+          <p className="text-slate-400 text-xs mb-5">Ces règles sont appliquées automatiquement lors de l'enregistrement de chaque acte médical.</p>
+
+          {/* Tableau récapitulatif des règles */}
+          <div className="card p-5 mb-5">
+            <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
+              <i className="fa-solid fa-percent text-[#1641C8]"/>Règles de répartition par type de médecin
+            </h3>
+            <div className="overflow-x-auto">
               <table className="w-full text-sm">
-                <thead><tr className="text-xs text-slate-400 font-bold uppercase"><th className="pb-2 text-left">Type</th><th className="pb-2 text-left">Acte</th><th className="pb-2 text-center">% Médecin</th><th className="pb-2 text-center">% Clinique</th></tr></thead>
+                <thead>
+                  <tr className="text-xs text-slate-400 font-bold uppercase border-b border-slate-100">
+                    <th className="pb-3 text-left">Type</th>
+                    <th className="pb-3 text-center">Consultations</th>
+                    <th className="pb-3 text-center">Gestes médicaux</th>
+                    <th className="pb-3 text-center">Chirurgies</th>
+                    <th className="pb-3 text-left">Loyer / Particularité</th>
+                  </tr>
+                </thead>
                 <tbody>
-                  {regles.map((r:any)=>(
-                    <tr key={r.id} className="border-t border-slate-50">
-                      <td className="py-1.5 text-xs font-semibold text-slate-600">{r.type_medecin}</td>
-                      <td className="py-1.5 text-xs text-slate-500">{r.type_acte}</td>
-                      <td className="py-1.5 text-center">
-                        <input type="number" defaultValue={r.pct_medecin} min={0} max={100}
-                          onBlur={e=>updateRegle(r.id,Number(e.target.value))}
-                          className="w-16 text-center border border-slate-200 rounded-lg px-1 py-0.5 text-xs font-bold focus:border-[#1641C8] outline-none"/>
-                      </td>
-                      <td className="py-1.5 text-center text-xs font-bold text-green-600">{100-r.pct_medecin}%</td>
-                    </tr>
-                  ))}
+                  <tr className="border-b border-slate-50">
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-blue-100 text-[#1641C8] flex items-center justify-center text-xs"><i className="fa-solid fa-chart-line"/></div>
+                        <span className="font-bold text-[13px] text-slate-800">Investisseur</span>
+                      </div>
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className="badge badge-green text-[11px]">70% médecin</span>
+                      <div className="text-[10px] text-slate-400 mt-0.5">30% clinique</div>
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className="badge badge-green text-[11px]">80% médecin</span>
+                      <div className="text-[10px] text-slate-400 mt-0.5">20% clinique</div>
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className="badge badge-gray text-[11px]">Manuel</span>
+                    </td>
+                    <td className="py-3 text-[12px] text-slate-500">Aucun loyer</td>
+                  </tr>
+                  <tr className="border-b border-slate-50">
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-green-100 text-green-700 flex items-center justify-center text-xs"><i className="fa-solid fa-handshake"/></div>
+                        <span className="font-bold text-[13px] text-slate-800">Affilié</span>
+                      </div>
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className="badge badge-green text-[11px]">60% médecin</span>
+                      <div className="text-[10px] text-slate-400 mt-0.5">40% clinique</div>
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className="badge badge-green text-[11px]">70% médecin</span>
+                      <div className="text-[10px] text-slate-400 mt-0.5">30% clinique</div>
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className="badge badge-gray text-[11px]">Manuel</span>
+                    </td>
+                    <td className="py-3 text-[12px] text-slate-500">Aucun loyer</td>
+                  </tr>
+                  <tr className="border-b border-slate-50">
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-orange-100 text-orange-600 flex items-center justify-center text-xs"><i className="fa-solid fa-building"/></div>
+                        <span className="font-bold text-[13px] text-slate-800">Exploitant</span>
+                      </div>
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className="badge badge-blue text-[11px]">100% médecin</span>
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className="badge badge-blue text-[11px]">100% médecin</span>
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className="badge badge-blue text-[11px]">100% médecin</span>
+                    </td>
+                    <td className="py-3 text-[12px] text-slate-500">Loyer fixe mensuel ↓</td>
+                  </tr>
+                  <tr className="border-b border-slate-50">
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center text-xs"><i className="fa-solid fa-star"/></div>
+                        <span className="font-bold text-[13px] text-slate-800">Invest.-Exploitant</span>
+                      </div>
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className="badge badge-blue text-[11px]">100% médecin</span>
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className="badge badge-blue text-[11px]">100% médecin</span>
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className="badge badge-blue text-[11px]">100% médecin</span>
+                    </td>
+                    <td className="py-3 text-[12px] text-slate-500">Loyer fixe mensuel ↓</td>
+                  </tr>
+                  <tr>
+                    <td className="py-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-cyan-100 text-cyan-700 flex items-center justify-center text-xs"><i className="fa-solid fa-glasses"/></div>
+                        <span className="font-bold text-[13px] text-slate-800">Optométrie</span>
+                      </div>
+                    </td>
+                    <td className="py-3 text-center">
+                      <span className="badge badge-blue text-[11px]">65% médecin</span>
+                      <div className="text-[10px] text-slate-400 mt-0.5">35% clinique</div>
+                    </td>
+                    <td className="py-3 text-center text-slate-400 text-xs">—</td>
+                    <td className="py-3 text-center text-slate-400 text-xs">—</td>
+                    <td className="py-3 text-[12px] text-slate-500">13% ventes montures · min mensuel ↓</td>
+                  </tr>
                 </tbody>
               </table>
             </div>
+            <div className="mt-4 bg-blue-50 rounded-xl p-3 text-xs text-[#1641C8] font-medium flex items-start gap-2">
+              <i className="fa-solid fa-info-circle mt-0.5 flex-shrink-0"/>
+              Pour modifier les pourcentages : contactez l'administrateur système. Les règles de partage sont configurées dans le backend via la table <code className="bg-blue-100 px-1 rounded">regles_partage</code>.
+            </div>
+          </div>
 
-            {/* Tarifs configurables */}
+          {/* Loyers fixes */}
+          <div className="grid grid-cols-2 gap-5 mb-5">
             <div className="card p-5">
-              <h3 className="font-bold text-sm mb-4 flex items-center gap-2"><i className="fa-solid fa-tag text-orange-500"/>Tarifs configurables</h3>
+              <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
+                <i className="fa-solid fa-building text-orange-500"/>Loyers fixes mensuels (Exploitants)
+              </h3>
+              <p className="text-xs text-slate-400 mb-4">
+                Ces montants sont comptabilisés comme revenus de la clinique chaque mois, indépendamment des actes.
+              </p>
               <div className="space-y-2">
-                {tarifs.map((t:any)=>(
+                {tarifs.filter((t:any)=>t.code?.includes('loyer') || t.unite==='mois').map((t:any)=>(
+                  <div key={t.id} className="flex items-center justify-between gap-3 py-2 border-b border-slate-50">
+                    <div>
+                      <div className="text-xs font-bold text-slate-700">{t.libelle}</div>
+                      <div className="text-[10px] text-slate-400">Loyer mensuel fixe</div>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <input type="number" defaultValue={t.montant} min={0}
+                        onBlur={e=>updateTarif(t.code,Number(e.target.value))}
+                        className="w-28 text-right border border-slate-200 rounded-lg px-2 py-1 text-xs font-bold focus:border-[#1641C8] outline-none"/>
+                      <span className="text-xs text-slate-400">HTG/mois</span>
+                    </div>
+                  </div>
+                ))}
+                {tarifs.filter((t:any)=>t.code?.includes('loyer') || t.unite==='mois').length === 0 && (
+                  <p className="text-xs text-slate-300 text-center py-4">Aucun loyer configuré</p>
+                )}
+              </div>
+            </div>
+
+            <div className="card p-5">
+              <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
+                <i className="fa-solid fa-tag text-[#1641C8]"/>Autres tarifs configurables
+              </h3>
+              <div className="space-y-2">
+                {tarifs.filter((t:any)=>!t.code?.includes('loyer') && t.unite!=='mois').map((t:any)=>(
                   <div key={t.id} className="flex items-center justify-between gap-3 py-1.5 border-b border-slate-50">
                     <span className="text-xs text-slate-600 flex-1">{t.libelle}</span>
                     <div className="flex items-center gap-1.5">
                       <input type="number" defaultValue={t.montant} min={0}
                         onBlur={e=>updateTarif(t.code,Number(e.target.value))}
                         className="w-24 text-right border border-slate-200 rounded-lg px-2 py-0.5 text-xs font-bold focus:border-[#1641C8] outline-none"/>
-                      <span className="text-xs text-slate-400">{t.unite==='pct'?'%':t.unite==='jour'?'HTG/j':t.unite==='mois'?'HTG/mois':'HTG'}</span>
+                      <span className="text-xs text-slate-400">{t.unite==='pct'?'%':t.unite==='jour'?'HTG/j':'HTG'}</span>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
+          </div>
+
+          {/* Règles modifiables depuis le backend */}
+          <div className="card p-5">
+            <h3 className="font-bold text-sm mb-4 flex items-center gap-2">
+              <i className="fa-solid fa-sliders text-slate-500"/>Règles ajustables (depuis le backend)
+            </h3>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-xs text-slate-400 font-bold uppercase">
+                  <th className="pb-2 text-left">Type médecin</th>
+                  <th className="pb-2 text-left">Type acte</th>
+                  <th className="pb-2 text-center">% Médecin</th>
+                  <th className="pb-2 text-center">% Clinique</th>
+                </tr>
+              </thead>
+              <tbody>
+                {regles.map((r:any)=>(
+                  <tr key={r.id} className="border-t border-slate-50">
+                    <td className="py-1.5 text-xs font-semibold text-slate-600 capitalize">{r.type_medecin?.replace('_',' ')}</td>
+                    <td className="py-1.5 text-xs text-slate-500 capitalize">{r.type_acte}</td>
+                    <td className="py-1.5 text-center">
+                      <input type="number" defaultValue={r.pct_medecin} min={0} max={100}
+                        onBlur={e=>updateRegle(r.id,Number(e.target.value))}
+                        className="w-16 text-center border border-slate-200 rounded-lg px-1 py-0.5 text-xs font-bold focus:border-[#1641C8] outline-none"/>
+                    </td>
+                    <td className="py-1.5 text-center text-xs font-bold text-green-600">{100-r.pct_medecin}%</td>
+                  </tr>
+                ))}
+                {regles.length===0&&<tr><td colSpan={4} className="text-center py-6 text-slate-300 text-xs">Aucune règle configurée dans le backend</td></tr>}
+              </tbody>
+            </table>
           </div>
         </div>
       )}
