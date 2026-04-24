@@ -109,6 +109,7 @@ export const laboApi = {
   list: () => api.get('/labo/analyses'),
   create: (data: any) => api.post('/labo/analyses', data),
   update: (id: number, data: any) => api.put(`/labo/analyses/${id}`, data),
+  patientResultats: (patientId: string) => api.get(`/patient/resultats-labo/${patientId}`),
 }
 export const caissierApi = {
   listRdv: (params?: any) => api.get('/caissier/rendez-vous', { params }),

@@ -19,7 +19,7 @@ export default function AdminPatients() {
 
   useEffect(() => { load() }, [])
 
-  const fmtDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' })
+  const fmtDate = (d: string | undefined) => d ? new Date(d).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' }) : '—'
 
   const demoPatients = [
     { id:1, numero:'#RB-001', nom:'Théodore', prenom:'Marie', telephone:'+509 3456-7890', email:'marie@gmail.com', adresse:null, created_at: new Date().toISOString() },
