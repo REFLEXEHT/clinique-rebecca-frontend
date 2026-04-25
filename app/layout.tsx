@@ -11,7 +11,7 @@ export const metadata: Metadata = {
   description: 'Soins spécialisés de qualité — Pétion-Ville, Haïti',
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default function RootLayout({ children }: { children: import('react').ReactNode }) {
   return (
     <html lang="fr">
       <head>
