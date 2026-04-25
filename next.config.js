@@ -1,10 +1,13 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async rewrites() {
+    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://clinique-rebecca-api.onrender.com'
+    // Remove trailing /api if present to avoid doubling
+    const base = backendUrl.replace(/\/api\/?$/, '')
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.NEXT_PUBLIC_API_URL || 'https://clinique-rebecca-api.onrender.com/api'}/:path*`,
+        destination: `${base}/api/:path*`,
       },
     ]
   },
