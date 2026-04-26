@@ -21,6 +21,7 @@ const NAV_GROUPS = [
     { href: '/admin/specialistes', icon: 'fa-user-doctor', label: 'Spécialistes' },
     { href: '/admin/horaires', icon: 'fa-clock', label: 'Horaires' },
     { href: '/admin/tarifs', icon: 'fa-tag', label: 'Tarifs' },
+    { href: '/admin/labo', icon: 'fa-flask-vial', label: 'Laboratoire' },
     { href: '/admin/stocks', icon: 'fa-boxes-stacked', label: 'Stocks pharmacie' },
   ]},
   { label: 'Rapports', items: [
