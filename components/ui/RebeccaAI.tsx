@@ -137,14 +137,14 @@ Exemple interdit : "Paracétamol contre la douleur et la fièvre — 2 comprimé
 // ── Suggestions par rôle ──────────────────────────────────────────────────────
 const SUGGESTIONS: Record<AIMode, string[]> = {
   patient: [
-    'Pourquoi mon médecin m'a prescrit cet examen ?',
+    "Pourquoi mon médecin m'a prescrit cet examen ?",
     'Comment me préparer pour ma prise de sang ?',
     'Quand est mon prochain rendez-vous ?',
-    'À quoi sert l'examen NFS ?',
+    "À quoi sert l'examen NFS ?",
   ],
   medecin: [
     'Analyse mes consultations des 6 derniers mois',
-    'Quels patients n'ont pas reconsulté depuis 3 mois ?',
+    "Quels patients n'ont pas reconsulté depuis 3 mois ?",
     'Comment augmenter mon flux de patients ?',
     'Dossiers incomplets à compléter',
   ],

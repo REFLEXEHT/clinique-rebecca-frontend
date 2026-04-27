@@ -62,7 +62,7 @@ function LaboTicker() {
     setGenLoading(true)
     try {
       const { data } = await chatApi.send(
-        'Génère un message d'accueil court et rassurant (max 20 mots) pour la fenêtre d'un laboratoire médical haïtien. Mentionne la rapidité des résultats.',
+        "Génère un message d'accueil court et rassurant (max 20 mots) pour la fenêtre d'un laboratoire médical haïtien. Mentionne la rapidité des résultats.",
         []
       )
       setAiMsg(data.response.trim())
