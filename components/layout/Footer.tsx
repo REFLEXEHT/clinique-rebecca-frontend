@@ -1,5 +1,4 @@
 'use client'
-// components/layout/Footer.tsx
 import Link from 'next/link'
 import { LOGO_SRC } from '@/lib/images'
 

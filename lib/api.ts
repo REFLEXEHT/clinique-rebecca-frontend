@@ -135,3 +135,12 @@ export const statsApi = {
   recettesParJour: (jours: number) => api.get('/admin/stats/recettes-par-jour', { params: { jours } }),
   specialites: () => api.get('/admin/stats/specialites'),
 }
+
+export const translateApi = {
+  /**
+   * Traduit un tableau de textes via Claude (backend).
+   * Retourne les textes dans la langue cible avec précision médicale.
+   */
+  translate: (texts: string[], targetLang: string) =>
+    api.post('/translate', { texts, target_lang: targetLang }),
+}

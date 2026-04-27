@@ -3,13 +3,32 @@
 import { useState, useRef, useEffect } from 'react'
 import { chatApi } from '@/lib/api'
 import { ChatMessage } from '@/types'
+import { useTranslation } from '@/context/TranslationContext'
 import { Send, X, MessageCircle } from 'lucide-react'
 
 export default function AiChatWidget() {
   const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: "Bonjour ! Je suis Rebecca, l'assistante de la Clinique. Comment puis-je vous aider ?" },
-  ])
+  const { lang } = useTranslation()
+  
+  // Le message de bienvenue s'adapte à la langue
+  const welcomeMessages: Record<string, string> = {
+    fr: "Bonjour ! Je suis Rebecca, l'assistante de la Clinique. Comment puis-je vous aider ?",
+    en: "Hello! I'm Rebecca, the Clinic's assistant. How can I help you?",
+    es: "¡Hola! Soy Rebecca, la asistente de la Clínica. ¿Cómo puedo ayudarle?",
+    ht: "Bonjou! Mwen se Rebecca, asistan Klinik la. Kijan mwen ka ede ou?",
+    zh: "您好！我是丽贝卡诊所的助手Rebecca。有什么可以帮助您的吗？",
+    pt: "Olá! Sou Rebecca, a assistente da Clínica. Como posso ajudá-lo?",
+    ar: "مرحباً! أنا ريبيكا، مساعدة العيادة. كيف يمكنني مساعدتك؟",
+  }
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  
+  // Mettre à jour le message de bienvenue quand la langue change
+  useEffect(() => {
+    setMessages([{
+      role: 'assistant',
+      content: welcomeMessages[lang] || welcomeMessages.fr
+    }])
+  }, [lang])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const bottomRef = useRef<HTMLDivElement>(null)
@@ -26,7 +45,11 @@ export default function AiChatWidget() {
     setLoading(true)
     try {
       const hist = messages.map(m => ({ role: m.role, content: m.content }))
-      const { data } = await chatApi.send(text, hist)
+      // Envoyer la langue courante pour que Claude réponde dans la bonne langue
+      const { data } = await chatApi.send(
+        lang !== 'fr' ? `[Réponds en ${lang === 'en' ? 'anglais' : lang === 'es' ? 'espagnol' : lang === 'ht' ? 'créole haïtien' : lang === 'zh' ? 'mandarin' : lang === 'pt' ? 'portugais' : lang === 'ar' ? 'arabe' : 'français'}] ${text}` : text,
+        hist
+      )
       setMessages(prev => [...prev, { role: 'assistant', content: data.response }])
     } catch {
       setMessages(prev => [...prev, {

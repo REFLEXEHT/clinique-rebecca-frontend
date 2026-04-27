@@ -14,6 +14,7 @@ import {
   genererNumeroRecu, genererCodePatient, formatHTG, calculerAge,
   imprimerDeuxCopies
 } from '@/lib/utils'
+import RebeccaAI from '@/components/ui/RebeccaAI'
 import {
   ShoppingCart, Plus, Minus, Trash2, Printer, LogOut,
   CheckCircle, X, Search, User, Activity, DollarSign
@@ -898,6 +899,31 @@ export default function CaissierPage() {
         </div>
       </div>
 
+      {/* Bouton + Panneau Rebecca AI */}
+      <div style={{ padding:'10px 20px', borderBottom:'1px solid #f1f5f9', display:'flex', justifyContent:'flex-end', background:'white' }}>
+        <button onClick={() => setShowAI(v => !v)} style={{
+          display:'flex', alignItems:'center', gap:8, padding:'8px 16px',
+          borderRadius:50, border:'none', cursor:'pointer', fontWeight:700, fontSize:12,
+          background: showAI ? '#d97706' : '#fffbeb', color: showAI ? 'white' : '#d97706',
+        }}>
+          <i className="fa-solid fa-wand-magic-sparkles" />
+          {showAI ? 'Fermer AI' : 'Rebecca AI — Aide saisie décaissement'}
+        </button>
+      </div>
+      {showAI && (
+        <div style={{ margin:'12px 20px', borderRadius:20, overflow:'hidden', border:'1px solid #fde68a', maxHeight:420 }}>
+          <RebeccaAI
+            mode="caissier"
+            context={{
+              caissier_nom: user?.nom,
+              date: new Date().toLocaleDateString('fr-FR'),
+              instructions: "Le caissier saisit un montant et un motif de décaissement. Le système comptable gère automatiquement les comptes."
+            }}
+            compact
+          />
+        </div>
+      )}
+
       {/* DÉCAISSEMENTS */}
       {ongletPrincipal === 'decaissement' && (
         <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 40 }}>
@@ -919,8 +945,9 @@ export default function CaissierPage() {
                 style={{ width: '100%', padding: '13px 16px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 20, fontWeight: 800, outline: 'none', boxSizing: 'border-box' as const }} />
             </div>
             <div style={{ marginBottom: 28 }}>
-              <label style={{ display: 'block', fontWeight: 700, color: '#374151', fontSize: 12, textTransform: 'uppercase' as const, marginBottom: 8 }}>Note / Détails</label>
-              <textarea value={decNote} onChange={e => setDecNote(e.target.value)} placeholder="Détails supplémentaires, fournisseur, justification..." rows={3}
+              <label style={{ display: 'block', fontWeight: 700, color: '#374151', fontSize: 12, textTransform: 'uppercase' as const, marginBottom: 8 }}>Description complète *</label>
+              <div style={{ fontSize:11, color:'#94a3b8', marginBottom:6 }}>Précisez : fournisseur, objet exact, référence facture. Rebecca AI peut vous aider à formuler.</div>
+              <textarea value={decNote} onChange={e => setDecNote(e.target.value)} placeholder="Ex: Achat médicaments — Pharmacie Dupont — 45 boîtes Amoxicilline — Facture #2026-042" rows={3}
                 style={{ width: '100%', padding: '11px 14px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, resize: 'vertical', boxSizing: 'border-box' as const }} />
             </div>
             <button onClick={sauvegarderDecaissement} disabled={decLoading}

@@ -2,10 +2,11 @@ import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
 import { AuthProvider } from '@/context/AuthContext'
+import { TranslationProvider } from '@/context/TranslationContext'
 import { Toaster } from 'react-hot-toast'
 
 const inter = Inter({
-  subsets: ['latin'],
+  subsets: ['latin', 'latin-ext'],
   variable: '--font-inter',
   display: 'swap',
 })
@@ -22,11 +23,7 @@ export const metadata: Metadata = {
   },
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr" className={inter.variable}>
       <head>
@@ -41,27 +38,26 @@ export default function RootLayout({
       </head>
       <body className="font-sans antialiased bg-white text-slate-900">
         <AuthProvider>
-          {children}
-          <Toaster
-            position="top-right"
-            toastOptions={{
-              duration: 4000,
-              style: {
-                background: '#0f172a',
-                color: '#f8fafc',
-                borderRadius: '12px',
-                fontSize: '14px',
-                fontWeight: '600',
-                padding: '12px 18px',
-              },
-              success: {
-                iconTheme: { primary: '#22c55e', secondary: '#fff' },
-              },
-              error: {
-                iconTheme: { primary: '#ef4444', secondary: '#fff' },
-              },
-            }}
-          />
+          {/* TranslationProvider enveloppe toute l'app — traduit chaque page automatiquement */}
+          <TranslationProvider>
+            {children}
+            <Toaster
+              position="top-right"
+              toastOptions={{
+                duration: 4000,
+                style: {
+                  background: '#0f172a',
+                  color: '#f8fafc',
+                  borderRadius: '12px',
+                  fontSize: '14px',
+                  fontWeight: '600',
+                  padding: '12px 18px',
+                },
+                success: { iconTheme: { primary: '#22c55e', secondary: '#fff' } },
+                error:   { iconTheme: { primary: '#ef4444', secondary: '#fff' } },
+              }}
+            />
+          </TranslationProvider>
         </AuthProvider>
       </body>
     </html>

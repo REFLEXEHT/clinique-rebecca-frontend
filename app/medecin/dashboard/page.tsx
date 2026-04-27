@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { rdvApi, actesApi } from '@/lib/api'
 import { RendezVous } from '@/types'
+import RebeccaAI from '@/components/ui/RebeccaAI'
 import { LogOut, Edit2, Save, X, Calendar, Clock, Video, User, Activity, ChevronRight } from 'lucide-react'
 
 type Onglet = 'tableau'|'rdv'|'statistiques'|'profil'
@@ -55,6 +56,7 @@ export default function MedecinDashboard() {
   const [rdvs, setRdvs] = useState<RendezVous[]>([])
   const [actes, setActes] = useState<any[]>([])
   const [editProfil, setEditProfil] = useState(false)
+  const [showAI, setShowAI] = useState(false)
   const [profil, setProfil] = useState({ bio:'', telephone:'', disponibilites:'Lun–Ven 07h–17h · Sam 07h–12h' })
 
   useEffect(() => {

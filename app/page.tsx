@@ -1,187 +1,380 @@
 'use client'
 export const dynamic = 'force-dynamic'
-// app/specialistes/[id]/page.tsx — Profil public spécialiste (lecture seule)
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import Navbar from '@/components/layout/Navbar'
-import Footer from '@/components/layout/Footer'
-import RdvModal from '@/components/ui/RdvModal'
-import { specialistesApi } from '@/lib/api'
-import { Specialiste } from '@/types'
+import { useForm } from 'react-hook-form'
+import toast from 'react-hot-toast'
+import { rdvApi, actesApi } from '@/lib/api'
+import { RendezVous } from '@/types'
+import RebeccaAI from '@/components/ui/RebeccaAI'
+import { LogOut, Edit2, Save, X, Calendar, Clock, Video, User, Activity, ChevronRight } from 'lucide-react'
 
-const SPECS_DATA: Record<number, Specialiste & { tags: string[]; bio: string; disponibilites: string; experience: string }> = {
-  1: { id:1, nom:'Dr. Michel Dubois', specialite:'Chirurgie générale', description:'Chirurgien senior', emoji:'🔬', categorie:'chirurgie', email:'m.dubois@cliniquerebecca.ht', telephone:'+509 3456-0001', actif:true, ordre:0, bio:'Chirurgien général spécialisé dans la chirurgie digestive et laparoscopique. Plus de 15 ans d\'expérience dans les interventions chirurgicales complexes, formé à l\'Hôpital Universitaire d\'État d\'Haïti et en France.', tags:['Chirurgie digestive','Laparoscopie','Urgences chirurgicales','Hernies'], disponibilites:'Lun–Ven 08h–17h · Sam 08h–12h', experience:'15 ans d\'expérience' },
-  2: { id:2, nom:'Dr. Anne-Marie Pierre', specialite:'Neurochirurgie', description:'Neurochirurgie pédiatrique', emoji:'🧠', categorie:'neurochirurgie', email:'am.pierre@cliniquerebecca.ht', telephone:'+509 3456-0002', actif:true, ordre:0, bio:'Experte en neurochirurgie pédiatrique et adulte, spécialisée dans le traitement des tumeurs cérébrales, des malformations vasculaires et de la pathologie de la colonne vertébrale.', tags:['Tumeurs cérébrales','Chirurgie de la colonne','Neurochirurgie pédiatrique'], disponibilites:'Mar–Jeu 08h–16h', experience:'12 ans d\'expérience' },
-  3: { id:3, nom:'Dr. Jean-Claude Étienne', specialite:'Neurologie', description:'Épilepsie, AVC', emoji:'🧬', categorie:'neurologie', email:'jc.etienne@cliniquerebecca.ht', telephone:'+509 3456-0003', actif:true, ordre:0, bio:'Neurologue expérimenté dans le diagnostic et le traitement de l\'épilepsie, des AVC et des pathologies démyélinisantes comme la sclérose en plaques.', tags:['Épilepsie','AVC','Sclérose en plaques'], disponibilites:'Lun–Ven 08h–17h', experience:'10 ans d\'expérience' },
-  4: { id:4, nom:'Dr. Sophie Lamour', specialite:'Orthopédie', description:'Traumatologie', emoji:'🦴', categorie:'orthopedie', email:'s.lamour@cliniquerebecca.ht', telephone:'+509 3456-0004', actif:true, ordre:0, bio:'Orthopédiste spécialisée en traumatologie et chirurgie prothétique. Prise en charge des fractures complexes, des arthroses sévères et remplacement articulaire.', tags:['Prothèse de hanche','Fractures complexes','Arthroscopie'], disponibilites:'Lun–Sam 08h–17h', experience:'13 ans d\'expérience' },
-  5: { id:5, nom:'Dr. Paul Désir', specialite:'Pédiatrie', description:'Néonatologie', emoji:'👶', categorie:'pediatrie', email:'p.desir@cliniquerebecca.ht', telephone:'+509 3456-0005', actif:true, ordre:0, bio:'Pédiatre dévoué spécialisé en néonatologie et pédiatrie générale. Suivi de croissance, vaccinations, maladies infectieuses de l\'enfant et maladies chroniques pédiatriques.', tags:['Néonatologie','Pédiatrie générale','Vaccinations','Maladies chroniques'], disponibilites:'Lun–Ven 08h–17h · Sam 08h–15h', experience:'11 ans d\'expérience' },
-  6: { id:6, nom:'Dr. Isabelle François', specialite:'Dermatologie', description:'Maladies de peau', emoji:'🌸', categorie:'dermatologie', email:'i.francois@cliniquerebecca.ht', telephone:'+509 3456-0006', actif:true, ordre:0, bio:'Dermatologue spécialisée dans les maladies inflammatoires de la peau, les infections cutanées, les pathologies pigmentaires et la dermatologie cosmétique.', tags:['Eczéma','Psoriasis','Acné','Dermatologie cosmétique'], disponibilites:'Lun–Ven 09h–17h', experience:'9 ans d\'expérience' },
-  7: { id:7, nom:'Dr. Henri Nazaire', specialite:'Urologie', description:'Prostate, système urinaire', emoji:'💊', categorie:'urologie', email:'h.nazaire@cliniquerebecca.ht', telephone:'+509 3456-0007', actif:true, ordre:0, bio:'Urologue expérimenté dans le traitement des pathologies de la prostate, des lithiases urinaires, des infections urinaires récidivantes et des troubles de la fertilité masculine.', tags:['Prostate','Lithiase urinaire','Fertilité masculine'], disponibilites:'Lun–Ven 08h–17h', experience:'14 ans d\'expérience' },
-  8: { id:8, nom:'Dr. Marie-Rose Cajuste', specialite:'ORL', description:'Oreille, nez, gorge', emoji:'👂', categorie:'orl', email:'mr.cajuste@cliniquerebecca.ht', telephone:'+509 3456-0008', actif:true, ordre:0, bio:'Spécialiste en oto-rhino-laryngologie. Prise en charge des pathologies de l\'oreille, du nez, des sinus, de la gorge et du larynx, avec ou sans chirurgie.', tags:['Sinusite','Troubles auditifs','Chirurgie ORL','Amygdales'], disponibilites:'Lun–Sam 07h–16h', experience:'8 ans d\'expérience' },
-  9: { id:9, nom:'Dr. Claudette Joseph', specialite:'Gynécologie-Obstétrique', description:'Suivi grossesse', emoji:'🌺', categorie:'gynecologie', email:'c.joseph@cliniquerebecca.ht', telephone:'+509 3456-0009', actif:true, ordre:0, bio:'Gynécologue-obstétricienne assurant le suivi de grossesse, les accouchements, et la santé reproductive de la femme tout au long de sa vie.', tags:['Suivi grossesse','Accouchement','Ménopause','Contraception'], disponibilites:'Lun–Sam 07h–17h', experience:'16 ans d\'expérience' },
-  10: { id:10, nom:'Dr. Patrick Dorival', specialite:'Chirurgie pédiatrique', description:'Chirurgie nourrissons', emoji:'🏥', categorie:'chir-ped', email:'p.dorival@cliniquerebecca.ht', telephone:'+509 3456-0010', actif:true, ordre:0, bio:'Chirurgien pédiatrique spécialisé dans les interventions chez les nourrissons et jeunes enfants, y compris les malformations congénitales.', tags:['Chirurgie néonatale','Hernies','Appendicite','Malformations'], disponibilites:'Lun–Ven 08h–16h', experience:'10 ans d\'expérience' },
-  11: { id:11, nom:'Dr. Réginald Louis', specialite:'Médecine interne', description:'Diabète, hypertension', emoji:'❤️', categorie:'medecine-interne', email:'r.louis@cliniquerebecca.ht', telephone:'+509 3456-0011', actif:true, ordre:0, bio:'Interniste expérimenté dans la prise en charge des maladies chroniques complexes. Diabète, hypertension, dyslipidémie, maladies auto-immunes et polyvasculaires.', tags:['Diabète','Hypertension','Maladies auto-immunes','Gériatrie'], disponibilites:'Lun–Sam 07h–17h', experience:'18 ans d\'expérience' },
-  12: { id:12, nom:'Dr. Nathalie Vincent', specialite:'Ophtalmologie', description:'Chirurgie oculaire', emoji:'👁️', categorie:'ophtalmologie', email:'n.vincent@cliniquerebecca.ht', telephone:'+509 3456-0012', actif:true, ordre:0, bio:'Ophtalmologue spécialisée en chirurgie de la cataracte, traitement du glaucome, pathologies rétiniennes et réfraction oculaire.', tags:['Cataracte','Glaucome','Rétine','Réfraction'], disponibilites:'Mar–Sam 08h–17h', experience:'12 ans d\'expérience' },
+type Onglet = 'tableau'|'rdv'|'statistiques'|'profil'
+type TypeActe = 'consultation'|'geste'|'observation'|'hospitalisation'|'chirurgie'
+
+const TYPES_ACTE = [
+  { value:'consultation' as TypeActe, label:'Consultation', couleur:'#1641C8', bg:'#eff6ff' },
+  { value:'geste' as TypeActe, label:'Geste médical', couleur:'#16a34a', bg:'#f0fdf4' },
+  { value:'observation' as TypeActe, label:'Observation', couleur:'#d97706', bg:'#fffbeb' },
+  { value:'hospitalisation' as TypeActe, label:'Hospitalisation', couleur:'#dc2626', bg:'#fef2f2' },
+  { value:'chirurgie' as TypeActe, label:'Chirurgie', couleur:'#7c3aed', bg:'#f5f3ff' },
+]
+
+const STATUT_MAP: Record<string,{label:string;couleur:string;bg:string}> = {
+  en_attente:{ label:'En attente', couleur:'#d97706', bg:'#fffbeb' },
+  confirme:{ label:'Confirmé', couleur:'#16a34a', bg:'#f0fdf4' },
+  annule:{ label:'Annulé', couleur:'#dc2626', bg:'#fef2f2' },
+  termine:{ label:'Terminé', couleur:'#64748b', bg:'#f8fafc' },
 }
 
-export default function SpecialistePage() {
-  const params = useParams()
-  const id = Number(params.id)
-  const [rdvOpen, setRdvOpen] = useState(false)
-  const [spec, setSpec] = useState(SPECS_DATA[id] || null)
+const DEMO_RDV: RendezVous[] = [
+  { id:1, patient_nom:'Marie Théodore', patient_telephone:'+509 3111-2222', patient_email:null, specialite:'Gynécologie', date_rdv:"2026-04-26T13:00:00.000Z", type_rdv:'presentiel', statut:'confirme', motif:'Suivi grossesse T2', notes_admin:null, mode_paiement:'Espèces', rappel_envoye:true, created_at:"2026-04-26T12:00:00.000Z" },
+  { id:2, patient_nom:'Jean Dorval', patient_telephone:'+509 3333-4444', patient_email:null, specialite:'Médecine interne', date_rdv:"2026-04-26T14:00:00.000Z", type_rdv:'presentiel', statut:'en_attente', motif:'Contrôle tension', notes_admin:null, mode_paiement:null, rappel_envoye:false, created_at:"2026-04-26T12:00:00.000Z" },
+  { id:3, patient_nom:'Rose Étienne', patient_telephone:'+509 3555-6666', patient_email:'rose@email.com', specialite:'Gynécologie', date_rdv:"2026-04-27T12:00:00.000Z", type_rdv:'video', statut:'confirme', motif:'Consultation en ligne', notes_admin:null, mode_paiement:'Moncash', rappel_envoye:true, lien_video:'https://meet.jit.si/cr-abc123', created_at:"2026-04-26T12:00:00.000Z" },
+  { id:4, patient_nom:'Claudette Marcelin', patient_telephone:'+509 3777-8888', patient_email:null, specialite:'Gynécologie', date_rdv:"2026-04-28T12:00:00.000Z", type_rdv:'presentiel', statut:'en_attente', motif:'Bilan prénatal', notes_admin:null, mode_paiement:'Espèces', rappel_envoye:false, created_at:"2026-04-26T12:00:00.000Z" },
+]
+
+const DEMO_ACTES: any[] = [
+  { id:1, patient_id:'#RB-042', patient_nom:'Marie Théodore', type_acte:'consultation', specialite:'Gynécologie', description:'Suivi grossesse T2 — tout normal', notes:'Tension 120/80', date_acte:"2026-04-25T12:00:00.000Z" },
+  { id:2, patient_id:'#RB-039', patient_nom:'Paul Jean-Baptiste', type_acte:'observation', specialite:'Médecine interne', description:'Observation 24h — diabète T2', notes:'Glycémie 280 mg/dL', date_acte:"2026-04-24T12:00:00.000Z" },
+  { id:3, patient_id:'#RB-031', patient_nom:'Rose Étienne', type_acte:'geste', specialite:'Gestes médicaux', description:'Perfusion IV — déshydratation', notes:'Résolution en 3h', date_acte:"2026-04-23T12:00:00.000Z" },
+  { id:4, patient_id:'#RB-028', patient_nom:'Jean Dorval', type_acte:'consultation', specialite:'Médecine interne', description:'HTA — ajustement Amlodipine', notes:'Contrôle dans 2 semaines', date_acte:"2026-04-23T12:00:00.000Z" },
+  { id:5, patient_id:'#RB-021', patient_nom:'Nadia François', type_acte:'consultation', specialite:'Gynécologie', description:'Bilan santé annuel', notes:'RAS', date_acte:"2026-04-21T12:00:00.000Z" },
+  { id:6, patient_id:'#RB-015', patient_nom:'Luc Desrosiers', type_acte:'geste', specialite:'Gestes médicaux', description:'Injection IM B12', notes:'', date_acte:"2026-02-25T12:00:00.000Z" },
+  { id:7, patient_id:'#RB-011', patient_nom:'Ange-Marie Pierre', type_acte:'chirurgie', specialite:'Chirurgie', description:'Appendicectomie laparoscopique', notes:'Suites simples', date_acte:"2026-01-16T12:00:00.000Z" },
+]
+
+const fmtDate = (d:string) => new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})
+const fmtHeure = (d:string) => new Date(d).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
+
+export default function MedecinDashboard() {
+  const { user, isAuthenticated, loading, logout } = useAuth()
+  const router = useRouter()
+  const [onglet, setOnglet] = useState<Onglet>('tableau')
+  const [rdvs, setRdvs] = useState<RendezVous[]>([])
+  const [actes, setActes] = useState<any[]>([])
+  const [editProfil, setEditProfil] = useState(false)
+  const [showAI, setShowAI] = useState(false)
+  const [profil, setProfil] = useState({ bio:'', telephone:'', disponibilites:'Lun–Ven 07h–17h · Sam 07h–12h' })
 
   useEffect(() => {
-    if (id) {
-      specialistesApi.getById(id)
-        .then(r => setSpec(prev => ({ ...SPECS_DATA[id], ...r.data, tags: SPECS_DATA[id]?.tags || [], bio: SPECS_DATA[id]?.bio || '' })))
-        .catch(() => setSpec(SPECS_DATA[id] || null))
-    }
-  }, [id])
+    if (!loading && (!isAuthenticated || user?.role !== 'medecin')) router.push('/login')
+  }, [isAuthenticated, user, loading])
 
-  if (!spec) return (
-    <>
-      <Navbar onRdvClick={() => setRdvOpen(true)} />
-      <div className="min-h-screen flex items-center justify-center text-slate-400 pt-[70px]">
-        Spécialiste introuvable
-      </div>
-    </>
-  )
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'medecin') return
+    rdvApi.medecinList().then(r => setRdvs(r.data||[])).catch(() => {})
+    actesApi.list().then(r => setActes(r.data||[])).catch(() => {})
+  }, [isAuthenticated, user])
+
+  const displayRdv = rdvs.length > 0 ? rdvs : DEMO_RDV
+  const displayActes = actes.length > 0 ? actes : DEMO_ACTES
+
+  const now = new Date()
+  const sixMoisAvant = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate())
+  const actes6mois = displayActes.filter(a => new Date(a.date_acte) >= sixMoisAvant)
+
+  const rdvAVenir = displayRdv.filter(r => new Date(r.date_rdv) > now && r.statut !== 'annule')
+  const rdvAujourd = displayRdv.filter(r => new Date(r.date_rdv).toDateString() === now.toDateString())
+
+  const statsActes = TYPES_ACTE.map(t => ({ ...t, count: actes6mois.filter(a => a.type_acte === t.value).length }))
+
+  // Stats par mois (6 mois)
+  const statsParMois = Array.from({length:6}).map((_,i) => {
+    const d = new Date(now.getFullYear(), now.getMonth()-5+i, 1)
+    const moisLabel = d.toLocaleDateString('fr-FR',{month:'short'})
+    const count = actes6mois.filter(a => {
+      const ad = new Date(a.date_acte)
+      return ad.getMonth()===d.getMonth() && ad.getFullYear()===d.getFullYear()
+    }).length
+    return { mois:moisLabel, count }
+  })
+  const maxCount = Math.max(...statsParMois.map(m => m.count), 1)
+
+  if (loading || !isAuthenticated) return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center' }}><div style={{ width:32, height:32, borderRadius:'50%', border:'3px solid #1641C8', borderTopColor:'transparent' }} /></div>
+
+  const ONGLETS: {key:Onglet;label:string;icon:string}[] = [
+    { key:'tableau', label:'Tableau de bord', icon:'fa-grid-2' },
+    { key:'rdv', label:'Rendez-vous', icon:'fa-calendar-check' },
+    { key:'statistiques', label:'Statistiques', icon:'fa-chart-bar' },
+    { key:'profil', label:'Mon profil', icon:'fa-user-doctor' },
+  ]
 
   return (
-    <>
-      <Navbar onRdvClick={() => setRdvOpen(true)} />
-      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
-
+    <div style={{ minHeight:'100vh', background:'#f8fafc', display:'flex', flexDirection:'column' }}>
       {/* Header */}
-      <div className="page-header">
-        <div className="breadcrumb">
-          <Link href="/">Accueil</Link> / <Link href="/specialites">Spécialités</Link> / <span>{spec.nom}</span>
+      <div style={{ background:'#0f172a', height:64, display:'flex', alignItems:'center', padding:'0 24px', gap:20, flexShrink:0 }}>
+        <Link href="/" style={{ color:'rgba(255,255,255,0.5)', fontSize:13, textDecoration:'none', display:'flex', alignItems:'center', gap:6 }}>
+          <i className="fa-solid fa-arrow-left" style={{ fontSize:11 }} /> Site
+        </Link>
+        <div style={{ width:1, height:24, background:'rgba(255,255,255,0.1)' }} />
+        <div style={{ fontWeight:800, color:'white', fontSize:'0.95rem' }}>Espace médecin</div>
+        <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:12 }}>
+          <span style={{ color:'rgba(255,255,255,0.7)', fontSize:13 }}>{user?.nom}</span>
+          <button onClick={() => { logout(); router.push('/') }} style={{ display:'flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.08)', border:'none', borderRadius:8, padding:'6px 12px', color:'rgba(255,255,255,0.7)', cursor:'pointer', fontSize:12 }}>
+            <LogOut size={13} /> Déconnexion
+          </button>
         </div>
       </div>
 
-      <div className="py-14 px-[5%] max-w-[900px] mx-auto">
-        {/* Card profil */}
-        <div className="card p-8 mb-8 shadow-lg">
-          <div className="flex gap-8 items-start">
-            <div className="w-[100px] h-[100px] rounded-3xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-5xl flex-shrink-0 shadow-md">
-              {spec.emoji}
-            </div>
-            <div className="flex-1">
-              <h1 className="font-extrabold text-[26px] text-slate-800 mb-1">{spec.nom}</h1>
-              <div className="flex items-center gap-2 mb-3 flex-wrap">
-                <span className="badge-blue text-sm px-3 py-1">{spec.specialite}</span>
-                {(spec as any).experience && <span className="badge-gray text-xs">{(spec as any).experience}</span>}
-                <span className="text-yellow-400 text-sm">★★★★★</span>
-              </div>
-              <p className="text-slate-500 text-[15px] leading-relaxed mb-5">{spec.bio || spec.description}</p>
-              <div className="flex flex-wrap gap-2 mb-5">
-                {spec.tags?.map(tag => (
-                  <span key={tag} className="px-3 py-1 bg-blue-50 text-[#1641C8] text-xs font-bold rounded-full border border-blue-100">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              <div className="flex gap-4">
-                <button onClick={() => setRdvOpen(true)} className="btn-primary">
-                  <i className="fa-regular fa-calendar-check"/> Prendre rendez-vous
-                </button>
-                <Link href="/consultation" className="btn-secondary">
-                  <i className="fa-solid fa-video"/> Consultation vidéo
-                </Link>
-              </div>
-            </div>
-          </div>
-        </div>
+      {/* Navigation onglets */}
+      <div style={{ background:'white', borderBottom:'1px solid #e2e8f0', padding:'0 24px', display:'flex', gap:4 }}>
+        {ONGLETS.map(o => (
+          <button key={o.key} onClick={() => setOnglet(o.key)} style={{ display:'flex', alignItems:'center', gap:8, padding:'14px 18px', border:'none', background:'none', cursor:'pointer', fontSize:13, fontWeight:700, borderBottom:`2px solid ${onglet===o.key?'#1641C8':'transparent'}`, color:onglet===o.key?'#1641C8':'#64748b' }}>
+            <i className={`fa-solid ${o.icon}`} style={{ fontSize:13 }} /> {o.label}
+          </button>
+        ))}
+      </div>
 
-        <div className="grid grid-cols-[1fr_300px] gap-6">
-          <div className="space-y-5">
-            {/* Domaines d'expertise */}
-            <div className="card p-6">
-              <h3 className="font-extrabold text-[16px] mb-4 flex items-center gap-2">
-                <i className="fa-solid fa-microscope text-[#1641C8]"/> Domaines d'expertise
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                {spec.tags?.map(tag => (
-                  <div key={tag} className="flex items-center gap-2.5 p-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-semibold text-slate-700">
-                    <i className="fa-solid fa-check text-green-500 text-xs"/> {tag}
-                  </div>
-                ))}
-              </div>
+      <div style={{ flex:1, maxWidth:1100, margin:'0 auto', width:'100%', padding:'32px 24px' }}>
+
+        {/* TABLEAU DE BORD */}
+        {onglet==='tableau' && (
+          <>
+            <div style={{ marginBottom:28 }}>
+              <h1 style={{ fontWeight:900, color:'#0f172a', fontSize:'1.4rem', marginBottom:4 }}>Bonjour, {user?.nom?.split(' ').slice(1).join(' ')}</h1>
+              <p style={{ color:'#64748b', fontSize:13 }}><span suppressHydrationWarning>{now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</span></p>
             </div>
 
-            {/* Informations pratiques */}
-            <div className="card p-6">
-              <h3 className="font-extrabold text-[16px] mb-4 flex items-center gap-2">
-                <i className="fa-solid fa-circle-info text-[#1641C8]"/> Informations pratiques
-              </h3>
-              <div className="space-y-3">
-                {[
-                  { icon:'fa-clock', label:'Disponibilités', value:(spec as any).disponibilites || 'Lun–Ven 08h–17h' },
-                  { icon:'fa-location-dot', label:'Lieu', value:'Clinique de la Rebecca, Haïti' },
-                  { icon:'fa-language', label:'Langues', value:'Français · Créole haïtien' },
-                  { icon:'fa-money-bill', label:'Consultation', value:'À partir de 1 500 HTG' },
-                ].map(i => (
-                  <div key={i.label} className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-[#1641C8] flex-shrink-0 mt-0.5">
-                      <i className={`fa-solid ${i.icon} text-xs`}/>
-                    </div>
-                    <div>
-                      <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{i.label}</div>
-                      <div className="font-semibold text-slate-700 text-sm">{i.value}</div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* Sidebar : contact + RDV */}
-          <div className="space-y-4">
-            <div className="card p-5 border-2 border-[#1641C8]/10">
-              <h4 className="font-extrabold text-[14px] mb-4">Prendre rendez-vous</h4>
-              <button onClick={() => setRdvOpen(true)} className="btn-primary w-full justify-center mb-3">
-                <i className="fa-regular fa-calendar-check"/> En personne
-              </button>
-              <Link href="/consultation" className="btn-secondary w-full justify-center text-sm no-underline inline-flex">
-                <i className="fa-solid fa-video"/> Consultation vidéo
-              </Link>
-              <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
-                {spec.telephone && (
-                  <a href={`https://wa.me/${spec.telephone.replace(/[^0-9]/g,'')}`} target="_blank" rel="noreferrer"
-                    className="flex items-center gap-2 text-sm text-green-600 font-medium no-underline hover:text-green-700">
-                    <i className="fa-brands fa-whatsapp text-green-500"/> {spec.telephone}
-                  </a>
-                )}
-                {spec.email && (
-                  <div className="flex items-center gap-2 text-sm text-slate-400">
-                    <i className="fa-solid fa-envelope"/> {spec.email}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            {/* Témoignages */}
-            <div className="card p-5">
-              <h4 className="font-extrabold text-[14px] mb-3">Avis patients</h4>
+            {/* KPIs */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:28 }}>
               {[
-                { n:'M.T.', note:'★★★★★', txt:'Médecin très professionnel et à l\'écoute.' },
-                { n:'P.J.', note:'★★★★★', txt:'Excellent suivi, je recommande vivement.' },
-              ].map(a => (
-                <div key={a.n} className="mb-3 last:mb-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-7 h-7 rounded-full bg-blue-100 text-[#1641C8] flex items-center justify-center text-xs font-bold">{a.n}</div>
-                    <span className="text-yellow-400 text-xs">{a.note}</span>
+                { label:"Aujourd'hui", val:rdvAujourd.length, icon:'fa-calendar-day', couleur:'#1641C8', bg:'#eff6ff' },
+                { label:'À venir', val:rdvAVenir.length, icon:'fa-clock', couleur:'#d97706', bg:'#fffbeb' },
+                { label:'Actes (6 mois)', val:actes6mois.length, icon:'fa-file-medical', couleur:'#16a34a', bg:'#f0fdf4' },
+                { label:'Consultations', val:actes6mois.filter(a=>a.type_acte==='consultation').length, icon:'fa-stethoscope', couleur:'#7c3aed', bg:'#f5f3ff' },
+              ].map(k => (
+                <div key={k.label} style={{ background:'white', borderRadius:16, padding:'20px', border:'1px solid #e2e8f0' }}>
+                  <div style={{ width:40, height:40, borderRadius:12, background:k.bg, display:'flex', alignItems:'center', justifyContent:'center', marginBottom:12 }}>
+                    <i className={`fa-solid ${k.icon}`} style={{ color:k.couleur, fontSize:18 }} />
                   </div>
-                  <p className="text-slate-500 text-xs italic leading-relaxed">"{a.txt}"</p>
+                  <div style={{ fontSize:'1.8rem', fontWeight:900, color:k.couleur, lineHeight:1 }}>{k.val}</div>
+                  <div style={{ color:'#64748b', fontSize:12, marginTop:4, fontWeight:600 }}>{k.label}</div>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      </div>
 
-      <Footer />
-    </>
+            {/* Prochains RDV */}
+            <div style={{ background:'white', borderRadius:18, border:'1px solid #e2e8f0', padding:'24px', marginBottom:24 }}>
+              <div style={{ fontWeight:800, color:'#0f172a', fontSize:'0.95rem', marginBottom:16, display:'flex', alignItems:'center', gap:8 }}>
+                <Calendar size={16} color="#1641C8" /> Prochains rendez-vous
+                <span style={{ marginLeft:'auto', background:'#eff6ff', color:'#1641C8', borderRadius:20, padding:'3px 10px', fontSize:12, fontWeight:700 }}>{rdvAVenir.length}</span>
+              </div>
+              {rdvAVenir.slice(0,4).map(rdv => {
+                const s = STATUT_MAP[rdv.statut]||STATUT_MAP.en_attente
+                return (
+                  <div key={rdv.id} style={{ display:'flex', alignItems:'center', gap:14, padding:'12px 0', borderBottom:'1px solid #f1f5f9' }}>
+                    <div style={{ width:44, height:44, borderRadius:12, background:'#f8fafc', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                      <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8' }}>{new Date(rdv.date_rdv).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}).split(' ')[1]?.toUpperCase()}</div>
+                      <div style={{ fontSize:16, fontWeight:900, color:'#0f172a', lineHeight:1 }}>{new Date(rdv.date_rdv).getDate()}</div>
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontWeight:800, color:'#0f172a', fontSize:14 }}>{rdv.patient_nom}</div>
+                      <div style={{ color:'#64748b', fontSize:12, marginTop:2 }}>
+                        {fmtHeure(rdv.date_rdv)} — {rdv.motif||rdv.specialite}
+                        {(rdv as any).type_rdv === 'video' && <span style={{ marginLeft:8, color:'#1641C8', fontWeight:700 }}><Video size={11} style={{ verticalAlign:'middle' }} /> Vidéo</span>}
+                      </div>
+                    </div>
+                    <span style={{ background:s.bg, color:s.couleur, borderRadius:8, padding:'4px 10px', fontSize:11, fontWeight:700 }}>{s.label}</span>
+                  </div>
+                )
+              })}
+              {rdvAVenir.length === 0 && <p style={{ color:'#94a3b8', fontSize:13, textAlign:'center', padding:'20px 0' }}>Aucun rendez-vous à venir</p>}
+            </div>
+
+            {/* Derniers actes */}
+            <div style={{ background:'white', borderRadius:18, border:'1px solid #e2e8f0', padding:'24px' }}>
+              <div style={{ fontWeight:800, color:'#0f172a', fontSize:'0.95rem', marginBottom:16 }}>Derniers actes enregistrés</div>
+              {displayActes.slice(0,5).map(a => {
+                const t = TYPES_ACTE.find(t=>t.value===a.type_acte)||TYPES_ACTE[0]
+                return (
+                  <div key={a.id} style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'12px 0', borderBottom:'1px solid #f1f5f9' }}>
+                    <span style={{ background:t.bg, color:t.couleur, borderRadius:8, padding:'4px 10px', fontSize:11, fontWeight:700, flexShrink:0 }}>{t.label}</span>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontWeight:700, fontSize:13, color:'#0f172a' }}>{a.patient_nom} <span style={{ color:'#94a3b8', fontWeight:500 }}>{a.patient_id}</span></div>
+                      <div style={{ color:'#64748b', fontSize:12, marginTop:2 }}>{a.description}</div>
+                    </div>
+                    <span style={{ color:'#94a3b8', fontSize:11, flexShrink:0 }}>{fmtDate(a.date_acte)}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )}
+
+        {/* RENDEZ-VOUS */}
+        {onglet==='rdv' && (
+          <div>
+            <h2 style={{ fontWeight:800, color:'#0f172a', fontSize:'1.2rem', marginBottom:20 }}>Mes rendez-vous</h2>
+            <div style={{ display:'grid', gap:12 }}>
+              {displayRdv.map(rdv => {
+                const s = STATUT_MAP[rdv.statut]||STATUT_MAP.en_attente
+                return (
+                  <div key={rdv.id} style={{ background:'white', borderRadius:16, padding:'20px 24px', border:'1px solid #e2e8f0', display:'flex', alignItems:'center', gap:20 }}>
+                    <div style={{ textAlign:'center', minWidth:56 }}>
+                      <div style={{ fontSize:22, fontWeight:900, color:'#0f172a', lineHeight:1 }}>{new Date(rdv.date_rdv).getDate()}</div>
+                      <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8' }}>{new Date(rdv.date_rdv).toLocaleDateString('fr-FR',{month:'short'}).toUpperCase()}</div>
+                      <div style={{ fontSize:12, color:'#64748b', marginTop:2 }}>{fmtHeure(rdv.date_rdv)}</div>
+                    </div>
+                    <div style={{ width:1, height:48, background:'#f1f5f9' }} />
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontWeight:800, color:'#0f172a', fontSize:'0.95rem' }}>{rdv.patient_nom}</div>
+                      <div style={{ color:'#64748b', fontSize:13, marginTop:3 }}>{rdv.motif || rdv.specialite}</div>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, marginTop:6 }}>
+                        <i className="fa-solid fa-phone" style={{ color:'#94a3b8', fontSize:11 }} />
+                        <span style={{ color:'#94a3b8', fontSize:12 }}>{rdv.patient_telephone}</span>
+                        {(rdv as any).type_rdv === 'video' && (
+                          <span style={{ display:'flex', alignItems:'center', gap:4, color:'#1641C8', fontSize:12, fontWeight:700 }}>
+                            <Video size={12} /> Vidéo
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div style={{ display:'flex', flexDirection:'column', alignItems:'flex-end', gap:8 }}>
+                      <span style={{ background:s.bg, color:s.couleur, borderRadius:8, padding:'4px 12px', fontSize:12, fontWeight:700 }}>{s.label}</span>
+                      {(rdv as any).lien_video && (
+                        <a href={(rdv as any).lien_video} target="_blank" rel="noreferrer"
+                          style={{ display:'flex', alignItems:'center', gap:6, background:'#1641C8', color:'white', borderRadius:8, padding:'6px 12px', fontSize:12, fontWeight:700, textDecoration:'none' }}>
+                          <Video size={12} /> Rejoindre
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* STATISTIQUES */}
+        {onglet==='statistiques' && (
+          <div>
+            <h2 style={{ fontWeight:800, color:'#0f172a', fontSize:'1.2rem', marginBottom:20 }}>Statistiques — 6 derniers mois</h2>
+
+            {/* Graphique barres par mois */}
+            <div style={{ background:'white', borderRadius:18, border:'1px solid #e2e8f0', padding:'24px', marginBottom:20 }}>
+              <div style={{ fontWeight:800, color:'#0f172a', fontSize:'0.95rem', marginBottom:20 }}>Actes médicaux par mois</div>
+              <div style={{ display:'flex', alignItems:'flex-end', gap:12, height:140 }}>
+                {statsParMois.map(m => (
+                  <div key={m.mois} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:6 }}>
+                    <span style={{ fontSize:11, fontWeight:700, color:'#64748b' }}>{m.count}</span>
+                    <div style={{ width:'100%', background:'#1641C8', borderRadius:6, height: m.count > 0 ? `${Math.max(8,(m.count/maxCount)*100)}%` : 4, opacity:m.count>0?1:0.15 }} />
+                    <span style={{ fontSize:11, color:'#94a3b8', fontWeight:600 }}>{m.mois}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Par type d'acte */}
+            <div style={{ background:'white', borderRadius:18, border:'1px solid #e2e8f0', padding:'24px', marginBottom:20 }}>
+              <div style={{ fontWeight:800, color:'#0f172a', fontSize:'0.95rem', marginBottom:16 }}>Répartition par type</div>
+              <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(180px, 1fr))', gap:12 }}>
+                {statsActes.map(s => (
+                  <div key={s.value} style={{ background:s.bg, borderRadius:14, padding:'16px' }}>
+                    <div style={{ fontSize:'1.8rem', fontWeight:900, color:s.couleur }}>{s.count}</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:s.couleur, marginTop:4 }}>{s.label}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Actes récents */}
+            <div style={{ background:'white', borderRadius:18, border:'1px solid #e2e8f0', padding:'24px' }}>
+              <div style={{ fontWeight:800, color:'#0f172a', fontSize:'0.95rem', marginBottom:16 }}>Détail des actes</div>
+              <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+                <thead>
+                  <tr style={{ background:'#f8fafc' }}>
+                    {['Date','Patient','Code','Type','Description'].map(h => (
+                      <th key={h} style={{ padding:'10px 14px', textAlign:'left', color:'#64748b', fontWeight:700, fontSize:12, borderBottom:'1px solid #e2e8f0' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {actes6mois.map(a => {
+                    const t = TYPES_ACTE.find(t=>t.value===a.type_acte)||TYPES_ACTE[0]
+                    return (
+                      <tr key={a.id} style={{ borderBottom:'1px solid #f1f5f9' }}>
+                        <td style={{ padding:'10px 14px', color:'#64748b' }}>{fmtDate(a.date_acte)}</td>
+                        <td style={{ padding:'10px 14px', fontWeight:700, color:'#0f172a' }}>{a.patient_nom}</td>
+                        <td style={{ padding:'10px 14px', color:'#94a3b8' }}>{a.patient_id}</td>
+                        <td style={{ padding:'10px 14px' }}><span style={{ background:t.bg, color:t.couleur, borderRadius:8, padding:'3px 8px', fontSize:11, fontWeight:700 }}>{t.label}</span></td>
+                        <td style={{ padding:'10px 14px', color:'#64748b', maxWidth:240, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{a.description}</td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* PROFIL */}
+        {onglet==='profil' && (
+          <div style={{ maxWidth:560 }}>
+            <h2 style={{ fontWeight:800, color:'#0f172a', fontSize:'1.2rem', marginBottom:20 }}>Mon profil</h2>
+            <div style={{ background:'white', borderRadius:18, border:'1px solid #e2e8f0', padding:32, marginBottom:20 }}>
+              <div style={{ display:'flex', alignItems:'center', gap:20, marginBottom:28 }}>
+                <div style={{ width:80, height:80, borderRadius:20, background:'linear-gradient(135deg,#1641C8,#0d9488)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:900, fontSize:24 }}>
+                  {user?.nom?.replace('Dr ','').split(' ').map((n:string)=>n[0]||'').slice(0,2).join('')}
+                </div>
+                <div>
+                  <h3 style={{ fontWeight:900, color:'#0f172a', fontSize:'1.1rem', margin:0 }}>{user?.nom}</h3>
+                  <div style={{ color:'#1641C8', fontWeight:700, marginTop:4 }}>{user?.specialite||'Médecin'}</div>
+                  <div style={{ color:'#64748b', fontSize:13, marginTop:4 }}>{user?.email}</div>
+                </div>
+              </div>
+
+              {!editProfil ? (
+                <>
+                  <div style={{ display:'grid', gap:16, marginBottom:24 }}>
+                    {[
+                      { label:'Téléphone', val:profil.telephone||user?.telephone||'Non renseigné' },
+                      { label:'Disponibilités', val:profil.disponibilites },
+                      { label:'Bio', val:profil.bio||'Aucune bio renseignée' },
+                    ].map(f => (
+                      <div key={f.label} style={{ background:'#f8fafc', borderRadius:12, padding:'14px 16px' }}>
+                        <div style={{ fontSize:11, fontWeight:700, color:'#94a3b8', textTransform:'uppercase' as const, marginBottom:4 }}>{f.label}</div>
+                        <div style={{ color:'#0f172a', fontSize:14 }}>{f.val}</div>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={() => setEditProfil(true)} style={{ display:'flex', alignItems:'center', gap:8, background:'#1641C8', color:'white', border:'none', borderRadius:12, padding:'11px 20px', fontWeight:700, cursor:'pointer', fontSize:14 }}>
+                    <Edit2 size={15} /> Modifier le profil
+                  </button>
+                </>
+              ) : (
+                <>
+                  {[
+                    { label:'Téléphone', key:'telephone', type:'tel' },
+                    { label:'Disponibilités', key:'disponibilites', type:'text' },
+                  ].map(f => (
+                    <div key={f.key} style={{ marginBottom:16 }}>
+                      <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:13, marginBottom:6 }}>{f.label}</label>
+                      <input type={f.type} value={(profil as any)[f.key]} onChange={e => setProfil(prev=>({...prev,[f.key]:e.target.value}))}
+                        style={{ width:'100%', padding:'11px 14px', borderRadius:10, border:'1px solid #d1d5db', fontSize:14, outline:'none', boxSizing:'border-box' as const }} />
+                    </div>
+                  ))}
+                  <div style={{ marginBottom:24 }}>
+                    <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:13, marginBottom:6 }}>Bio professionnelle</label>
+                    <textarea value={profil.bio} onChange={e => setProfil(prev=>({...prev,bio:e.target.value}))} rows={4} placeholder="Décrivez votre parcours et expertise..."
+                      style={{ width:'100%', padding:'11px 14px', borderRadius:10, border:'1px solid #d1d5db', fontSize:14, resize:'vertical', boxSizing:'border-box' as const }} />
+                  </div>
+                  <div style={{ display:'flex', gap:10 }}>
+                    <button onClick={() => { setEditProfil(false); toast.success('Profil mis à jour') }} style={{ flex:1, background:'#1641C8', color:'white', border:'none', borderRadius:12, padding:'11px 0', fontWeight:700, cursor:'pointer', fontSize:14, display:'flex', alignItems:'center', justifyContent:'center', gap:8 }}>
+                      <Save size={15} /> Sauvegarder
+                    </button>
+                    <button onClick={() => setEditProfil(false)} style={{ width:44, background:'#f1f5f9', border:'none', borderRadius:12, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'#64748b' }}>
+                      <X size={16} />
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
   )
 }

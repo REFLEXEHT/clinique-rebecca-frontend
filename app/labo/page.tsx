@@ -6,8 +6,9 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { laboApi } from '@/lib/api'
+import { laboApi, chatApi } from '@/lib/api'
 import { ResultatLabo } from '@/types'
+import RebeccaAI from '@/components/ui/RebeccaAI'
 import { Plus, X, Search, FlaskConical, LogOut, CheckCircle, AlertCircle, Send } from 'lucide-react'
 
 const EXAMENS = [
@@ -35,6 +36,86 @@ interface LaboForm {
   type_examen:string; resultats:string; valeurs_normales:string; interpretation:string; notes:string
 }
 
+// ── Bannière défilante labo ───────────────────────────────────────────────────
+const EXAMENS_ANNONCE = [
+  { nom:'NFS (Numération Formule Sanguine)', info:'Résultats en 1h — Détecte anémies et infections', couleur:'#0891b2' },
+  { nom:'Glycémie à jeun', info:'Résultats en 30 min — Dépistage diabète', couleur:'#16a34a' },
+  { nom:'Sérologie VIH', info:'Résultats en 30 min — Confidentiel', couleur:'#7c3aed' },
+  { nom:'Bilan lipidique complet', info:'Résultats en 2h — Prévention cardio-vasculaire', couleur:'#d97706' },
+  { nom:'TSH (Thyroïde)', info:'Résultats en 4h — Bilan thyroïdien complet', couleur:'#0d9488' },
+  { nom:'Test de grossesse β-hCG', info:'Résultats en 30 min — Quantitatif & qualitatif', couleur:'#be185d' },
+  { nom:'ECBU (Analyse urine)', info:'Résultats en 24h — Infections urinaires', couleur:'#1641C8' },
+  { nom:'Bilan hépatique', info:'Résultats en 2h — Surveillance foie', couleur:'#dc2626' },
+]
+
+function LaboTicker() {
+  const [idx, setIdx] = useState(0)
+  const [aiMsg, setAiMsg] = useState('')
+  const [genLoading, setGenLoading] = useState(false)
+
+  useEffect(() => {
+    const t = setInterval(() => setIdx(i => (i + 1) % EXAMENS_ANNONCE.length), 2800)
+    return () => clearInterval(t)
+  }, [])
+
+  const generateMsg = async () => {
+    setGenLoading(true)
+    try {
+      const { data } = await chatApi.send(
+        'Génère un message d'accueil court et rassurant (max 20 mots) pour la fenêtre d'un laboratoire médical haïtien. Mentionne la rapidité des résultats.',
+        []
+      )
+      setAiMsg(data.response.trim())
+    } catch { setAiMsg('Vos analyses sont traitées avec soin. Résultats rapides et fiables.') }
+    finally { setGenLoading(false) }
+  }
+
+  const ex = EXAMENS_ANNONCE[idx]
+  return (
+    <div style={{ background:`linear-gradient(135deg,#0f172a,${ex.couleur})`, borderRadius:20, padding:'20px 24px', marginBottom:24, color:'white' }}>
+      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14, flexWrap:'wrap', gap:10 }}>
+        <div>
+          <div style={{ fontSize:10, fontWeight:700, letterSpacing:3, color:'rgba(255,255,255,0.5)', textTransform:'uppercase', marginBottom:4 }}>Fenêtre Laboratoire</div>
+          <div style={{ fontWeight:900, fontSize:'1.05rem' }}>Examens disponibles aujourd'hui</div>
+        </div>
+        <button onClick={generateMsg} disabled={genLoading} style={{
+          display:'flex', alignItems:'center', gap:7, padding:'8px 14px',
+          borderRadius:50, border:'1.5px solid rgba(255,255,255,0.3)',
+          background:'rgba(255,255,255,0.1)', color:'white',
+          cursor:genLoading?'wait':'pointer', fontWeight:700, fontSize:11,
+        }}>
+          <i className="fa-solid fa-wand-magic-sparkles" />
+          {genLoading ? 'Génération…' : 'Message IA'}
+        </button>
+      </div>
+      <div key={idx} style={{ animation:'fadeSlideIn 0.4s ease both' }}>
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+          <div style={{ background:'rgba(255,255,255,0.12)', borderRadius:14, padding:'14px 18px' }}>
+            <div style={{ fontSize:11, color:'rgba(255,255,255,0.55)', marginBottom:6 }}>Examen</div>
+            <div style={{ fontWeight:800, fontSize:14 }}>{ex.nom}</div>
+          </div>
+          <div style={{ background:'rgba(255,255,255,0.12)', borderRadius:14, padding:'14px 18px' }}>
+            <div style={{ fontSize:11, color:'rgba(255,255,255,0.55)', marginBottom:6 }}>Information</div>
+            <div style={{ fontWeight:600, fontSize:13 }}>{ex.info}</div>
+          </div>
+        </div>
+        <div style={{ display:'flex', gap:5, justifyContent:'center', marginTop:12 }}>
+          {EXAMENS_ANNONCE.map((_,i) => (
+            <button key={i} onClick={() => setIdx(i)} style={{ width:i===idx?18:6, height:6, borderRadius:3, border:'none', background:i===idx?'white':'rgba(255,255,255,0.3)', cursor:'pointer', padding:0, transition:'all 0.3s' }} />
+          ))}
+        </div>
+      </div>
+      {aiMsg && (
+        <div style={{ marginTop:14, background:'rgba(255,255,255,0.1)', borderRadius:12, padding:'10px 16px', fontSize:13, fontStyle:'italic', display:'flex', alignItems:'center', gap:8 }}>
+          <i className="fa-solid fa-quote-left" style={{ fontSize:11, opacity:0.7 }} />
+          {aiMsg}
+        </div>
+      )}
+    </div>
+  )
+}
+
+
 export default function LaboPage() {
   const { user, isAuthenticated, loading, logout } = useAuth()
   const router = useRouter()
@@ -45,6 +126,7 @@ export default function LaboPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [pendingData, setPendingData] = useState<LaboForm|null>(null)
   const [savLoading, setSavLoading] = useState(false)
+  const [showAI, setShowAI] = useState(false)
 
   const { register, handleSubmit, reset, watch } = useForm<LaboForm>()
 

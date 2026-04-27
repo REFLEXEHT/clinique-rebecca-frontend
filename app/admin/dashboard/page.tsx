@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import { statsApi, rdvApi } from '@/lib/api'
 import { DashboardStats, RendezVous } from '@/types'
+import RebeccaAI from '@/components/ui/RebeccaAI'
 import { Line, Doughnut } from 'react-chartjs-2'
 import {
   Chart as ChartJS, CategoryScale, LinearScale, PointElement,
@@ -43,6 +44,7 @@ export default function AdminDashboard() {
   const [rdvChart, setRdvChart] = useState<any[]>([])
   const [rdvList, setRdvList] = useState<RendezVous[]>([])
   const [loading, setLoading] = useState(true)
+  const [showAI, setShowAI] = useState(false)
   const [today, setToday] = useState('')
 
   useEffect(() => {

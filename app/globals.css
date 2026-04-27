@@ -564,3 +564,17 @@
   .btn-primary, .btn-secondary { padding: 12px 20px; font-size: 14px; }
   .specs-grid { grid-template-columns: 1fr !important; }
 }
+
+/* ─── Traduction IA — éléments protégés ─────────────────────────────────── */
+/* Ces éléments ne seront jamais traduits par le moteur IA */
+[data-no-translate] {
+  /* Marqueur visuel désactivé en production — utile pour le debug */
+}
+
+/* Empêche la traduction des numéros, emails et codes patient */
+.no-translate,
+[data-phone],
+[data-email],
+[data-code] {
+  /* Protégé de la traduction */
+}

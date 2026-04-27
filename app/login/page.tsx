@@ -41,10 +41,8 @@ export default function LoginPage() {
       // ── Vérification critique : le rôle sélectionné doit correspondre
       //    au rôle réel du compte enregistré en base de données.
       if (user.role !== roleSelec) {
-        toast.error(
-          `Ce compte est enregistré comme "${ROLES.find(r => r.value === user.role)?.label || user.role}". ` +
-          `Veuillez sélectionner le bon profil.`
-        )
+        const roleLabel = ROLES.find(r => r.value === user.role)?.label || user.role
+        toast.error(`Ce compte est enregistré comme "${roleLabel}". Veuillez sélectionner le bon profil.`)
         setLoading(false)
         return
       }
