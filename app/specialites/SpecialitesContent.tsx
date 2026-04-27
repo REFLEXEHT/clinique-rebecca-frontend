@@ -49,8 +49,7 @@ const FILTRES = [
 const INITIALES = (nom: string) => nom.replace('Dr ','').replace('Mme ','').replace('Mr ','').split(' ').slice(0,2).map(n=>n[0]||'').join('')
 
 export default function SpecialitesContent() {
-  const [medecins, setMedecins] = useState
-  const [mounted, setMounted] = useState(false)<any[]>(MEDECINS_FALLBACK)
+  const [medecins, setMedecins] = useState<any[]>(MEDECINS_FALLBACK)
   const [filtre, setFiltre] = useState('tous')
   const [search, setSearch] = useState('')
   const [rdvOpen, setRdvOpen] = useState(false)
