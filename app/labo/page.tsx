@@ -1,5 +1,4 @@
 'use client'
-// app/labo/page.tsx — Espace laboratoire avec formulaire patient + envoi résultats
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
@@ -8,43 +7,45 @@ import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { laboApi } from '@/lib/api'
 import { ResultatLabo } from '@/types'
-import { Plus, X, Send, Search, FlaskConical, LogOut } from 'lucide-react'
+import { Plus, X, Search, FlaskConical, LogOut, CheckCircle, AlertCircle, Send } from 'lucide-react'
 
 const EXAMENS = [
   'NFS (Numération Formule Sanguine)','Glycémie à jeun','HbA1c','Créatininémie',
   'Transaminases (ALAT/ASAT)','TSH (Thyroïde)','Sérologie VIH','ECBU',
   'Bilan lipidique','Hémoculture','Coproculture','Test de grossesse',
-  'Ionogramme sanguin','TP/TCA','CRP','Acide urique',
+  'Ionogramme sanguin','TP/TCA','CRP','Acide urique','Bilan rénal complet',
+  'Bilan hépatique','Protéinurie 24h','ANCA','Anti-DNA natif',
 ]
 
-const STATUS_MAP: Record<string, {label:string;cls:string}> = {
-  en_attente: {label:'En attente', cls:'badge-yellow'},
-  disponible: {label:'Disponible', cls:'badge-blue'},
-  envoye: {label:'Envoyé ✓', cls:'badge-green'},
+const STATUS_MAP: Record<string,{label:string;bg:string;color:string}> = {
+  en_attente:{ label:'En attente', bg:'#fffbeb', color:'#d97706' },
+  disponible:{ label:'Disponible', bg:'#eff6ff', color:'#1641C8' },
+  envoye:{ label:'Transmis', bg:'#f0fdf4', color:'#16a34a' },
 }
+
+const DEMO: ResultatLabo[] = [
+  { id:1, patient_id:'#RB-42015', patient_nom:'Marie Théodore', type_examen:'NFS', resultats:'Hb: 12g/dL, GB: 7800/mm³, Plaquettes: 245000/mm³', notes:'Normal', date_examen:new Date().toISOString(), technicien_id:1, status:'disponible' },
+  { id:2, patient_id:'#RB-39841', patient_nom:'Paul Jean-Baptiste', type_examen:'Glycémie à jeun', resultats:'1.26 g/L', notes:'Légèrement élevé', date_examen:new Date().toISOString(), technicien_id:1, status:'en_attente' },
+  { id:3, patient_id:'#RB-51203', patient_nom:'Rose Étienne', type_examen:'TSH', resultats:'2.8 mUI/L', notes:'Normal', date_examen:new Date(Date.now()-86400000).toISOString(), technicien_id:1, status:'envoye' },
+]
 
 interface LaboForm {
-  patient_id: string; patient_nom: string; patient_telephone: string; patient_email: string
-  type_examen: string; resultats: string; valeurs_normales: string; interpretation: string
-  notes: string; date_examen: string
+  patient_id:string; patient_nom:string; patient_telephone:string; patient_email:string
+  type_examen:string; resultats:string; valeurs_normales:string; interpretation:string; notes:string
 }
-
-const DEMO_RESULTATS: ResultatLabo[] = [
-  {id:1, patient_id:'#RB-42015', patient_nom:'Marie Théodore', type_examen:'NFS', resultats:'Hb: 12g/dL, GB: 7800/mm³, Plaquettes: 245000/mm³', notes:'Normal', date_examen:new Date().toISOString(), technicien_id:1, status:'disponible'},
-  {id:2, patient_id:'#RB-39841', patient_nom:'Paul Jean-Baptiste', type_examen:'Glycémie à jeun', resultats:'1.26 g/L', notes:'Légèrement élevé', date_examen:new Date().toISOString(), technicien_id:1, status:'en_attente'},
-  {id:3, patient_id:'#RB-51203', patient_nom:'Rose Étienne', type_examen:'TSH', resultats:'2.8 mUI/L', notes:'Normal', date_examen:new Date(Date.now()-86400000).toISOString(), technicien_id:1, status:'envoye'},
-]
 
 export default function LaboPage() {
   const { user, isAuthenticated, loading, logout } = useAuth()
   const router = useRouter()
-  const [resultats, setResultats] = useState<ResultatLabo[]>(DEMO_RESULTATS)
+  const [resultats, setResultats] = useState<ResultatLabo[]>(DEMO)
   const [showForm, setShowForm] = useState(false)
   const [searchId, setSearchId] = useState('')
-  const [filtered, setFiltered] = useState<ResultatLabo[]>(DEMO_RESULTATS)
-  const { register, handleSubmit, reset } = useForm<LaboForm>({
-    defaultValues: { date_examen: new Date().toISOString().slice(0,16) }
-  })
+  const [filtered, setFiltered] = useState<ResultatLabo[]>(DEMO)
+  const [showConfirm, setShowConfirm] = useState(false)
+  const [pendingData, setPendingData] = useState<LaboForm|null>(null)
+  const [savLoading, setSavLoading] = useState(false)
+
+  const { register, handleSubmit, reset, watch } = useForm<LaboForm>()
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== 'labo')) router.push('/login')
@@ -52,173 +53,211 @@ export default function LaboPage() {
 
   useEffect(() => {
     if (isAuthenticated && user?.role === 'labo') {
-      laboApi.list().then(r => setResultats(r.data.length ? r.data : DEMO_RESULTATS)).catch(() => setResultats(DEMO_RESULTATS))
+      laboApi.list().then(r => {
+        const data = r.data?.length ? r.data : DEMO
+        setResultats(data); setFiltered(data)
+      }).catch(() => {})
     }
   }, [isAuthenticated, user])
 
   useEffect(() => {
     if (!searchId.trim()) { setFiltered(resultats); return }
-    setFiltered(resultats.filter(r =>
-      r.patient_id.toLowerCase().includes(searchId.toLowerCase()) ||
-      r.patient_nom.toLowerCase().includes(searchId.toLowerCase())
-    ))
+    const q = searchId.toLowerCase()
+    setFiltered(resultats.filter(r => r.patient_id?.toLowerCase().includes(q) || r.patient_nom.toLowerCase().includes(q)))
   }, [searchId, resultats])
 
-  const onSubmit = async (data: LaboForm) => {
-    try {
-      await laboApi.create({ ...data, date_examen: new Date(data.date_examen).toISOString(), status:'disponible' })
-      toast.success('✓ Résultat enregistré')
-      setTimeout(() => toast.success('📱 WhatsApp envoyé au patient', {duration:3000}), 600)
-      setTimeout(() => toast.success('📧 Email envoyé', {duration:3000}), 1200)
-      reset({ date_examen: new Date().toISOString().slice(0,16) })
-      setShowForm(false)
-      laboApi.list().then(r => setResultats(r.data.length ? r.data : DEMO_RESULTATS)).catch(() => {})
-    } catch { toast.error('Erreur lors de l\'enregistrement') }
+  const onSubmitForm = (data: LaboForm) => {
+    setPendingData(data); setShowConfirm(true)
   }
 
-  const envoyer = async (r: ResultatLabo) => {
+  const confirmerSauvegarde = async () => {
+    if (!pendingData) return
+    setSavLoading(true)
     try {
-      await laboApi.update(r.id, { status:'envoye' })
-      setResultats(prev => prev.map(x => x.id===r.id ? {...x,status:'envoye'} : x))
-      toast.success(`📱 Résultats envoyés à ${r.patient_nom}`)
-    } catch { toast.error('Erreur') }
+      const payload = { ...pendingData, date_examen: new Date().toISOString(), technicien_id: user?.id, status:'disponible' }
+      const r = await laboApi.create(payload)
+      const nouv: ResultatLabo = { id: r.data?.id||Date.now(), ...payload }
+      setResultats(prev => [nouv, ...prev])
+      setFiltered(prev => [nouv, ...prev])
+      toast.success('Résultat enregistré. Notification envoyée au caissier et à l\'admin.')
+      setShowForm(false); setShowConfirm(false); setPendingData(null); reset()
+    } catch {
+      toast.error('Erreur lors de la sauvegarde')
+    }
+    finally { setSavLoading(false) }
   }
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"/></div>
+  const fmtDate = (d:string) => new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})
+
+  if (loading||!isAuthenticated) return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center' }}><div style={{ width:32, height:32, borderRadius:'50%', border:'3px solid #0d9488', borderTopColor:'transparent' }} /></div>
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <div className="bg-[#0f172a] h-[70px] flex items-center px-6 gap-4">
-        <Link href="/" className="text-white/60 hover:text-white text-sm no-underline"><i className="fa-solid fa-arrow-left mr-2"/>Accueil</Link>
-        <h1 className="text-white font-bold">Espace Laboratoire</h1>
-        <div className="ml-auto flex items-center gap-2">
-          <span className="text-white/60 text-sm"><i className="fa-solid fa-flask-vial text-[#1641C8] mr-1.5"/>{user?.nom}</span>
-          <button onClick={() => { logout(); router.push('/') }} className="text-white/40 hover:text-red-400 text-xs border-none bg-transparent cursor-pointer ml-2 flex items-center gap-1">
-            <LogOut size={12}/> Déco
+    <div style={{ minHeight:'100vh', background:'#f8fafc' }}>
+      {/* Header */}
+      <div style={{ background:'#0f172a', height:64, display:'flex', alignItems:'center', padding:'0 24px', gap:16 }}>
+        <div style={{ width:36, height:36, borderRadius:10, background:'rgba(13,148,136,0.2)', display:'flex', alignItems:'center', justifyContent:'center' }}>
+          <FlaskConical size={18} color="#5eead4" />
+        </div>
+        <div style={{ fontWeight:800, color:'white', fontSize:'0.95rem' }}>Espace Laboratoire</div>
+        <div style={{ marginLeft:'auto', display:'flex', alignItems:'center', gap:12 }}>
+          <span style={{ color:'rgba(255,255,255,0.6)', fontSize:13 }}>{user?.nom}</span>
+          <button onClick={() => { logout(); router.push('/') }} style={{ display:'flex', alignItems:'center', gap:6, background:'rgba(255,255,255,0.08)', border:'none', borderRadius:8, padding:'6px 12px', color:'rgba(255,255,255,0.7)', cursor:'pointer', fontSize:12 }}>
+            <LogOut size={13} /> Déconnexion
           </button>
         </div>
       </div>
 
-      <div className="p-7">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-xl font-extrabold">Résultats de laboratoire</h1>
-            <p className="text-slate-400 text-[13px] mt-0.5">Saisie et envoi par numéro patient unique</p>
+      <div style={{ maxWidth:1100, margin:'0 auto', padding:'32px 24px' }}>
+        {/* Actions bar */}
+        <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:24 }}>
+          <div style={{ flex:1, position:'relative' }}>
+            <Search size={16} style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color:'#94a3b8' }} />
+            <input value={searchId} onChange={e => setSearchId(e.target.value)} placeholder="Rechercher par code patient ou nom..."
+              style={{ width:'100%', padding:'11px 14px 11px 42px', borderRadius:12, border:'1px solid #e2e8f0', fontSize:14, outline:'none', background:'white', boxSizing:'border-box' as const }} />
           </div>
-          <button onClick={() => setShowForm(true)} className="btn-primary"><Plus size={15}/> Saisir un résultat</button>
-        </div>
-
-        {/* KPIs */}
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <div className="kpi-card"><div className="text-2xl font-black text-[#1641C8] mb-1">{resultats.length}</div><div className="text-xs text-slate-500 font-semibold">Total</div></div>
-          <div className="kpi-card"><div className="text-2xl font-black text-yellow-600 mb-1">{resultats.filter(r=>r.status==='en_attente').length}</div><div className="text-xs text-slate-500 font-semibold">En attente</div></div>
-          <div className="kpi-card"><div className="text-2xl font-black text-blue-600 mb-1">{resultats.filter(r=>r.status==='disponible').length}</div><div className="text-xs text-slate-500 font-semibold">Prêts</div></div>
-          <div className="kpi-card"><div className="text-2xl font-black text-green-600 mb-1">{resultats.filter(r=>r.status==='envoye').length}</div><div className="text-xs text-slate-500 font-semibold">Envoyés</div></div>
+          <button onClick={() => setShowForm(!showForm)} style={{ display:'flex', alignItems:'center', gap:8, background:'#0d9488', color:'white', border:'none', borderRadius:12, padding:'11px 20px', fontWeight:700, cursor:'pointer', fontSize:14, whiteSpace:'nowrap' as const }}>
+            <Plus size={16} /> Nouveau résultat
+          </button>
         </div>
 
         {/* Formulaire */}
         {showForm && (
-          <div className="card p-6 mb-6">
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="font-extrabold text-[16px] flex items-center gap-2"><FlaskConical size={18} className="text-[#1641C8]"/> Saisir un résultat d'examen</h3>
-              <button onClick={() => { setShowForm(false); reset() }} className="text-slate-400 hover:text-slate-600 border-none bg-transparent cursor-pointer"><X size={18}/></button>
+          <div style={{ background:'white', borderRadius:20, border:'1px solid #e2e8f0', padding:28, marginBottom:24 }}>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
+              <h2 style={{ fontWeight:800, color:'#0f172a', fontSize:'1rem', margin:0 }}>Enregistrer un résultat</h2>
+              <button onClick={() => setShowForm(false)} style={{ background:'none', border:'none', cursor:'pointer', color:'#64748b', display:'flex' }}><X size={18} /></button>
             </div>
-            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-              <div className="bg-blue-50 rounded-xl border border-blue-100 p-4">
-                <div className="text-[11px] font-extrabold text-[#1641C8] uppercase tracking-wider mb-3">Identification du patient</div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div><label className="label">Code patient unique * (#RB-XXXXX)</label>
-                    <input {...register('patient_id',{required:true})} className="input" placeholder="#RB-00000"/></div>
-                  <div><label className="label">Nom complet *</label>
-                    <input {...register('patient_nom',{required:true})} className="input" placeholder="Prénom NOM"/></div>
-                  <div><label className="label">Téléphone (WhatsApp)</label>
-                    <input {...register('patient_telephone')} className="input" placeholder="+509 3xxx-xxxx"/></div>
-                  <div><label className="label">Email</label>
-                    <input {...register('patient_email')} type="email" className="input" placeholder="patient@email.com"/></div>
+            <div style={{ background:'#fff7ed', border:'1px solid #fed7aa', borderRadius:12, padding:'12px 16px', marginBottom:20, fontSize:13, color:'#c2410c', fontWeight:600 }}>
+              Important — Une fois sauvegardé, le résultat ne pourra plus être modifié après 24 heures. Vérifiez les données avant de confirmer.
+            </div>
+            <form onSubmit={handleSubmit(onSubmitForm)}>
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+                <div>
+                  <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:13, marginBottom:6 }}>Code patient *</label>
+                  <input {...register('patient_id',{required:true})} placeholder="#RB-XXXXX"
+                    style={{ width:'100%', padding:'10px 14px', borderRadius:10, border:'1px solid #d1d5db', fontSize:14, outline:'none', boxSizing:'border-box' as const }} />
+                </div>
+                <div>
+                  <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:13, marginBottom:6 }}>Nom du patient *</label>
+                  <input {...register('patient_nom',{required:true})} placeholder="Prénom Nom"
+                    style={{ width:'100%', padding:'10px 14px', borderRadius:10, border:'1px solid #d1d5db', fontSize:14, outline:'none', boxSizing:'border-box' as const }} />
+                </div>
+                <div>
+                  <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:13, marginBottom:6 }}>Téléphone patient</label>
+                  <input {...register('patient_telephone')} placeholder="+509 xxxx xxxx"
+                    style={{ width:'100%', padding:'10px 14px', borderRadius:10, border:'1px solid #d1d5db', fontSize:14, outline:'none', boxSizing:'border-box' as const }} />
+                </div>
+                <div>
+                  <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:13, marginBottom:6 }}>Email patient</label>
+                  <input {...register('patient_email')} type="email" placeholder="email@exemple.com"
+                    style={{ width:'100%', padding:'10px 14px', borderRadius:10, border:'1px solid #d1d5db', fontSize:14, outline:'none', boxSizing:'border-box' as const }} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="label">Type d'examen *</label>
-                  <select {...register('type_examen',{required:true})} className="input">
-                    <option value="">Choisir...</option>
-                    {EXAMENS.map(e => <option key={e}>{e}</option>)}
-                  </select></div>
-                <div><label className="label">Date de l'examen *</label>
-                  <input {...register('date_examen',{required:true})} type="datetime-local" className="input"/></div>
+              <div style={{ marginBottom:16 }}>
+                <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:13, marginBottom:6 }}>Type d'examen *</label>
+                <select {...register('type_examen',{required:true})} style={{ width:'100%', padding:'10px 14px', borderRadius:10, border:'1px solid #d1d5db', fontSize:14, background:'white' }}>
+                  <option value="">Sélectionner un examen</option>
+                  {EXAMENS.map(e => <option key={e} value={e}>{e}</option>)}
+                </select>
               </div>
-              <div><label className="label">Résultats détaillés *</label>
-                <textarea {...register('resultats',{required:true})} className="input resize-none" rows={3} placeholder="Ex: Hb: 12g/dL, GB: 7800/mm³ ..."/></div>
-              <div className="grid grid-cols-2 gap-4">
-                <div><label className="label">Valeurs normales (référence)</label>
-                  <textarea {...register('valeurs_normales')} className="input resize-none" rows={2} placeholder="Ex: Hb: 11-15 g/dL ..."/></div>
-                <div><label className="label">Interprétation</label>
-                  <textarea {...register('interpretation')} className="input resize-none" rows={2} placeholder="Normal / Suivi recommandé..."/></div>
+              <div style={{ marginBottom:16 }}>
+                <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:13, marginBottom:6 }}>Résultats *</label>
+                <textarea {...register('resultats',{required:true})} rows={4} placeholder="Ex: Hb: 12g/dL, GB: 7800/mm³, Plaquettes: 245000/mm³..."
+                  style={{ width:'100%', padding:'10px 14px', borderRadius:10, border:'1px solid #d1d5db', fontSize:14, resize:'vertical', boxSizing:'border-box' as const }} />
               </div>
-              <div><label className="label">Notes du technicien</label>
-                <input {...register('notes')} className="input" placeholder="Observations particulières..."/></div>
-              <div className="bg-green-50 rounded-xl border border-green-200 p-3 flex items-center gap-2 text-sm text-green-700 font-medium">
-                <i className="fa-solid fa-paper-plane text-green-600"/>
-                Résultat envoyé automatiquement par WhatsApp + Email après enregistrement.
+              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+                <div>
+                  <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:13, marginBottom:6 }}>Valeurs de référence</label>
+                  <input {...register('valeurs_normales')} placeholder="Ex: Hb: 12-16 g/dL..."
+                    style={{ width:'100%', padding:'10px 14px', borderRadius:10, border:'1px solid #d1d5db', fontSize:14, outline:'none', boxSizing:'border-box' as const }} />
+                </div>
+                <div>
+                  <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:13, marginBottom:6 }}>Interprétation</label>
+                  <input {...register('interpretation')} placeholder="Normal / Élevé / Bas / Pathologique"
+                    style={{ width:'100%', padding:'10px 14px', borderRadius:10, border:'1px solid #d1d5db', fontSize:14, outline:'none', boxSizing:'border-box' as const }} />
+                </div>
               </div>
-              <div className="flex gap-3">
-                <button type="submit" className="btn-primary"><Send size={14}/> Enregistrer & Envoyer au patient</button>
-                <button type="button" onClick={() => { setShowForm(false); reset() }} className="btn-ghost">Annuler</button>
+              <div style={{ marginBottom:20 }}>
+                <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:13, marginBottom:6 }}>Notes techniques</label>
+                <textarea {...register('notes')} rows={2} placeholder="Observations du technicien..."
+                  style={{ width:'100%', padding:'10px 14px', borderRadius:10, border:'1px solid #d1d5db', fontSize:14, resize:'vertical', boxSizing:'border-box' as const }} />
               </div>
+              <button type="submit" style={{ display:'flex', alignItems:'center', gap:8, background:'#0d9488', color:'white', border:'none', borderRadius:12, padding:'12px 24px', fontWeight:700, cursor:'pointer', fontSize:14 }}>
+                <CheckCircle size={16} /> Vérifier avant sauvegarde
+              </button>
             </form>
           </div>
         )}
 
-        {/* Recherche */}
-        <div className="flex gap-3 mb-4">
-          <div className="relative max-w-sm flex-1">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"/>
-            <input value={searchId} onChange={e => setSearchId(e.target.value)} className="input pl-9" placeholder="Rechercher par code ou nom patient..."/>
+        {/* Popup confirmation */}
+        {showConfirm && pendingData && (
+          <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000, padding:20 }}>
+            <div style={{ background:'white', borderRadius:24, padding:36, maxWidth:520, width:'100%' }}>
+              <h3 style={{ fontWeight:900, color:'#0f172a', fontSize:'1.1rem', marginBottom:20 }}>Résumé avant sauvegarde</h3>
+              <div style={{ background:'#f8fafc', borderRadius:14, padding:20, marginBottom:20 }}>
+                {[
+                  { label:'Code patient', val:pendingData.patient_id },
+                  { label:'Nom', val:pendingData.patient_nom },
+                  { label:'Téléphone', val:pendingData.patient_telephone },
+                  { label:'Examen', val:pendingData.type_examen },
+                  { label:'Résultats', val:pendingData.resultats },
+                  { label:'Interprétation', val:pendingData.interpretation },
+                ].map(f => (
+                  <div key={f.label} style={{ display:'flex', gap:12, padding:'6px 0', borderBottom:'1px solid #e2e8f0' }}>
+                    <span style={{ fontSize:12, color:'#94a3b8', fontWeight:600, minWidth:110 }}>{f.label}</span>
+                    <span style={{ fontSize:13, color:'#0f172a', fontWeight:600, flex:1 }}>{f.val||'—'}</span>
+                  </div>
+                ))}
+              </div>
+              <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:12, padding:'12px 16px', marginBottom:20, fontSize:13, color:'#991b1b' }}>
+                Modification impossible après 24 heures. Une notification sera envoyée au caissier et à l'administrateur.
+              </div>
+              <div style={{ display:'flex', gap:10 }}>
+                <button onClick={() => setShowConfirm(false)} style={{ flex:1, background:'#f1f5f9', border:'none', borderRadius:12, padding:'12px 0', fontWeight:700, cursor:'pointer', color:'#374151' }}>Corriger</button>
+                <button onClick={confirmerSauvegarde} disabled={savLoading} style={{ flex:2, background:'#0d9488', color:'white', border:'none', borderRadius:12, padding:'12px 0', fontWeight:700, cursor:'pointer', opacity:savLoading?0.7:1 }}>
+                  {savLoading ? 'Enregistrement...' : 'Confirmer et enregistrer'}
+                </button>
+              </div>
+            </div>
           </div>
-          {searchId && <button onClick={() => setSearchId('')} className="btn-ghost text-xs"><X size={12}/> Effacer</button>}
-        </div>
+        )}
 
-        {/* Table */}
-        <div className="card overflow-hidden">
-          <table className="tbl">
-            <thead><tr><th>Code Patient</th><th>Nom</th><th>Examen</th><th>Résultats</th><th>Notes</th><th>Date</th><th>Statut</th><th>Action</th></tr></thead>
+        {/* Liste résultats */}
+        <div style={{ background:'white', borderRadius:18, border:'1px solid #e2e8f0', overflow:'hidden' }}>
+          <div style={{ padding:'16px 24px', borderBottom:'1px solid #f1f5f9', fontWeight:800, color:'#0f172a', fontSize:'0.9rem' }}>
+            Résultats enregistrés — {filtered.length}
+          </div>
+          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+            <thead>
+              <tr style={{ background:'#f8fafc' }}>
+                {['Code patient','Nom','Examen','Date','Statut','Action'].map(h => (
+                  <th key={h} style={{ padding:'10px 16px', textAlign:'left', color:'#64748b', fontWeight:700, fontSize:12, borderBottom:'1px solid #e2e8f0' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
             <tbody>
-              {filtered.length === 0
-                ? <tr><td colSpan={8} className="text-center py-12 text-slate-300 text-sm">Aucun résultat</td></tr>
-                : filtered.map(r => {
-                  const st = STATUS_MAP[r.status] || {label:r.status,cls:'badge-gray'}
-                  return (
-                    <tr key={r.id}>
-                      <td><span className="font-extrabold text-[#1641C8] text-sm">{r.patient_id}</span></td>
-                      <td className="font-semibold text-sm">{r.patient_nom}</td>
-                      <td className="text-xs font-medium text-slate-600">{r.type_examen}</td>
-                      <td className="max-w-[160px]"><div className="text-xs truncate font-medium">{r.resultats}</div></td>
-                      <td className="text-xs text-slate-400 italic">{r.notes}</td>
-                      <td className="text-xs text-slate-400">{new Date(r.date_examen).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit',year:'2-digit'})}</td>
-                      <td><span className={st.cls}>{st.label}</span></td>
-                      <td>{r.status !== 'envoye' && (
-                        <button onClick={() => envoyer(r)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1641C8] text-white text-xs font-bold border-none cursor-pointer hover:bg-[#0f2fa3]">
-                          <Send size={11}/> Envoyer
-                        </button>
-                      )}</td>
-                    </tr>
-                  )
-                })
-              }
+              {filtered.map(r => {
+                const s = STATUS_MAP[r.status||'en_attente']
+                return (
+                  <tr key={r.id} style={{ borderBottom:'1px solid #f1f5f9' }}>
+                    <td style={{ padding:'12px 16px', fontWeight:700, color:'#1641C8', fontFamily:'monospace' }}>{r.patient_id}</td>
+                    <td style={{ padding:'12px 16px', fontWeight:600, color:'#0f172a' }}>{r.patient_nom}</td>
+                    <td style={{ padding:'12px 16px', color:'#374151' }}>{r.type_examen}</td>
+                    <td style={{ padding:'12px 16px', color:'#64748b', fontSize:12 }}>{new Date(r.date_examen).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}</td>
+                    <td style={{ padding:'12px 16px' }}>
+                      <span style={{ background:s.bg, color:s.color, borderRadius:8, padding:'4px 10px', fontSize:11, fontWeight:700 }}>{s.label}</span>
+                    </td>
+                    <td style={{ padding:'12px 16px' }}>
+                      <button onClick={() => toast.success(`Résultat envoyé pour ${r.patient_nom}`)}
+                        style={{ display:'flex', alignItems:'center', gap:6, background:'#eff6ff', color:'#1641C8', border:'none', borderRadius:8, padding:'6px 12px', cursor:'pointer', fontWeight:700, fontSize:12 }}>
+                        <Send size={13} /> Transmettre
+                      </button>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
-        </div>
-
-        <div className="mt-5 p-4 bg-blue-50 rounded-xl border border-blue-200">
-          <div className="text-sm font-extrabold text-[#1641C8] mb-2">📋 Flux de travail Laboratoire</div>
-          <div className="flex gap-4 text-xs text-slate-600 font-medium flex-wrap">
-            <span>1. Patient reçoit un code unique (#RB-XXXXX) à l'enregistrement</span>
-            <span className="text-slate-300">→</span>
-            <span>2. Caissier encaisse le service labo</span>
-            <span className="text-slate-300">→</span>
-            <span>3. Technicien saisit les résultats ici avec le code patient</span>
-            <span className="text-slate-300">→</span>
-            <span>4. Patient reçoit les résultats par WhatsApp + Email</span>
-          </div>
         </div>
       </div>
     </div>

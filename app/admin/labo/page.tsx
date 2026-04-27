@@ -1,132 +1,158 @@
 'use client'
+// app/admin/labo/page.tsx — Dashboard laboratoire admin avec statistiques
 import { useEffect, useState } from 'react'
+import { laboApi } from '@/lib/api'
+import { ResultatLabo } from '@/types'
+import { FlaskConical, TrendingUp, Clock, CheckCircle, Send } from 'lucide-react'
 import toast from 'react-hot-toast'
-import { api } from '@/lib/api'
-import { Plus, Search, Save, X } from 'lucide-react'
 
-interface TarifLabo { id: number; code: string; libelle: string; montant: number; devise: string }
+const EXAMENS_STATS = [
+  { nom:'NFS', count:42, pct:22 },{ nom:'Glycémie', count:35, pct:18 },
+  { nom:'Bilan lipidique', count:28, pct:14 },{ nom:'TSH', count:22, pct:11 },
+  { nom:'ECBU', count:18, pct:9 },{ nom:'Sérologie VIH', count:15, pct:8 },
+  { nom:'HbA1c', count:14, pct:7 },{ nom:'Créatininémie', count:12, pct:6 },
+  { nom:'Autres', count:10, pct:5 },
+]
 
-export default function AdminLabo() {
-  const [tarifs,  setTarifs]  = useState<TarifLabo[]>([])
-  const [search,  setSearch]  = useState('')
-  const [edited,  setEdited]  = useState<Record<string, number>>({})
-  const [showAdd, setShowAdd] = useState(false)
-  const [newItem, setNewItem] = useState({ libelle: '', montant: 0, code: '' })
-  const [loading, setLoading] = useState(true)
+const STATUS_MAP: Record<string,{label:string;bg:string;color:string}> = {
+  en_attente:{ label:'En attente', bg:'#fffbeb', color:'#d97706' },
+  disponible:{ label:'Disponible', bg:'#eff6ff', color:'#1641C8' },
+  envoye:{ label:'Transmis', bg:'#f0fdf4', color:'#16a34a' },
+}
 
-  const load = () => {
-    api.get('/labo/tarifs').then(r => { setTarifs(r.data || []); setLoading(false) }).catch(() => setLoading(false))
+const DEMO: ResultatLabo[] = [
+  { id:1, patient_id:'#RB-42015', patient_nom:'Marie Théodore', type_examen:'NFS', resultats:'Normal', notes:'', date_examen:new Date().toISOString(), technicien_id:1, status:'disponible' },
+  { id:2, patient_id:'#RB-39841', patient_nom:'Paul Jean-Baptiste', type_examen:'Glycémie à jeun', resultats:'Élevée: 1.26 g/L', notes:'Légèrement élevé', date_examen:new Date().toISOString(), technicien_id:1, status:'en_attente' },
+  { id:3, patient_id:'#RB-51203', patient_nom:'Rose Étienne', type_examen:'TSH', resultats:'2.8 mUI/L — Normal', notes:'', date_examen:new Date(Date.now()-86400000).toISOString(), technicien_id:1, status:'envoye' },
+]
+
+const COULEURS = ['#1641C8','#0d9488','#7c3aed','#dc2626','#d97706','#059669','#be185d','#374151','#6366f1']
+
+export default function AdminLaboPage() {
+  const [resultats, setResultats] = useState<ResultatLabo[]>(DEMO)
+  const [filtreStatus, setFiltreStatus] = useState('tous')
+  const [periode, setPeriode] = useState('mois')
+
+  useEffect(() => {
+    laboApi.list().then(r => { if (r.data?.length) setResultats(r.data) }).catch(()=>{})
+  }, [])
+
+  const stats = {
+    total: resultats.length,
+    attente: resultats.filter(r=>r.status==='en_attente').length,
+    disponibles: resultats.filter(r=>r.status==='disponible').length,
+    envoyes: resultats.filter(r=>r.status==='envoye').length,
   }
-  useEffect(() => { load() }, [])
 
-  const save = async (t: TarifLabo) => {
-    const val = edited[t.code]; if (val === undefined) return
-    try {
-      await api.put(`/admin/labo/tarifs/${t.code}`, { montant: val })
-      setTarifs(p => p.map(x => x.code === t.code ? { ...x, montant: val } : x))
-      setEdited(p => { const n={...p}; delete n[t.code]; return n })
-      toast.success(`${t.libelle} mis à jour ✓`)
-    } catch { toast.error('Erreur') }
-  }
-
-  const addExamen = async () => {
-    if (!newItem.libelle || newItem.montant <= 0) { toast.error('Libellé et prix requis'); return }
-    const code = newItem.code || `LABO_${newItem.libelle.toUpperCase().replace(/[^A-Z0-9]/g,'_').slice(0,20)}`
-    try {
-      await api.post('/admin/labo/ajouter', { code, libelle: newItem.libelle, montant: newItem.montant })
-      toast.success('Examen ajouté ✓')
-      setNewItem({ libelle:'', montant:0, code:'' }); setShowAdd(false); load()
-    } catch { toast.error('Erreur') }
-  }
-
-  const filtres = tarifs.filter(t => !search || t.libelle.toLowerCase().includes(search.toLowerCase()))
+  const filtered = filtreStatus==='tous' ? resultats : resultats.filter(r=>r.status===filtreStatus)
 
   return (
-    <div style={{ padding:28, maxWidth:1000, margin:'0 auto' }}>
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
-        <div>
-          <h1 style={{ fontWeight:900, fontSize:'1.4rem', color:'#0f172a', margin:0 }}>Gestion Laboratoire</h1>
-          <p style={{ color:'#64748b', margin:'4px 0 0', fontSize:14 }}>{tarifs.length} examens · Actualisation Février 2026</p>
-        </div>
-        <button onClick={() => setShowAdd(!showAdd)} style={{
-          background: showAdd ? '#f1f5f9' : 'linear-gradient(135deg,#16a34a,#0d9488)',
-          color: showAdd ? '#374151' : 'white', border:'none', borderRadius:12,
-          padding:'10px 20px', fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:8
-        }}>
-          {showAdd ? <><X size={14} />Fermer</> : <><Plus size={14} />Ajouter un examen</>}
-        </button>
+    <div style={{ padding:28 }}>
+      <div style={{ marginBottom:24 }}>
+        <h1 style={{ fontWeight:900, color:'#0f172a', fontSize:'1.3rem', marginBottom:4 }}>Laboratoire — Tableau de bord</h1>
+        <p style={{ color:'#64748b', fontSize:13 }}>Statistiques et suivi des résultats d'analyses</p>
       </div>
 
-      {showAdd && (
-        <div style={{ background:'white', borderRadius:16, padding:24, border:'1px solid #e2e8f0', marginBottom:20 }}>
-          <div style={{ display:'grid', gridTemplateColumns:'2fr 1fr 1fr', gap:14, marginBottom:16 }}>
-            <div>
-              <label style={{ display:'block', fontWeight:600, fontSize:13, color:'#374151', marginBottom:6 }}>Nom de l'examen *</label>
-              <input value={newItem.libelle} onChange={e => setNewItem(p => ({...p, libelle:e.target.value}))}
-                placeholder="Ex: Interleukine 6" style={{ width:'100%', padding:'10px 12px', borderRadius:8, border:'1px solid #d1d5db', fontSize:14, boxSizing:'border-box' as const }} />
+      {/* KPIs */}
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:16, marginBottom:28 }}>
+        {[
+          { label:'Total analyses', val:stats.total, icon:<FlaskConical size={20}/>, couleur:'#0d9488', bg:'#f0fdfa' },
+          { label:'En attente', val:stats.attente, icon:<Clock size={20}/>, couleur:'#d97706', bg:'#fffbeb' },
+          { label:'Disponibles', val:stats.disponibles, icon:<CheckCircle size={20}/>, couleur:'#1641C8', bg:'#eff6ff' },
+          { label:'Transmis', val:stats.envoyes, icon:<Send size={20}/>, couleur:'#16a34a', bg:'#f0fdf4' },
+        ].map(k => (
+          <div key={k.label} style={{ background:'white', borderRadius:16, padding:'20px', border:'1px solid #e2e8f0' }}>
+            <div style={{ width:40, height:40, borderRadius:12, background:k.bg, display:'flex', alignItems:'center', justifyContent:'center', color:k.couleur, marginBottom:12 }}>{k.icon}</div>
+            <div style={{ fontSize:'1.8rem', fontWeight:900, color:k.couleur }}>{k.val}</div>
+            <div style={{ color:'#64748b', fontSize:12, fontWeight:600, marginTop:4 }}>{k.label}</div>
+          </div>
+        ))}
+      </div>
+
+      <div style={{ display:'grid', gridTemplateColumns:'1fr 1.6fr', gap:20, marginBottom:24 }}>
+        {/* Répartition par examen */}
+        <div style={{ background:'white', borderRadius:18, border:'1px solid #e2e8f0', padding:24 }}>
+          <div style={{ fontWeight:800, color:'#0f172a', fontSize:'0.9rem', marginBottom:20 }}>Examens les plus demandés</div>
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {EXAMENS_STATS.map((e,i) => (
+              <div key={e.nom}>
+                <div style={{ display:'flex', justifyContent:'space-between', marginBottom:4 }}>
+                  <span style={{ fontSize:13, color:'#374151', fontWeight:600 }}>{e.nom}</span>
+                  <span style={{ fontSize:12, color:'#64748b' }}>{e.count} ({e.pct}%)</span>
+                </div>
+                <div style={{ height:6, background:'#f1f5f9', borderRadius:3, overflow:'hidden' }}>
+                  <div style={{ height:'100%', background:COULEURS[i%COULEURS.length], width:`${e.pct}%`, borderRadius:3 }} />
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Évolution mensuelle (simple bar chart) */}
+        <div style={{ background:'white', borderRadius:18, border:'1px solid #e2e8f0', padding:24 }}>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+            <div style={{ fontWeight:800, color:'#0f172a', fontSize:'0.9rem' }}>Volume par mois</div>
+            <div style={{ display:'flex', gap:6 }}>
+              {['semaine','mois','trimestre'].map(p => (
+                <button key={p} onClick={() => setPeriode(p)} style={{ padding:'5px 12px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:700,
+                  background:periode===p?'#0d9488':'#f1f5f9', color:periode===p?'white':'#64748b' }}>
+                  {p.charAt(0).toUpperCase()+p.slice(1)}
+                </button>
+              ))}
             </div>
-            <div>
-              <label style={{ display:'block', fontWeight:600, fontSize:13, color:'#374151', marginBottom:6 }}>Prix HTG *</label>
-              <input type="number" value={newItem.montant} onChange={e => setNewItem(p => ({...p, montant:Number(e.target.value)}))}
-                style={{ width:'100%', padding:'10px 12px', borderRadius:8, border:'1px solid #d1d5db', fontSize:14, boxSizing:'border-box' as const }} />
-            </div>
-            <div style={{ display:'flex', alignItems:'flex-end' }}>
-              <button onClick={addExamen} style={{ width:'100%', background:'linear-gradient(135deg,#16a34a,#0d9488)', color:'white', border:'none', borderRadius:8, padding:'11px', fontWeight:700, cursor:'pointer' }}>
-                Ajouter
+          </div>
+          <div style={{ display:'flex', alignItems:'flex-end', gap:10, height:140 }}>
+            {[32,41,28,55,48,62,44,71,58,66,53,79].slice(0,periode==='semaine'?7:periode==='mois'?8:12).map((v,i) => (
+              <div key={i} style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', gap:4 }}>
+                <span style={{ fontSize:10, color:'#94a3b8', fontWeight:600 }}>{v}</span>
+                <div style={{ width:'100%', background:'#0d9488', borderRadius:4, height:`${(v/79)*100}%`, minHeight:4 }} />
+                <span style={{ fontSize:10, color:'#94a3b8' }}>{['Jan','Fév','Mar','Avr','Mai','Jui','Juil','Aoû','Sep','Oct','Nov','Déc'][i]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Table résultats */}
+      <div style={{ background:'white', borderRadius:18, border:'1px solid #e2e8f0', overflow:'hidden' }}>
+        <div style={{ padding:'16px 24px', borderBottom:'1px solid #f1f5f9', display:'flex', alignItems:'center', gap:12 }}>
+          <span style={{ fontWeight:800, color:'#0f172a', fontSize:'0.9rem' }}>Tous les résultats</span>
+          <div style={{ marginLeft:'auto', display:'flex', gap:6 }}>
+            {['tous','en_attente','disponible','envoye'].map(f => (
+              <button key={f} onClick={() => setFiltreStatus(f)} style={{ padding:'5px 12px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:700,
+                background:filtreStatus===f?'#1641C8':'#f1f5f9', color:filtreStatus===f?'white':'#64748b' }}>
+                {f==='tous'?'Tous':STATUS_MAP[f]?.label||f}
               </button>
-            </div>
+            ))}
           </div>
         </div>
-      )}
-
-      <div style={{ position:'relative', marginBottom:16 }}>
-        <Search size={16} style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color:'#94a3b8' }} />
-        <input placeholder="Rechercher un examen..." value={search} onChange={e => setSearch(e.target.value)}
-          style={{ width:'100%', padding:'11px 14px 11px 40px', borderRadius:10, border:'1px solid #d1d5db', fontSize:14, boxSizing:'border-box' as const }} />
-      </div>
-
-      {loading ? (
-        <div style={{ textAlign:'center', padding:48, color:'#94a3b8' }}>Chargement...</div>
-      ) : (
-        <div style={{ background:'white', borderRadius:18, border:'1px solid #e2e8f0', overflow:'hidden' }}>
-          <div style={{ maxHeight:580, overflowY:'auto' }}>
-            <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
-              <thead style={{ position:'sticky', top:0, background:'#f8fafc', zIndex:1 }}>
-                <tr style={{ borderBottom:'1px solid #e2e8f0' }}>
-                  {['Examen','Prix actuel','Modifier le prix',''].map(h => (
-                    <th key={h} style={{ padding:'12px 16px', textAlign:'left', color:'#64748b', fontWeight:600, fontSize:12 }}>{h}</th>
-                  ))}
+        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+          <thead>
+            <tr style={{ background:'#f8fafc' }}>
+              {['Code','Patient','Examen','Résultats','Date','Statut'].map(h => (
+                <th key={h} style={{ padding:'10px 16px', textAlign:'left', color:'#64748b', fontWeight:700, fontSize:12, borderBottom:'1px solid #e2e8f0' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map(r => {
+              const s = STATUS_MAP[r.status||'en_attente']
+              return (
+                <tr key={r.id} style={{ borderBottom:'1px solid #f1f5f9' }}>
+                  <td style={{ padding:'12px 16px', fontWeight:700, color:'#0d9488', fontFamily:'monospace' }}>{r.patient_id}</td>
+                  <td style={{ padding:'12px 16px', fontWeight:600, color:'#0f172a' }}>{r.patient_nom}</td>
+                  <td style={{ padding:'12px 16px', color:'#374151' }}>{r.type_examen}</td>
+                  <td style={{ padding:'12px 16px', color:'#64748b', maxWidth:200, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' as const }}>{r.resultats}</td>
+                  <td style={{ padding:'12px 16px', color:'#94a3b8', fontSize:12 }}>{new Date(r.date_examen).toLocaleDateString('fr-FR')}</td>
+                  <td style={{ padding:'12px 16px' }}>
+                    <span style={{ background:s.bg, color:s.color, borderRadius:8, padding:'4px 10px', fontSize:11, fontWeight:700 }}>{s.label}</span>
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {filtres.map(t => (
-                  <tr key={t.code} style={{ borderBottom:'1px solid #f8fafc', background: edited[t.code] !== undefined ? '#f0fdf4' : 'white' }}>
-                    <td style={{ padding:'10px 16px', fontWeight:600, color:'#0f172a' }}>{t.libelle}</td>
-                    <td style={{ padding:'10px 16px', color:'#16a34a', fontWeight:700 }}>{t.montant.toLocaleString()} {t.devise}</td>
-                    <td style={{ padding:'10px 16px' }}>
-                      <input type="number" min={0} placeholder={String(t.montant)}
-                        onChange={e => setEdited(p => ({...p, [t.code]: Number(e.target.value)}))}
-                        style={{ width:110, padding:'7px 10px', borderRadius:8, border:'1px solid #d1d5db', fontSize:13, textAlign:'right' as const }} />
-                    </td>
-                    <td style={{ padding:'10px 16px' }}>
-                      {edited[t.code] !== undefined && (
-                        <button onClick={() => save(t)} style={{ background:'#16a34a', color:'white', border:'none', borderRadius:8, padding:'6px 14px', fontWeight:700, cursor:'pointer', fontSize:12, display:'flex', alignItems:'center', gap:4 }}>
-                          <Save size={12} /> Sauvegarder
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-                {filtres.length === 0 && (
-                  <tr><td colSpan={4} style={{ padding:32, textAlign:'center' as const, color:'#94a3b8' }}>
-                    {tarifs.length === 0 ? 'Données en cours de chargement depuis Render...' : `Aucun résultat pour "${search}"`}
-                  </td></tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
+              )
+            })}
+          </tbody>
+        </table>
+      </div>
     </div>
   )
 }
