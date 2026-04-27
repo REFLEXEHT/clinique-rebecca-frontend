@@ -1,4 +1,5 @@
 'use client'
+export const dynamic = 'force-dynamic'
 /**
  * app/caissier/page.tsx — Espace Caissier Clinique de la Rebecca
  * Formulaires patients adaptés par service, facturation complète, impression
@@ -200,7 +201,6 @@ export default function CaissierPage() {
   const router = useRouter()
 
   // Navigation
-  const [mounted, setMounted] = useState(false)
   const [ongletPrincipal, setOngletPrincipal] = useState<'caisse' | 'decaissement'>('caisse')
   const [serviceActif, setServiceActif] = useState<TypeService>('consultation')
   const [catActive, setCatActive] = useState<string>('')
@@ -401,7 +401,7 @@ export default function CaissierPage() {
     finally { setDecLoading(false) }
   }
 
-  if (!mounted || loading || !isAuthenticated) return (
+  if (loading || !isAuthenticated) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid #1641C8', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
     </div>

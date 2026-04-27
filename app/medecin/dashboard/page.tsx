@@ -1,4 +1,5 @@
 'use client'
+export const dynamic = 'force-dynamic'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
@@ -50,7 +51,6 @@ const fmtHeure = (d:string) => new Date(d).toLocaleTimeString('fr-FR',{hour:'2-d
 export default function MedecinDashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth()
   const router = useRouter()
-  const [mounted, setMounted] = useState(false)
   const [onglet, setOnglet] = useState<Onglet>('tableau')
   const [rdvs, setRdvs] = useState<RendezVous[]>([])
   const [actes, setActes] = useState<any[]>([])
@@ -91,7 +91,7 @@ export default function MedecinDashboard() {
   })
   const maxCount = Math.max(...statsParMois.map(m => m.count), 1)
 
-  if (!mounted || loading || !isAuthenticated) return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center' }}><div style={{ width:32, height:32, borderRadius:'50%', border:'3px solid #1641C8', borderTopColor:'transparent' }} /></div>
+  if (loading || !isAuthenticated) return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center' }}><div style={{ width:32, height:32, borderRadius:'50%', border:'3px solid #1641C8', borderTopColor:'transparent' }} /></div>
 
   const ONGLETS: {key:Onglet;label:string;icon:string}[] = [
     { key:'tableau', label:'Tableau de bord', icon:'fa-grid-2' },

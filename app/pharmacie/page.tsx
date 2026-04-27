@@ -1,4 +1,5 @@
 'use client'
+export const dynamic = 'force-dynamic'
 // app/pharmacie/page.tsx — Espace pharmacien : consultation stocks uniquement
 // La vente est gérée par le caissier (qui a accès à la pharmacie dans son interface)
 import { useEffect, useState } from 'react'

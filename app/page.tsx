@@ -1,4 +1,5 @@
 'use client'
+export const dynamic = 'force-dynamic'
 // app/specialites/[slug]/page.tsx
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'

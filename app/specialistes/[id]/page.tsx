@@ -1,4 +1,5 @@
 'use client'
+export const dynamic = 'force-dynamic'
 // app/specialistes/[id]/page.tsx — Profil public spécialiste (lecture seule)
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
