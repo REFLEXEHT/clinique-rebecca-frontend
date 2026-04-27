@@ -235,6 +235,7 @@ export default function CaissierPage() {
   const [decMontant, setDecMontant] = useState('')
   const [decNote, setDecNote] = useState('')
   const [decLoading, setDecLoading] = useState(false)
+  const [showAI, setShowAI] = useState(false)
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || (user?.role !== 'caissier' && user?.role !== 'admin')))

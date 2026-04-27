@@ -305,6 +305,32 @@ export default function LaboPage() {
           </div>
         )}
 
+        {/* Bouton + Panneau Rebecca AI */}
+        <div style={{ padding:'10px 20px', borderBottom:'1px solid #f1f5f9', display:'flex', justifyContent:'flex-end', background:'white' }}>
+          <button onClick={() => setShowAI(v => !v)} style={{
+            display:'flex', alignItems:'center', gap:8, padding:'8px 16px',
+            borderRadius:50, border:'none', cursor:'pointer', fontWeight:700, fontSize:12,
+            background: showAI ? '#0891b2' : '#f0f9ff', color: showAI ? 'white' : '#0891b2',
+          }}>
+            <i className="fa-solid fa-wand-magic-sparkles" />
+            {showAI ? 'Fermer AI' : 'Rebecca AI — Laboratoire'}
+          </button>
+        </div>
+        {showAI && (
+          <div style={{ margin:'12px 20px', borderRadius:20, overflow:'hidden', border:'1px solid #bae6fd', maxHeight:400 }}>
+            <RebeccaAI
+              mode="labo"
+              context={{
+                examens_disponibles: EXAMENS.slice(0, 8),
+                resultats_en_attente: filtered.filter((r: any) => r.status === 'en_attente').length,
+                resultats_disponibles: filtered.filter((r: any) => r.status === 'disponible').length,
+                total_resultats: filtered.length,
+              }}
+              compact
+            />
+          </div>
+        )}
+
         {/* Liste résultats */}
         <div style={{ background:'white', borderRadius:18, border:'1px solid #e2e8f0', overflow:'hidden' }}>
           <div style={{ padding:'16px 24px', borderBottom:'1px solid #f1f5f9', fontWeight:800, color:'#0f172a', fontSize:'0.9rem' }}>

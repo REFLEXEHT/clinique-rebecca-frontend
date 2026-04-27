@@ -93,6 +93,33 @@ export default function AdminDashboard() {
 
   return (
     <div className="p-7">
+      {/* Bouton Rebecca AI */}
+      <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:16 }}>
+        <button onClick={() => setShowAI(v => !v)} style={{
+          display:'flex', alignItems:'center', gap:8, padding:'10px 20px',
+          borderRadius:50, border:'none', cursor:'pointer', fontWeight:700, fontSize:13,
+          background: showAI ? '#6366f1' : '#f5f3ff', color: showAI ? 'white' : '#6366f1',
+          transition:'all 0.2s',
+        }}>
+          <i className="fa-solid fa-wand-magic-sparkles" />
+          {showAI ? 'Fermer Rebecca AI' : 'Rebecca AI — Analyse & Alertes'}
+        </button>
+      </div>
+      {showAI && stats && (
+        <div style={{ marginBottom:24, borderRadius:20, overflow:'hidden', border:'1px solid #e2e8f0', boxShadow:'0 4px 24px rgba(99,102,241,0.1)' }}>
+          <RebeccaAI
+            mode="admin"
+            context={{
+              stats_jour: { rdv: stats.rdv_today, recettes: stats.recettes_day },
+              stats_mois: { rdv: stats.rdv_month, patients: stats.patients_month, recettes: stats.recettes_month },
+              rdv_en_attente: stats.rdv_en_attente,
+              taux_presence: stats.taux_presence,
+              derniers_rdv: rdvList.slice(0,5).map(r => ({ patient: r.patient_nom, specialite: r.specialite, statut: r.statut })),
+            }}
+            initialPrompt="Donne-moi un résumé de la situation actuelle et les alertes importantes."
+          />
+        </div>
+      )}
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

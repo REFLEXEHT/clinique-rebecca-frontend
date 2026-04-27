@@ -130,7 +130,40 @@ export default function MedecinDashboard() {
 
       <div style={{ flex:1, maxWidth:1100, margin:'0 auto', width:'100%', padding:'32px 24px' }}>
 
-        {/* TABLEAU DE BORD */}
+        {/* Bouton Rebecca AI */}
+        <div style={{ display:'flex', justifyContent:'flex-end', marginBottom:20 }}>
+          <button onClick={() => setShowAI(v => !v)} style={{
+            display:'flex', alignItems:'center', gap:8, padding:'10px 20px',
+            borderRadius:50, border:'none', cursor:'pointer', fontWeight:700, fontSize:13,
+            background: showAI ? '#0d9488' : '#f0fdf4', color: showAI ? 'white' : '#0d9488',
+            transition:'all 0.2s',
+          }}>
+            <i className="fa-solid fa-wand-magic-sparkles" />
+            {showAI ? 'Fermer Rebecca AI' : 'Rebecca AI — Analyse & Conseils'}
+          </button>
+        </div>
+
+        {/* Panneau AI médecin */}
+        {showAI && (
+          <div style={{ marginBottom:28, borderRadius:20, overflow:'hidden', border:'1px solid #e2e8f0', boxShadow:'0 4px 24px rgba(13,148,136,0.1)' }}>
+            <RebeccaAI
+              mode="medecin"
+              context={{
+                medecin_nom: user?.nom,
+                specialite: user?.specialite,
+                rdv_aujourd_hui: rdvAujourd.length,
+                rdv_a_venir: rdvAVenir.length,
+                actes_6_mois: actes6mois.length,
+                types_actes: statsActes.map((s: any) => ({ type: s.label, count: s.count })),
+                derniers_patients: displayActes.slice(0,10).map((a: any) => ({
+                  nom: a.patient_nom, type: a.type_acte, date: a.date_acte
+                })),
+              }}
+            />
+          </div>
+        )}
+
+        {/* TABLEAU DE BORD */}}
         {onglet==='tableau' && (
           <>
             <div style={{ marginBottom:28 }}>

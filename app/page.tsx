@@ -1,266 +1,182 @@
 'use client'
 export const dynamic = 'force-dynamic'
-// app/patient/dashboard/page.tsx — Espace patient : RDV, résultats labo, consultation vidéo
-import { useEffect, useState } from 'react'
-import { useAuth } from '@/context/AuthContext'
+// Page création patient — accessible à tous les rôles connectés
+import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { useForm } from 'react-hook-form'
+import { useAuth } from '@/context/AuthContext'
+import { api } from '@/lib/api'
+import toast from 'react-hot-toast'
 import Link from 'next/link'
-import { rdvApi, laboApi } from '@/lib/api'
-import { RendezVous, ResultatLabo } from '@/types'
-import RebeccaAI from '@/components/ui/RebeccaAI'
-import { Video, FlaskConical, Calendar, LogOut } from 'lucide-react'
 
-const STATUS_RDV: Record<string, {label:string; cls:string}> = {
-  en_attente: { label:'En attente', cls:'badge-yellow' },
-  confirme: { label:'Confirmé ✓', cls:'badge-green' },
-  annule: { label:'Annulé', cls:'badge-red' },
-  termine: { label:'Terminé', cls:'badge-gray' },
+interface PatientForm {
+  nom: string; prenom: string; date_naissance: string; sexe: string
+  telephone: string; email: string; adresse: string
+  groupe_sanguin: string; allergies: string; antecedents: string; notes: string
 }
 
-export default function PatientDashboard() {
-  const { user, isAuthenticated, loading, logout } = useAuth()
+const REDIRECT_MAP: Record<string, string> = {
+  admin: '/admin/dashboard', medecin: '/medecin/dashboard',
+  caissier: '/caissier', labo: '/labo', pharmacie: '/pharmacie', patient: '/patient/dashboard'
+}
+
+export default function NouveauPatientPage() {
+  const { user } = useAuth()
   const router = useRouter()
-  const [rdvs, setRdvs] = useState<RendezVous[]>([])
-  const [resultats, setResultats] = useState<ResultatLabo[]>([])
-  const [activeTab, setActiveTab] = useState<'rdv'|'labo'|'video'>('rdv')
-  const [showAI, setShowAI] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [created, setCreated] = useState<any>(null)
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<PatientForm>()
 
-  useEffect(() => {
-    if (!loading && (!isAuthenticated || user?.role !== 'patient')) router.push('/login')
-  }, [isAuthenticated, user, loading])
+  const onSubmit = async (data: PatientForm) => {
+    setLoading(true)
+    try {
+      const res = await api.post('/patients', data)
+      setCreated(res.data)
+      toast.success(`✅ Patient ${res.data.code} enregistré !`)
+      reset()
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || 'Erreur lors de la création')
+    } finally { setLoading(false) }
+  }
 
-  useEffect(() => {
-    if (!isAuthenticated) return
-    rdvApi.patientList().then(r => setRdvs(r.data)).catch(() => {})
-    if (user?.id) {
-      laboApi.patientResultats(String(user.id)).then(r => setResultats(r.data)).catch(() => {})
-    }
-  }, [isAuthenticated, user])
+  const backUrl = REDIRECT_MAP[user?.role || 'patient']
 
-  const rdvVideo = rdvs.filter(r => (r as any).type_rdv === 'video' && (r as any).lien_video)
-  const rdvNormal = rdvs.filter(r => (r as any).type_rdv !== 'video')
-
-  const prochainRdv = rdvs.find(r => new Date(r.date_rdv) > new Date() && r.statut !== 'annule')
-
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"/></div>
+  if (created) return (
+    <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+      <div className="bg-white rounded-2xl shadow-lg p-8 max-w-md w-full text-center">
+        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <i className="fa-solid fa-user-check text-green-600 text-2xl" />
+        </div>
+        <h2 className="font-extrabold text-xl mb-1">Patient enregistré !</h2>
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 my-4">
+          <div className="text-[11px] font-bold text-slate-400 uppercase mb-1">Code patient unique</div>
+          <div className="font-black text-2xl text-[#1641C8] font-mono">{created.code}</div>
+          <div className="text-sm text-slate-600 mt-1">{created.nom}</div>
+        </div>
+        <p className="text-slate-500 text-sm mb-5">
+          Conservez ce code — il sera utilisé pour les ordonnances, résultats de labo et RDV.
+        </p>
+        <div className="flex gap-3">
+          <button onClick={() => setCreated(null)} className="btn-secondary flex-1 justify-center">
+            <i className="fa-solid fa-plus" /> Nouveau patient
+          </button>
+          <Link href={backUrl} className="btn-primary flex-1 justify-center no-underline">
+            <i className="fa-solid fa-arrow-left" /> Retour
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
 
   return (
     <div className="min-h-screen bg-slate-50">
       {/* Header */}
       <div className="bg-[#0f172a] h-[70px] flex items-center px-6 gap-4">
-        <Link href="/" className="text-white/60 hover:text-white text-sm no-underline">
-          <i className="fa-solid fa-plus mr-2 text-[#1641C8]"/>Clinique de la Rebecca
+        <Link href={backUrl} className="text-white/60 hover:text-white text-sm no-underline">
+          <i className="fa-solid fa-arrow-left mr-2" />Retour
         </Link>
-        <div className="ml-auto flex items-center gap-3">
-          <span className="text-white/70 text-sm"><i className="fa-regular fa-user mr-1.5"/>{user?.nom}</span>
-          <button onClick={() => { logout(); router.push('/') }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-white/60 hover:text-red-400 text-xs font-medium border-none bg-transparent cursor-pointer transition-colors">
-            <LogOut size={13}/> Déconnexion
-          </button>
+        <div className="w-px h-5 bg-white/15" />
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 rounded-lg bg-blue-500/20 text-blue-400 flex items-center justify-center">
+            <i className="fa-solid fa-user-plus text-sm" />
+          </div>
+          <h1 className="text-white font-bold">Nouveau Patient</h1>
         </div>
+        <div className="ml-auto text-white/50 text-xs">{user?.nom} — {user?.role}</div>
       </div>
 
-      <div className="max-w-[900px] mx-auto py-10 px-5">
-        {/* Bonjour + bouton AI */}
-        <div className="mb-7 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-extrabold text-slate-800">Bonjour, {user?.nom?.split(' ')[0]} 👋</h1>
-            <p className="text-slate-400 text-sm mt-1">Votre espace santé personnel</p>
-          </div>
-          <button onClick={() => setShowAI(v => !v)} style={{
-            display:'flex', alignItems:'center', gap:8, padding:'10px 18px',
-            borderRadius:50, border:'none', cursor:'pointer', fontWeight:700, fontSize:13,
-            background: showAI ? '#1641C8' : '#eff6ff', color: showAI ? 'white' : '#1641C8',
-            transition:'all 0.2s', flexShrink:0
-          }}>
-            <i className="fa-solid fa-wand-magic-sparkles" />
-            {showAI ? 'Fermer Rebecca AI' : 'Rebecca AI — Mes examens & RDV'}
-          </button>
-        </div>
-
-        {/* Panneau AI patient */}
-        {showAI && (
-          <div style={{ marginBottom:28, borderRadius:20, overflow:'hidden', border:'1px solid #e2e8f0', boxShadow:'0 4px 24px rgba(22,65,200,0.08)' }}>
-            <RebeccaAI
-              mode="patient"
-              context={{
-                patient_nom: user?.nom,
-                patient_email: user?.email,
-                prochains_rdv: rdvs.filter(r => new Date(r.date_rdv) > new Date()).slice(0,3).map(r => ({ specialite: r.specialite, date: r.date_rdv, statut: r.statut })),
-                examens_prescrits: resultats.slice(0,5).map(r => ({ examen: r.type_examen, date_demande: r.date_examen, statut: r.status })),
-                nb_rdv_total: rdvs.length,
-                nb_resultats: resultats.length,
-              }}
-              initialPrompt="Explique-moi pourquoi mes examens ont été prescrits et comment je dois me préparer pour mon prochain rendez-vous."
-            />
-          </div>
-        )}
-
-        {/* Prochain RDV */}
-        {prochainRdv && (
-          <div className="card p-5 mb-7 border-2 border-[#1641C8]/20 bg-blue-50/30">
-            <div className="text-[11px] font-extrabold text-[#1641C8] uppercase tracking-widest mb-2">Prochain rendez-vous</div>
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="font-extrabold text-lg text-slate-800">{prochainRdv.specialite}</div>
-                <div className="text-slate-500 text-sm mt-1">
-                  <i className="fa-regular fa-calendar mr-1.5"/>
-                  {new Date(prochainRdv.date_rdv).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' })}
+      <div className="max-w-3xl mx-auto p-7">
+        <div className="card p-6">
+          <form onSubmit={handleSubmit(onSubmit)}>
+            {/* Identité */}
+            <div className="mb-5">
+              <h3 className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <i className="fa-solid fa-id-card text-[#1641C8]" /> Identité
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Nom *</label>
+                  <input {...register('nom', { required: 'Requis' })} className="input" placeholder="Nom de famille" />
+                  {errors.nom && <p className="text-red-500 text-xs mt-1">{errors.nom.message}</p>}
                 </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className={STATUS_RDV[prochainRdv.statut]?.cls || 'badge-gray'}>
-                  {STATUS_RDV[prochainRdv.statut]?.label || prochainRdv.statut}
-                </span>
-                {(prochainRdv as any).lien_video && (
-                  <a href={(prochainRdv as any).lien_video} target="_blank" rel="noreferrer"
-                    className="flex items-center gap-2 px-4 py-2 bg-[#1641C8] text-white text-sm font-bold rounded-xl no-underline hover:bg-[#0f2fa3] transition-colors">
-                    <Video size={14}/> Rejoindre la vidéo
-                  </a>
-                )}
+                <div>
+                  <label className="label">Prénom *</label>
+                  <input {...register('prenom', { required: 'Requis' })} className="input" placeholder="Prénom" />
+                  {errors.prenom && <p className="text-red-500 text-xs mt-1">{errors.prenom.message}</p>}
+                </div>
+                <div>
+                  <label className="label">Date de naissance</label>
+                  <input {...register('date_naissance')} type="date" className="input" />
+                </div>
+                <div>
+                  <label className="label">Sexe</label>
+                  <select {...register('sexe')} className="input">
+                    <option value="">Choisir...</option>
+                    <option value="M">Masculin</option>
+                    <option value="F">Féminin</option>
+                  </select>
+                </div>
               </div>
             </div>
-          </div>
-        )}
 
-        {/* Onglets */}
-        <div className="flex gap-2 mb-6">
-          {([
-            { key:'rdv', icon:<Calendar size={14}/>, label:'Mes rendez-vous' },
-            { key:'labo', icon:<FlaskConical size={14}/>, label:'Résultats labo' },
-            { key:'video', icon:<Video size={14}/>, label:'Consultations vidéo' },
-          ] as const).map(t => (
-            <button key={t.key} onClick={() => setActiveTab(t.key)}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-full font-bold text-sm border-2 cursor-pointer transition-all
-              ${activeTab===t.key ? 'bg-[#1641C8] text-white border-[#1641C8]' : 'bg-white text-slate-600 border-slate-200 hover:border-[#1641C8]'}`}>
-              {t.icon} {t.label}
-            </button>
-          ))}
-        </div>
-
-        {/* Mes RDV */}
-        {activeTab === 'rdv' && (
-          <div className="space-y-3">
-            {rdvs.length === 0 ? (
-              <div className="card p-10 text-center">
-                <Calendar size={32} className="text-slate-200 mx-auto mb-3"/>
-                <p className="text-slate-400 text-sm">Vous n'avez pas encore de rendez-vous</p>
-                <Link href="/consultation" className="btn-primary inline-flex mt-4 text-sm no-underline">
-                  Prendre un rendez-vous
-                </Link>
-              </div>
-            ) : rdvs.map(r => (
-              <div key={r.id} className="card p-4 flex items-center gap-4 hover:shadow-md transition-all">
-                <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center flex-shrink-0 text-[#1641C8]">
-                  {(r as any).type_rdv === 'video' ? <Video size={18}/> : <Calendar size={18}/>}
+            {/* Contact */}
+            <div className="mb-5">
+              <h3 className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <i className="fa-solid fa-phone text-[#1641C8]" /> Contact
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="label">Téléphone / WhatsApp *</label>
+                  <input {...register('telephone', { required: 'Requis' })} className="input" placeholder="+509 3xxx-xxxx" />
+                  {errors.telephone && <p className="text-red-500 text-xs mt-1">{errors.telephone.message}</p>}
                 </div>
-                <div className="flex-1">
-                  <div className="font-extrabold text-slate-800">{r.specialite}</div>
-                  <div className="text-slate-400 text-xs mt-0.5">
-                    {new Date(r.date_rdv).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' })}
-                    {(r as any).type_rdv === 'video' && <span className="ml-2 badge-blue">Vidéo</span>}
-                  </div>
+                <div>
+                  <label className="label">Email</label>
+                  <input {...register('email')} type="email" className="input" placeholder="patient@email.com" />
                 </div>
-                <div className="flex items-center gap-3">
-                  <span className={STATUS_RDV[r.statut]?.cls || 'badge-gray'}>{STATUS_RDV[r.statut]?.label || r.statut}</span>
-                  {(r as any).lien_video && (
-                    <a href={(r as any).lien_video} target="_blank" rel="noreferrer"
-                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#1641C8] text-white text-xs font-bold rounded-lg no-underline hover:bg-[#0f2fa3]">
-                      <Video size={11}/> Rejoindre
-                    </a>
-                  )}
+                <div className="col-span-2">
+                  <label className="label">Adresse</label>
+                  <input {...register('adresse')} className="input" placeholder="Quartier, ville..." />
                 </div>
               </div>
-            ))}
-          </div>
-        )}
-
-        {/* Résultats labo */}
-        {activeTab === 'labo' && (
-          <div className="space-y-3">
-            {resultats.length === 0 ? (
-              <div className="card p-10 text-center">
-                <FlaskConical size={32} className="text-slate-200 mx-auto mb-3"/>
-                <p className="text-slate-400 text-sm">Aucun résultat de laboratoire disponible</p>
-              </div>
-            ) : resultats.map(r => (
-              <div key={r.id} className="card p-5 hover:shadow-md transition-all">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <div className="font-extrabold text-slate-800 text-[15px]">{r.type_examen}</div>
-                    <div className="text-slate-400 text-xs mt-0.5">
-                      {new Date(r.date_examen).toLocaleDateString('fr-FR', { day:'numeric', month:'long', year:'numeric' })}
-                    </div>
-                  </div>
-                  <span className={r.status==='envoye' ? 'badge-green' : r.status==='disponible' ? 'badge-blue' : 'badge-yellow'}>
-                    {r.status==='envoye' ? 'Envoyé ✓' : r.status==='disponible' ? 'Disponible' : 'En attente'}
-                  </span>
-                </div>
-                {r.resultats && (
-                  <div className="bg-slate-50 rounded-xl p-3 text-sm text-slate-700 font-medium">
-                    {r.resultats}
-                  </div>
-                )}
-                {r.notes && <p className="text-xs text-slate-400 italic mt-2">{r.notes}</p>}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Consultations vidéo */}
-        {activeTab === 'video' && (
-          <div>
-            {rdvVideo.length === 0 ? (
-              <div className="card p-10 text-center">
-                <Video size={32} className="text-slate-200 mx-auto mb-3"/>
-                <p className="text-slate-400 text-sm mb-4">Vous n'avez pas de consultation vidéo programmée</p>
-                <Link href="/consultation" className="btn-primary inline-flex text-sm no-underline">
-                  <Video size={14}/> Réserver une consultation vidéo
-                </Link>
-              </div>
-            ) : rdvVideo.map(r => (
-              <div key={r.id} className="card p-5 mb-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="font-extrabold text-lg">{r.specialite}</div>
-                    <div className="text-slate-400 text-sm mt-0.5">
-                      {new Date(r.date_rdv).toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', hour:'2-digit', minute:'2-digit' })}
-                    </div>
-                  </div>
-                  <a href={(r as any).lien_video} target="_blank" rel="noreferrer"
-                    className="flex items-center gap-2 px-6 py-3 bg-[#1641C8] text-white font-bold rounded-xl no-underline hover:bg-[#0f2fa3] transition-colors">
-                    <Video size={16}/> Rejoindre la consultation
-                  </a>
-                </div>
-                <div className="mt-4 p-3 bg-blue-50 rounded-xl text-xs text-[#1641C8] font-medium">
-                  <i className="fa-solid fa-link mr-1.5"/>{(r as any).lien_video}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Actions rapides */}
-        <div className="grid grid-cols-2 gap-4 mt-8">
-          <Link href="/consultation" className="card p-5 flex items-center gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all no-underline">
-            <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center text-[#1641C8] text-xl">
-              <i className="fa-regular fa-calendar-plus"/>
             </div>
-            <div>
-              <div className="font-extrabold text-slate-800">Nouveau rendez-vous</div>
-              <div className="text-slate-400 text-xs">En personne ou en vidéo</div>
+
+            {/* Médical */}
+            <div className="mb-6">
+              <h3 className="text-[12px] font-bold text-slate-400 uppercase tracking-wider mb-3 flex items-center gap-2">
+                <i className="fa-solid fa-heart-pulse text-[#1641C8]" /> Informations médicales
+              </h3>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="label">Groupe sanguin</label>
+                  <select {...register('groupe_sanguin')} className="input">
+                    <option value="">Non connu</option>
+                    {['A+','A-','B+','B-','AB+','AB-','O+','O-'].map(g => <option key={g}>{g}</option>)}
+                  </select>
+                </div>
+                <div className="col-span-2">
+                  <label className="label">Allergies connues</label>
+                  <input {...register('allergies')} className="input" placeholder="Pénicilline, aspirine..." />
+                </div>
+                <div className="col-span-3">
+                  <label className="label">Antécédents médicaux</label>
+                  <textarea {...register('antecedents')} className="input resize-none" rows={2}
+                    placeholder="Diabète, hypertension, chirurgies antérieures..." />
+                </div>
+                <div className="col-span-3">
+                  <label className="label">Notes</label>
+                  <textarea {...register('notes')} className="input resize-none" rows={2} placeholder="Observations..." />
+                </div>
+              </div>
             </div>
-          </Link>
-          <a href="https://wa.me/50938880000" target="_blank" rel="noreferrer"
-            className="card p-5 flex items-center gap-4 hover:-translate-y-0.5 hover:shadow-md transition-all no-underline">
-            <div className="w-12 h-12 bg-green-50 rounded-xl flex items-center justify-center text-green-600 text-xl">
-              <i className="fa-brands fa-whatsapp"/>
+
+            <div className="flex gap-3">
+              <button type="submit" disabled={loading} className="btn-primary">
+                {loading ? <><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Enregistrement...</> : <><i className="fa-solid fa-user-plus" /> Enregistrer le patient</>}
+              </button>
+              <Link href={backUrl} className="btn-ghost no-underline">Annuler</Link>
             </div>
-            <div>
-              <div className="font-extrabold text-slate-800">Contacter la clinique</div>
-              <div className="text-slate-400 text-xs">WhatsApp · +509 3888 0000</div>
-            </div>
-          </a>
+          </form>
         </div>
       </div>
     </div>
