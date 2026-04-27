@@ -43,12 +43,12 @@ export default function AdminDashboard() {
   const [rdvChart, setRdvChart] = useState<any[]>([])
   const [rdvList, setRdvList] = useState<RendezVous[]>([])
   const [loading, setLoading] = useState(true)
-
-  const today = new Date().toLocaleDateString('fr-FR', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  })
+  const [today, setToday] = useState('')
 
   useEffect(() => {
+    setToday(new Date().toLocaleDateString('fr-FR', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    }))
     Promise.allSettled([
       statsApi.dashboard(),
       statsApi.rdvParJour(7),

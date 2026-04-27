@@ -46,7 +46,7 @@ export default function AdminDepenses() {
   return (
     <div className="p-7">
       <div className="flex items-center justify-between mb-6">
-        <div><h1 className="text-xl font-extrabold">Dépenses</h1><p className="text-slate-500 text-[13px] mt-0.5">Charges du mois — {new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</p></div>
+        <div><h1 className="text-xl font-extrabold">Dépenses</h1><p className="text-slate-500 text-[13px] mt-0.5">Charges du mois — <span suppressHydrationWarning>{new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</span></p></div>
         <button onClick={()=>setShowForm(!showForm)} className="btn-primary"><Plus size={15}/> Ajouter une dépense</button>
       </div>
       <div className="grid grid-cols-3 gap-4 mb-6">

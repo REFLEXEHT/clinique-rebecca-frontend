@@ -26,7 +26,7 @@ const MOIS_DEMO = [
 ]
 
 export default function StatistiquesPage() {
-  const [periode, setPeriode] = useState({ debut: new Date(Date.now()-30*86400000).toISOString().slice(0,10), fin: new Date().toISOString().slice(0,10) })
+  const [periode, setPeriode] = useState(() => ({ debut: new Date(Date.now()-30*86400000).toISOString().slice(0,10), fin: new Date().toISOString().slice(0,10) }))
   const [activeSection, setActiveSection] = useState<'global'|'services'|'labo'|'pharmacie'>('global')
   const [stats, setStats] = useState<any>(null)
 

@@ -46,8 +46,8 @@ export default function AdminRdv() {
 
   // Demo data if API not connected
   const demoRdvs = [
-    { id:1, patient_nom:'Marie Théodore', patient_telephone:'+509 3456-7890', patient_email:'marie@gmail.com', specialite:'Gynécologie', date_rdv: new Date().toISOString(), type_rdv:'presentiel' as const, statut:'confirme' as const, motif:'Suivi grossesse', notes_admin:null, mode_paiement:'À la clinique', rappel_envoye:false, created_at: new Date().toISOString() },
-    { id:2, patient_nom:'Paul Jean-Baptiste', patient_telephone:'+509 3789-0123', patient_email:null, specialite:'Orthopédie', date_rdv: new Date().toISOString(), type_rdv:'video' as const, statut:'en_attente' as const, motif:'Douleur genou', notes_admin:null, mode_paiement:'Moncash', rappel_envoye:false, created_at: new Date().toISOString() },
+    { id:1, patient_nom:'Marie Théodore', patient_telephone:'+509 3456-7890', patient_email:'marie@gmail.com', specialite:'Gynécologie', date_rdv: "2026-04-26T12:00:00.000Z", type_rdv:'presentiel' as const, statut:'confirme' as const, motif:'Suivi grossesse', notes_admin:null, mode_paiement:'À la clinique', rappel_envoye:false, created_at: "2026-04-26T12:00:00.000Z" },
+    { id:2, patient_nom:'Paul Jean-Baptiste', patient_telephone:'+509 3789-0123', patient_email:null, specialite:'Orthopédie', date_rdv: "2026-04-26T12:00:00.000Z", type_rdv:'video' as const, statut:'en_attente' as const, motif:'Douleur genou', notes_admin:null, mode_paiement:'Moncash', rappel_envoye:false, created_at: "2026-04-26T12:00:00.000Z" },
   ]
 
   const displayRdvs = rdvs.length > 0 ? rdvs : demoRdvs

@@ -24,9 +24,9 @@ const STATUS_MAP: Record<string,{label:string;bg:string;color:string}> = {
 }
 
 const DEMO: ResultatLabo[] = [
-  { id:1, patient_id:'#RB-42015', patient_nom:'Marie Théodore', type_examen:'NFS', resultats:'Hb: 12g/dL, GB: 7800/mm³, Plaquettes: 245000/mm³', notes:'Normal', date_examen:new Date().toISOString(), technicien_id:1, status:'disponible' as 'en_attente' | 'disponible' | 'envoye' },
-  { id:2, patient_id:'#RB-39841', patient_nom:'Paul Jean-Baptiste', type_examen:'Glycémie à jeun', resultats:'1.26 g/L', notes:'Légèrement élevé', date_examen:new Date().toISOString(), technicien_id:1, status:'en_attente' as 'en_attente' | 'disponible' | 'envoye' },
-  { id:3, patient_id:'#RB-51203', patient_nom:'Rose Étienne', type_examen:'TSH', resultats:'2.8 mUI/L', notes:'Normal', date_examen:new Date(Date.now()-86400000).toISOString(), technicien_id:1, status:'envoye' as 'en_attente' | 'disponible' | 'envoye' },
+  { id:1, patient_id:'#RB-42015', patient_nom:'Marie Théodore', type_examen:'NFS', resultats:'Hb: 12g/dL, GB: 7800/mm³, Plaquettes: 245000/mm³', notes:'Normal', date_examen:"2026-04-26T12:00:00.000Z", technicien_id:1, status:'disponible' as 'en_attente' | 'disponible' | 'envoye' },
+  { id:2, patient_id:'#RB-39841', patient_nom:'Paul Jean-Baptiste', type_examen:'Glycémie à jeun', resultats:'1.26 g/L', notes:'Légèrement élevé', date_examen:"2026-04-26T12:00:00.000Z", technicien_id:1, status:'en_attente' as 'en_attente' | 'disponible' | 'envoye' },
+  { id:3, patient_id:'#RB-51203', patient_nom:'Rose Étienne', type_examen:'TSH', resultats:'2.8 mUI/L', notes:'Normal', date_examen:"2026-04-25T12:00:00.000Z", technicien_id:1, status:'envoye' as 'en_attente' | 'disponible' | 'envoye' },
 ]
 
 interface LaboForm {
@@ -74,7 +74,7 @@ export default function LaboPage() {
     if (!pendingData) return
     setSavLoading(true)
     try {
-      const payload = { ...pendingData, date_examen: new Date().toISOString(), technicien_id: user?.id, status: 'disponible' as const }
+      const payload = { ...pendingData, date_examen: "2026-04-26T12:00:00.000Z", technicien_id: user?.id, status: 'disponible' as const }
       const r = await laboApi.create(payload)
       const nouv = { id: r.data?.id || Date.now(), ...payload } as unknown as ResultatLabo
       setResultats(prev => [nouv, ...prev])

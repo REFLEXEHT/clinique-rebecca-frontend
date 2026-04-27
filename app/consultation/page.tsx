@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
@@ -13,9 +13,12 @@ type FormData = { nom:string; telephone:string; email:string; specialite:string;
 
 export default function ConsultationPage() {
   const [rdvOpen, setRdvOpen] = useState(false)
+  const [mounted, setMounted] = useState(false)
   const [typeChoisi, setTypeChoisi] = useState<'presentiel'|'video'|null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  useEffect(() => { setMounted(true) }, [])
+
   const { register, handleSubmit, reset, formState:{errors} } = useForm<FormData>()
 
   const onSubmit = async (data: FormData) => {
@@ -27,6 +30,8 @@ export default function ConsultationPage() {
     } catch { toast.error('Erreur lors de la soumission') }
     finally { setLoading(false) }
   }
+
+  if (!mounted) return <div style={{ minHeight: '100vh', background: '#f8fafc' }} />
 
   if (success) return (
     <>

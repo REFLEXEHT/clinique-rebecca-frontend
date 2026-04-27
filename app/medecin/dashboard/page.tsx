@@ -28,20 +28,20 @@ const STATUT_MAP: Record<string,{label:string;couleur:string;bg:string}> = {
 }
 
 const DEMO_RDV: RendezVous[] = [
-  { id:1, patient_nom:'Marie Théodore', patient_telephone:'+509 3111-2222', patient_email:null, specialite:'Gynécologie', date_rdv:new Date(Date.now()+3_600_000).toISOString(), type_rdv:'presentiel', statut:'confirme', motif:'Suivi grossesse T2', notes_admin:null, mode_paiement:'Espèces', rappel_envoye:true, created_at:new Date().toISOString() },
-  { id:2, patient_nom:'Jean Dorval', patient_telephone:'+509 3333-4444', patient_email:null, specialite:'Médecine interne', date_rdv:new Date(Date.now()+7_200_000).toISOString(), type_rdv:'presentiel', statut:'en_attente', motif:'Contrôle tension', notes_admin:null, mode_paiement:null, rappel_envoye:false, created_at:new Date().toISOString() },
-  { id:3, patient_nom:'Rose Étienne', patient_telephone:'+509 3555-6666', patient_email:'rose@email.com', specialite:'Gynécologie', date_rdv:new Date(Date.now()+86_400_000).toISOString(), type_rdv:'video', statut:'confirme', motif:'Consultation en ligne', notes_admin:null, mode_paiement:'Moncash', rappel_envoye:true, lien_video:'https://meet.jit.si/cr-abc123', created_at:new Date().toISOString() },
-  { id:4, patient_nom:'Claudette Marcelin', patient_telephone:'+509 3777-8888', patient_email:null, specialite:'Gynécologie', date_rdv:new Date(Date.now()+172_800_000).toISOString(), type_rdv:'presentiel', statut:'en_attente', motif:'Bilan prénatal', notes_admin:null, mode_paiement:'Espèces', rappel_envoye:false, created_at:new Date().toISOString() },
+  { id:1, patient_nom:'Marie Théodore', patient_telephone:'+509 3111-2222', patient_email:null, specialite:'Gynécologie', date_rdv:"2026-04-26T13:00:00.000Z", type_rdv:'presentiel', statut:'confirme', motif:'Suivi grossesse T2', notes_admin:null, mode_paiement:'Espèces', rappel_envoye:true, created_at:"2026-04-26T12:00:00.000Z" },
+  { id:2, patient_nom:'Jean Dorval', patient_telephone:'+509 3333-4444', patient_email:null, specialite:'Médecine interne', date_rdv:"2026-04-26T14:00:00.000Z", type_rdv:'presentiel', statut:'en_attente', motif:'Contrôle tension', notes_admin:null, mode_paiement:null, rappel_envoye:false, created_at:"2026-04-26T12:00:00.000Z" },
+  { id:3, patient_nom:'Rose Étienne', patient_telephone:'+509 3555-6666', patient_email:'rose@email.com', specialite:'Gynécologie', date_rdv:"2026-04-27T12:00:00.000Z", type_rdv:'video', statut:'confirme', motif:'Consultation en ligne', notes_admin:null, mode_paiement:'Moncash', rappel_envoye:true, lien_video:'https://meet.jit.si/cr-abc123', created_at:"2026-04-26T12:00:00.000Z" },
+  { id:4, patient_nom:'Claudette Marcelin', patient_telephone:'+509 3777-8888', patient_email:null, specialite:'Gynécologie', date_rdv:"2026-04-28T12:00:00.000Z", type_rdv:'presentiel', statut:'en_attente', motif:'Bilan prénatal', notes_admin:null, mode_paiement:'Espèces', rappel_envoye:false, created_at:"2026-04-26T12:00:00.000Z" },
 ]
 
 const DEMO_ACTES: any[] = [
-  { id:1, patient_id:'#RB-042', patient_nom:'Marie Théodore', type_acte:'consultation', specialite:'Gynécologie', description:'Suivi grossesse T2 — tout normal', notes:'Tension 120/80', date_acte:new Date(Date.now()-86400000).toISOString() },
-  { id:2, patient_id:'#RB-039', patient_nom:'Paul Jean-Baptiste', type_acte:'observation', specialite:'Médecine interne', description:'Observation 24h — diabète T2', notes:'Glycémie 280 mg/dL', date_acte:new Date(Date.now()-172800000).toISOString() },
-  { id:3, patient_id:'#RB-031', patient_nom:'Rose Étienne', type_acte:'geste', specialite:'Gestes médicaux', description:'Perfusion IV — déshydratation', notes:'Résolution en 3h', date_acte:new Date(Date.now()-259200000).toISOString() },
-  { id:4, patient_id:'#RB-028', patient_nom:'Jean Dorval', type_acte:'consultation', specialite:'Médecine interne', description:'HTA — ajustement Amlodipine', notes:'Contrôle dans 2 semaines', date_acte:new Date(Date.now()-345600000).toISOString() },
-  { id:5, patient_id:'#RB-021', patient_nom:'Nadia François', type_acte:'consultation', specialite:'Gynécologie', description:'Bilan santé annuel', notes:'RAS', date_acte:new Date(Date.now()-432000000).toISOString() },
-  { id:6, patient_id:'#RB-015', patient_nom:'Luc Desrosiers', type_acte:'geste', specialite:'Gestes médicaux', description:'Injection IM B12', notes:'', date_acte:new Date(Date.now()-5184000000).toISOString() },
-  { id:7, patient_id:'#RB-011', patient_nom:'Ange-Marie Pierre', type_acte:'chirurgie', specialite:'Chirurgie', description:'Appendicectomie laparoscopique', notes:'Suites simples', date_acte:new Date(Date.now()-8640000000).toISOString() },
+  { id:1, patient_id:'#RB-042', patient_nom:'Marie Théodore', type_acte:'consultation', specialite:'Gynécologie', description:'Suivi grossesse T2 — tout normal', notes:'Tension 120/80', date_acte:"2026-04-25T12:00:00.000Z" },
+  { id:2, patient_id:'#RB-039', patient_nom:'Paul Jean-Baptiste', type_acte:'observation', specialite:'Médecine interne', description:'Observation 24h — diabète T2', notes:'Glycémie 280 mg/dL', date_acte:"2026-04-24T12:00:00.000Z" },
+  { id:3, patient_id:'#RB-031', patient_nom:'Rose Étienne', type_acte:'geste', specialite:'Gestes médicaux', description:'Perfusion IV — déshydratation', notes:'Résolution en 3h', date_acte:"2026-04-23T12:00:00.000Z" },
+  { id:4, patient_id:'#RB-028', patient_nom:'Jean Dorval', type_acte:'consultation', specialite:'Médecine interne', description:'HTA — ajustement Amlodipine', notes:'Contrôle dans 2 semaines', date_acte:"2026-04-23T12:00:00.000Z" },
+  { id:5, patient_id:'#RB-021', patient_nom:'Nadia François', type_acte:'consultation', specialite:'Gynécologie', description:'Bilan santé annuel', notes:'RAS', date_acte:"2026-04-21T12:00:00.000Z" },
+  { id:6, patient_id:'#RB-015', patient_nom:'Luc Desrosiers', type_acte:'geste', specialite:'Gestes médicaux', description:'Injection IM B12', notes:'', date_acte:"2026-02-25T12:00:00.000Z" },
+  { id:7, patient_id:'#RB-011', patient_nom:'Ange-Marie Pierre', type_acte:'chirurgie', specialite:'Chirurgie', description:'Appendicectomie laparoscopique', notes:'Suites simples', date_acte:"2026-01-16T12:00:00.000Z" },
 ]
 
 const fmtDate = (d:string) => new Date(d).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'})
@@ -50,6 +50,7 @@ const fmtHeure = (d:string) => new Date(d).toLocaleTimeString('fr-FR',{hour:'2-d
 export default function MedecinDashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth()
   const router = useRouter()
+  const [mounted, setMounted] = useState(false)
   const [onglet, setOnglet] = useState<Onglet>('tableau')
   const [rdvs, setRdvs] = useState<RendezVous[]>([])
   const [actes, setActes] = useState<any[]>([])
@@ -69,7 +70,7 @@ export default function MedecinDashboard() {
   const displayRdv = rdvs.length > 0 ? rdvs : DEMO_RDV
   const displayActes = actes.length > 0 ? actes : DEMO_ACTES
 
-  const sixMoisAvant = new Date(); sixMoisAvant.setMonth(sixMoisAvant.getMonth()-6)
+  // sixMoisAvant computed in useMemo below
   const actes6mois = displayActes.filter(a => new Date(a.date_acte) >= sixMoisAvant)
 
   const rdvAVenir = displayRdv.filter(r => new Date(r.date_rdv) > new Date() && r.statut !== 'annule')
@@ -89,7 +90,7 @@ export default function MedecinDashboard() {
   })
   const maxCount = Math.max(...statsParMois.map(m => m.count), 1)
 
-  if (loading || !isAuthenticated) return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center' }}><div style={{ width:32, height:32, borderRadius:'50%', border:'3px solid #1641C8', borderTopColor:'transparent' }} /></div>
+  if (!mounted || loading || !isAuthenticated) return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center' }}><div style={{ width:32, height:32, borderRadius:'50%', border:'3px solid #1641C8', borderTopColor:'transparent' }} /></div>
 
   const ONGLETS: {key:Onglet;label:string;icon:string}[] = [
     { key:'tableau', label:'Tableau de bord', icon:'fa-grid-2' },
@@ -131,7 +132,7 @@ export default function MedecinDashboard() {
           <>
             <div style={{ marginBottom:28 }}>
               <h1 style={{ fontWeight:900, color:'#0f172a', fontSize:'1.4rem', marginBottom:4 }}>Bonjour, {user?.nom?.split(' ').slice(1).join(' ')}</h1>
-              <p style={{ color:'#64748b', fontSize:13 }}>{new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</p>
+              <p style={{ color:'#64748b', fontSize:13 }}><span suppressHydrationWarning>{new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</span></p>
             </div>
 
             {/* KPIs */}

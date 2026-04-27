@@ -200,6 +200,7 @@ export default function CaissierPage() {
   const router = useRouter()
 
   // Navigation
+  const [mounted, setMounted] = useState(false)
   const [ongletPrincipal, setOngletPrincipal] = useState<'caisse' | 'decaissement'>('caisse')
   const [serviceActif, setServiceActif] = useState<TypeService>('consultation')
   const [catActive, setCatActive] = useState<string>('')
@@ -217,7 +218,7 @@ export default function CaissierPage() {
   const [patient, setPatient] = useState<any>({
     nom: '', prenom: '', telephone: '', telephone_whatsapp: '',
     sexe: 'M', date_naissance: '', age: 0,
-    date_visite: new Date().toISOString().slice(0, 16),
+    date_visite: '',  // set in useEffect to avoid hydration mismatch
     code_unique: genererCodePatient(),
     contact_urgence_nom: '', contact_urgence_tel: '',
     medecin_traitant: '',
@@ -351,7 +352,7 @@ export default function CaissierPage() {
     setPatient({
       nom: '', prenom: '', telephone: '', telephone_whatsapp: '',
       sexe: 'M', date_naissance: '', age: 0,
-      date_visite: new Date().toISOString().slice(0, 16),
+      date_visite: '',  // set in useEffect to avoid hydration mismatch
       code_unique: genererCodePatient(),
       contact_urgence_nom: '', contact_urgence_tel: '',
       medecin_traitant: '',
@@ -400,7 +401,7 @@ export default function CaissierPage() {
     finally { setDecLoading(false) }
   }
 
-  if (loading || !isAuthenticated) return (
+  if (!mounted || loading || !isAuthenticated) return (
     <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div style={{ width: 36, height: 36, borderRadius: '50%', border: '3px solid #1641C8', borderTopColor: 'transparent', animation: 'spin 0.8s linear infinite' }} />
     </div>
@@ -658,7 +659,7 @@ export default function CaissierPage() {
               <div>
                 <div style={{ fontSize: 11, color: '#1641C8', fontWeight: 700 }}>Date de visite (automatique)</div>
                 <div style={{ fontSize: 14, fontWeight: 800, color: '#0f172a' }}>
-                  {new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                  <span suppressHydrationWarning>{new Date().toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
                 </div>
               </div>
             </div>
