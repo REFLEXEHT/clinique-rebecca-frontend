@@ -70,17 +70,18 @@ export default function MedecinDashboard() {
   const displayRdv = rdvs.length > 0 ? rdvs : DEMO_RDV
   const displayActes = actes.length > 0 ? actes : DEMO_ACTES
 
-  // sixMoisAvant computed in useMemo below
+  const now = new Date()
+  const sixMoisAvant = new Date(now.getFullYear(), now.getMonth() - 6, now.getDate())
   const actes6mois = displayActes.filter(a => new Date(a.date_acte) >= sixMoisAvant)
 
-  const rdvAVenir = displayRdv.filter(r => new Date(r.date_rdv) > new Date() && r.statut !== 'annule')
-  const rdvAujourd = displayRdv.filter(r => new Date(r.date_rdv).toDateString() === new Date().toDateString())
+  const rdvAVenir = displayRdv.filter(r => new Date(r.date_rdv) > now && r.statut !== 'annule')
+  const rdvAujourd = displayRdv.filter(r => new Date(r.date_rdv).toDateString() === now.toDateString())
 
   const statsActes = TYPES_ACTE.map(t => ({ ...t, count: actes6mois.filter(a => a.type_acte === t.value).length }))
 
   // Stats par mois (6 mois)
   const statsParMois = Array.from({length:6}).map((_,i) => {
-    const d = new Date(); d.setMonth(d.getMonth()-5+i)
+    const d = new Date(now.getFullYear(), now.getMonth()-5+i, 1)
     const moisLabel = d.toLocaleDateString('fr-FR',{month:'short'})
     const count = actes6mois.filter(a => {
       const ad = new Date(a.date_acte)
@@ -132,7 +133,7 @@ export default function MedecinDashboard() {
           <>
             <div style={{ marginBottom:28 }}>
               <h1 style={{ fontWeight:900, color:'#0f172a', fontSize:'1.4rem', marginBottom:4 }}>Bonjour, {user?.nom?.split(' ').slice(1).join(' ')}</h1>
-              <p style={{ color:'#64748b', fontSize:13 }}><span suppressHydrationWarning>{new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</span></p>
+              <p style={{ color:'#64748b', fontSize:13 }}><span suppressHydrationWarning>{now.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})}</span></p>
             </div>
 
             {/* KPIs */}
