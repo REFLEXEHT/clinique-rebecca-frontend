@@ -1,201 +1,384 @@
 'use client'
 export const dynamic = 'force-dynamic'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import RdvModal from '@/components/ui/RdvModal'
 
-const SERVICES_DATA: Record<string, any> = {
-  'clinique-externe': {
-    titre:'Clinique Externe', icon:'fa-stethoscope', couleur:'#1641C8', bg:'#eff6ff',
-    description:'La clinique externe regroupe 12 spécialités médicales dédiées à votre santé. Nos médecins qualifiés assurent des consultations, suivis, diagnostics et traitements dans un cadre moderne et accueillant.',
-    medecins:[
-      { nom:"Dr Vania Louissaint",      specialite:"Médecine interne",   prix:5000, tel:"4217-8031", emoji:"🩺" },
-      { nom:"Dr Christelle Philippe",   specialite:"Médecine interne",   prix:4000, tel:"3894-8400", emoji:"🩺" },
-      { nom:"Dr Lemoine Lafleur",       specialite:"Neurologie",         prix:6000, tel:"4869-0495", emoji:"🧠" },
-      { nom:"Dr Eliode Pierre",         specialite:"Gynécologie",        prix:3000, tel:"3774-9416", emoji:"👩‍⚕️" },
-      { nom:"Dr Delvalès Doccy",        specialite:"Gynécologie",        prix:5000, tel:"3493-6533", emoji:"👩‍⚕️" },
-      { nom:"Dr Bob-Hallen Treisma",    specialite:"Gynécologie",        prix:5000, tel:"3816-5368", emoji:"👩‍⚕️" },
-      { nom:"Dr Jean Daniel",           specialite:"Gynécologie",        prix:3000, tel:"3634-3265", emoji:"👩‍⚕️" },
-      { nom:"Dr Enold Lubin",           specialite:"Gynécologie",        prix:4000, tel:"4853-4651", emoji:"👩‍⚕️" },
-      { nom:"Dr Sophie Beaujour",       specialite:"Dermatologie",       prix:3000, tel:"3294-3481", emoji:"🧬" },
-      { nom:"Dr Kaina Michaud",         specialite:"ORL",                prix:4000, tel:"3891-1659", emoji:"👂" },
-      { nom:"Mr Reginald Volcy",        specialite:"Psychologie",        prix:3000, tel:"4308-9457", emoji:"🧬" },
-      { nom:"Dr Jean Luc Mathurin",     specialite:"Radiologie",         prix:0,    tel:"4007-6328", emoji:"🩻" },
+// ── Données statiques de chaque service ──────────────────────────────────────
+const SERVICES_DATA: Record<string, {
+  titre: string; couleur: string; bg: string; icon: string
+  desc: string; longDesc: string
+  examens: { nom: string; raison: string; duree?: string }[]
+  pharmacie?: boolean
+  produits?: { nom: string; categorie: string; disponible: boolean; expiration?: string }[]
+}> = {
+  laboratoire: {
+    titre: 'Laboratoire', couleur: '#0d9488', icon: 'fa-flask-vial',
+    bg: 'linear-gradient(135deg,#0f1e3d 0%,#0d9488 100%)',
+    desc: 'Analyses biologiques complètes avec résultats rapides',
+    longDesc: 'Notre laboratoire est équipé d\'appareils modernes et calibrés pour vous fournir des résultats fiables en un minimum de temps. Nos techniciens de laboratoire certifiés traitent vos échantillons avec soin et précision. Les résultats urgents sont disponibles en 2 heures.',
+    examens: [
+      { nom: 'Numération formule sanguine (NFS)', raison: 'Détecter anémies, infections, troubles de la coagulation. Indiqué en cas de fatigue chronique, fièvre ou surveillance de traitement.', duree: '1h' },
+      { nom: 'Glycémie à jeun', raison: 'Dépister ou surveiller le diabète. Recommandé à partir de 40 ans ou en cas d\'antécédents familiaux.', duree: '30 min' },
+      { nom: 'HbA1c (hémoglobine glyquée)', raison: 'Évaluer l\'équilibre du diabète sur les 3 derniers mois. Essentiel pour ajuster le traitement.', duree: '2h' },
+      { nom: 'Bilan lipidique', raison: 'Mesurer cholestérol total, HDL, LDL et triglycérides. Prévention cardio-vasculaire.', duree: '2h' },
+      { nom: 'Fonction rénale (créatinine, urée)', raison: 'Évaluer la santé des reins. Essentiel avant tout traitement à élimination rénale.', duree: '2h' },
+      { nom: 'Bilan hépatique (ALAT, ASAT)', raison: 'Surveiller la santé du foie. Recommandé en cas de traitement prolongé ou consommation d\'alcool.', duree: '2h' },
+      { nom: 'Sérologie VIH', raison: 'Dépistage du VIH. Recommandé une fois par an pour toute personne sexuellement active.', duree: '30 min' },
+      { nom: 'Test de grossesse (β-hCG)', raison: 'Confirmer une grossesse dès 10 jours après une relation. Résultat quantitatif et qualitatif.', duree: '30 min' },
+      { nom: 'Analyse d\'urine (ECBU)', raison: 'Détecter infections urinaires, protéines, sang. Indiqué en cas de brûlures urinaires ou suivi rénal.', duree: '24h' },
     ],
-    infos:['Horaires : Lun–Ven 07h–17h, Sam 07h–12h','Paiement : Espèces, MonCash, NatCash','Résultats : disponibles sous 24-48h'],
   },
-  'laboratoire': {
-    titre:'Laboratoire', icon:'fa-flask-vial', couleur:'#16a34a', bg:'#f0fdf4',
-    description:'Notre laboratoire propose 165 analyses biologiques avec des équipements modernes. Les résultats sont envoyés directement sur votre téléphone via WhatsApp.',
-    medecins:[],
-    examens_vedettes:['Hémogramme complet — 1 000 HTG','Glycémie — 900 HTG','Sérologie HIV — 1 000 HTG','Hépatite B — 1 400 HTG','Bilan rénal — 1 500 HTG','HBA1C — 2 000 HTG','TORCH — 8 600 HTG','TSH — 1 500 HTG'],
-    infos:['Résultats envoyés par WhatsApp','Horaires : Lun–Sam 07h–15h','Prélèvement sur place ou à domicile (déplacement en sus)'],
-  },
-  'pharmacie': {
-    titre:'Pharmacie', icon:'fa-pills', couleur:'#7c3aed', bg:'#f5f3ff',
-    description:'Notre pharmacie interne offre des médicaments génériques et de marque à des prix accessibles pour tous les patients de la clinique.',
-    medecins:[],
-    infos:['Médicaments sur ordonnance et sans ordonnance','Conseils pharmaceutiques gratuits','Stocks régulièrement mis à jour'],
-  },
-  'dentisterie': {
-    titre:'Dentisterie', icon:'fa-tooth', couleur:'#0d9488', bg:'#f0fdfa',
-    description:'La dentisterie de la Clinique Rebecca offre une gamme complète de soins dentaires allant des extractions simples aux prothèses et aux appareils orthodontiques.',
-    medecins:[
-      { nom:"Dr Wolf Charlie Cajuste", specialite:"Dentisterie", prix:2500, tel:"3810-7562", emoji:"🦷" },
+  dentisterie: {
+    titre: 'Dentisterie', couleur: '#7c3aed', icon: 'fa-tooth',
+    bg: 'linear-gradient(135deg,#0f1e3d 0%,#7c3aed 100%)',
+    desc: 'Soins dentaires complets pour toute la famille',
+    longDesc: 'Le Dr Wolf Charlie Cajuste vous accueille dans un cabinet moderne et équipé pour tous vos besoins bucco-dentaires. De la prévention à la réhabilitation complète, nous offrons des soins de qualité dans un environnement confortable et rassurant.',
+    examens: [
+      { nom: 'Consultation dentaire', raison: 'Examen complet de la cavité buccale, bilan de santé dentaire et plan de traitement personnalisé.', duree: '30 min' },
+      { nom: 'Détartrage et prophylaxie', raison: 'Éliminer le tartre et la plaque dentaire pour prévenir caries et maladies des gencives. Recommandé tous les 6 mois.', duree: '45 min' },
+      { nom: 'Extraction dentaire', raison: 'Ablation d\'une dent non récupérable, dent de sagesse enclavée ou dent déchaussée sévèrement.', duree: '30-60 min' },
+      { nom: 'Obturation (plombage)', raison: 'Traitement des caries pour préserver la dent. Réalisé avec des matériaux esthétiques couleur dent.', duree: '45 min' },
+      { nom: 'Traitement de canal', raison: 'Sauver une dent infectée en profondeur en traitant la pulpe. Évite l\'extraction.', duree: '60-90 min' },
+      { nom: 'Prothèse dentaire', raison: 'Remplacement d\'une ou plusieurs dents perdues. Améliore la mastication et l\'esthétique.', duree: 'Plusieurs séances' },
+      { nom: 'Radiographie dentaire', raison: 'Visualiser les racines, os alvéolaire et caries interproximales non visibles à l\'œil nu.', duree: '15 min' },
     ],
-    tarifs_vedettes:['Consultation — 2 500 HTG','Extraction simple — 5 000 HTG','Prophylaxie grade 1 — 7 500 HTG','Couronne porcelaine — 500 USD','Couronne zirconium — 600 USD','Braces — 200 USD','Endodontie antérieure — 20 000 HTG'],
-    infos:['Consultations HTG et procédures spécialisées en USD','Paiement échelonné disponible pour traitements importants'],
   },
-  'physiotherapie': {
-    titre:'Physiothérapie', icon:'fa-person-walking', couleur:'#d97706', bg:'#fffbeb',
-    description:'La physiothérapie offre une prise en charge complète pour la rééducation fonctionnelle, les traumatismes, AVC et douleurs chroniques.',
-    medecins:[
-      { nom:"Mme Fredia Fleurival", specialite:"Physiothérapeute", prix:3000, tel:"3368-8796", emoji:"🏥" },
+  pharmacie: {
+    titre: 'Pharmacie', couleur: '#dc2626', icon: 'fa-pills',
+    bg: 'linear-gradient(135deg,#0f1e3d 0%,#dc2626 100%)',
+    desc: 'Médicaments disponibles sur place, ordonnances honorées',
+    longDesc: 'Notre pharmacie intégrée vous permet d\'honorer vos ordonnances sur place, sans déplacement supplémentaire. Notre pharmacien vérifie les interactions médicamenteuses et vous conseille sur la bonne utilisation de vos médicaments.',
+    examens: [],
+    pharmacie: true,
+    produits: [
+      { nom: 'Amoxicilline 500mg', categorie: 'Antibiotique', disponible: true, expiration: '2026-12' },
+      { nom: 'Paracétamol 1g', categorie: 'Antalgique', disponible: true, expiration: '2027-03' },
+      { nom: 'Metformine 500mg', categorie: 'Antidiabétique', disponible: true, expiration: '2026-09' },
+      { nom: 'Amlodipine 5mg', categorie: 'Antihypertenseur', disponible: true, expiration: '2027-01' },
+      { nom: 'Atorvastatine 20mg', categorie: 'Hypolipémiant', disponible: false },
+      { nom: 'Oméprazole 20mg', categorie: 'Antiulcéreux', disponible: true, expiration: '2026-11' },
+      { nom: 'Ibuprofène 400mg', categorie: 'Anti-inflammatoire', disponible: true, expiration: '2027-06' },
+      { nom: 'Cotrimoxazole 480mg', categorie: 'Antibiotique', disponible: true, expiration: '2026-08' },
     ],
-    infos:['Séances individuelles sur rendez-vous','Forfaits multi-séances disponibles','Prise en charge des références médicales'],
   },
-  'optometrie': {
-    titre:'Optométrie', icon:'fa-glasses', couleur:'#dc2626', bg:'#fef2f2',
-    description:'Examens de la vue complets et vente de montures. Dr Gilles Abraham assure les consultations et prescriptions de lunettes correctrices.',
-    medecins:[
-      { nom:"Dr Gilles Abraham", specialite:"Optométrie", prix:2000, tel:"3627-1021", emoji:"👁️" },
+  physiotherapie: {
+    titre: 'Physiothérapie', couleur: '#d97706', icon: 'fa-person-walking',
+    bg: 'linear-gradient(135deg,#0f1e3d 0%,#d97706 100%)',
+    desc: 'Rééducation fonctionnelle et traitement des douleurs',
+    longDesc: 'Mme Fredia Fleurival, notre physiothérapeute diplômée, prend en charge vos douleurs musculaires, articulaires et neurologiques. Chaque programme de rééducation est personnalisé selon votre pathologie et vos objectifs de récupération.',
+    examens: [
+      { nom: 'Kinésithérapie musculaire', raison: 'Renforcer les muscles affaiblis après traumatisme, chirurgie ou immobilisation prolongée.', duree: '45 min' },
+      { nom: 'Rééducation post-opératoire', raison: 'Retrouver mobilité et force après une intervention chirurgicale (genou, hanche, épaule).', duree: '45-60 min' },
+      { nom: 'Traitement des lombalgies', raison: 'Soulager et prévenir les douleurs du bas du dos par étirements, renforcement et posture.', duree: '45 min' },
+      { nom: 'Rééducation post-AVC', raison: 'Récupérer les fonctions motrices et améliorer l\'autonomie après un accident vasculaire cérébral.', duree: '60 min' },
+      { nom: 'Électrothérapie (TENS)', raison: 'Soulager les douleurs chroniques par stimulation électrique des nerfs. Non invasif.', duree: '30 min' },
+      { nom: 'Ultrasons thérapeutiques', raison: 'Traiter les tendinites, bursites et cicatrices par ondes sonores de haute fréquence.', duree: '20 min' },
+      { nom: 'Massage thérapeutique', raison: 'Relâcher les contractures musculaires, améliorer la circulation et réduire le stress.', duree: '45 min' },
     ],
-    infos:['Examen complet — 2 000 HTG','Large choix de montures','Verres progressifs et unifocaux','Contrat : 35% consultation + 13% montures pour la clinique'],
   },
-  'maternite': {
-    titre:'Maternité', icon:'fa-baby', couleur:'#ec4899', bg:'#fdf2f8',
-    description:'Suivi de grossesse complet et accouchement sécurisé par une équipe de gynécologues et pédiatres qualifiés.',
-    medecins:[
-      { nom:"Dr Eliode Pierre",      specialite:"Gynécologie", prix:3000, tel:"3774-9416", emoji:"👩‍⚕️" },
-      { nom:"Dr Delvalès Doccy",     specialite:"Gynécologie", prix:5000, tel:"3493-6533", emoji:"👩‍⚕️" },
-      { nom:"Dr Bob-Hallen Treisma", specialite:"Gynécologie", prix:5000, tel:"3816-5368", emoji:"👩‍⚕️" },
-      { nom:"Dr Mikerline Charles",  specialite:"Pédiatrie",   prix:3000, tel:"3673-8631", emoji:"👶" },
+  optometrie: {
+    titre: 'Optométrie', couleur: '#059669', icon: 'fa-glasses',
+    bg: 'linear-gradient(135deg,#0f1e3d 0%,#059669 100%)',
+    desc: 'Bilan visuel complet et prescriptions de verres correcteurs',
+    longDesc: 'Mr Gilles Abraham, optométriste, réalise des bilans visuels complets et vous accompagne dans le choix de vos verres correcteurs ou lentilles de contact. Un suivi visuel annuel est recommandé pour détecter précocement glaucome, cataracte et dégénérescence maculaire.',
+    examens: [
+      { nom: 'Bilan visuel complet', raison: 'Évaluer l\'acuité visuelle de loin et de près, la réfraction et la santé oculaire globale.', duree: '45 min' },
+      { nom: 'Réfractométrie (prescription)', raison: 'Déterminer avec précision la correction nécessaire pour lunettes ou lentilles.', duree: '20 min' },
+      { nom: 'Dépistage glaucome (tonométrie)', raison: 'Mesurer la pression intraoculaire pour détecter un glaucome débutant, souvent asymptomatique.', duree: '15 min' },
+      { nom: 'Fond d\'œil', raison: 'Examiner la rétine, le nerf optique et les vaisseaux. Indiqué chez diabétiques et hypertendus.', duree: '20 min' },
+      { nom: 'Adaptation lentilles de contact', raison: 'Choisir et adapter des lentilles selon la forme de votre œil et votre prescription.', duree: '30 min' },
     ],
-    infos:['Suivi prénatal complet','Échographie obstétricale disponible','Accouchement médicalisé','Consultation pédiatrique néonatale'],
   },
-  'salle-sop': {
-    titre:'Salle Opératoire', icon:'fa-scalpel', couleur:'#64748b', bg:'#f8fafc',
-    description:'Bloc opératoire moderne équipé pour les chirurgies générales, orthopédiques, gynécologiques et neurochirurgicales.',
-    medecins:[
-      { nom:"Dr Wisly Joseph",         specialite:"Chirurgie Générale",  prix:3000, tel:"3865-5254", emoji:"🔬" },
-      { nom:"Dr Jean Berldine",        specialite:"Chirurgie Générale",  prix:4000, tel:"3685-7346", emoji:"🔬" },
-      { nom:"Dr Jeff Tesnor",          specialite:"Chirurgie Générale",  prix:6000, tel:"3459-4612", emoji:"🔬" },
-      { nom:"Dr Peterly PHILIPPE",     specialite:"Orthopédie",          prix:6500, tel:"3780-4789", emoji:"🦴" },
-      { nom:"Dr Bernard Pierre",       specialite:"Neurochirurgie",      prix:5000, tel:"3719-2362", emoji:"🧠" },
-      { nom:"Dr Pierre Billy Lemaus",  specialite:"Urologie",            prix:5000, tel:"3663-8503", emoji:"🩺" },
-      { nom:"Dr Marie Kerline Pierre", specialite:"Anesthésiologie",     prix:5000, tel:"3780-6951", emoji:"💉" },
+  maternite: {
+    titre: 'Maternité', couleur: '#be185d', icon: 'fa-baby',
+    bg: 'linear-gradient(135deg,#0f1e3d 0%,#be185d 100%)',
+    desc: 'Accompagnement de la grossesse à la naissance',
+    longDesc: 'Notre service de maternité assure un suivi complet et bienveillant de votre grossesse jusqu\'à l\'accouchement. Le Dr Claudette Joseph et son équipe sont là pour vous accompagner à chaque étape, dans un environnement chaleureux et sécurisé.',
+    examens: [
+      { nom: 'Consultation prénatale', raison: 'Suivi mensuel de la grossesse : tension, poids, position du bébé, cœur fœtal.', duree: '30 min' },
+      { nom: 'Échographie obstétricale', raison: 'Visualiser le bébé, mesurer sa croissance et vérifier le placenta. Recommandée à 12, 22 et 32 semaines.', duree: '30 min' },
+      { nom: 'Test de tolérance au glucose', raison: 'Dépister le diabète gestationnel entre 24 et 28 semaines de grossesse.', duree: '2h' },
+      { nom: 'Accouchement', raison: 'Prise en charge complète du travail et de l\'accouchement avec sage-femme et médecin disponibles.', duree: 'Variable' },
+      { nom: 'Soins nouveau-né', raison: 'Bilan complet, pesée, mesures, vitamine K, vaccination BCG et soins de base du nourrisson.', duree: '1h' },
+      { nom: 'Planification familiale', raison: 'Choix d\'une contraception adaptée après l\'accouchement ou pour espacement des naissances.', duree: '20 min' },
     ],
-    infos:['Bloc opératoire équipé aux normes','Anesthésie générale et loco-régionale','Chirurgies programmées et urgences'],
   },
-  'gestes-medicaux': {
-    titre:'Gestes Médicaux', icon:'fa-syringe', couleur:'#f59e0b', bg:'#fffbeb',
-    description:'Soins infirmiers et actes médicaux rapides. Injections, perfusions, pansements et surveillance sans rendez-vous.',
-    medecins:[],
-    infos:['Injection IM — 1 500 HTG','Injection IV — 2 000 HTG','Perfusion (avec soluté) — 3 000 HTG','Pansement simple — 1 500 HTG','Disponible sans rendez-vous'],
+  sop: {
+    titre: 'Salle SOP (Bloc opératoire)', couleur: '#374151', icon: 'fa-scalpel',
+    bg: 'linear-gradient(135deg,#0f1e3d 0%,#475569 100%)',
+    desc: 'Bloc opératoire équipé pour interventions chirurgicales',
+    longDesc: 'Notre salle d\'opération est équipée pour les interventions chirurgicales programmées et les urgences. L\'équipe comprend chirurgiens spécialistes, anesthésiste et infirmières de bloc, tous formés aux dernières pratiques chirurgicales.',
+    examens: [
+      { nom: 'Chirurgie digestive', raison: 'Traitement des affections du tube digestif : appendicite, hernie, vésicule biliaire, intestin.', duree: '1-3h' },
+      { nom: 'Chirurgie gynécologique', raison: 'Hystérectomie, kystectomie ovarienne, ligature des trompes, césarienne.', duree: '1-2h' },
+      { nom: 'Chirurgie orthopédique', raison: 'Ostéosynthèse de fractures, arthroplastie, corrections déformités osseuses.', duree: '1-4h' },
+      { nom: 'Herniorraphie', raison: 'Réparation chirurgicale d\'une hernie abdominale ou inguinale avec filet synthétique.', duree: '45-90 min' },
+      { nom: 'Appendicectomie', raison: 'Ablation de l\'appendice en cas d\'appendicite aiguë. Urgence chirurgicale fréquente.', duree: '45-60 min' },
+    ],
+  },
+  gestes: {
+    titre: 'Gestes médicaux', couleur: '#6366f1', icon: 'fa-syringe',
+    bg: 'linear-gradient(135deg,#0f1e3d 0%,#6366f1 100%)',
+    desc: 'Soins courants effectués sur place rapidement',
+    longDesc: 'Notre service de gestes médicaux prend en charge les actes courants sans hospitalisation. Nos infirmières diplômées réalisent vos soins avec douceur et professionnalisme dans un environnement stérile et sécurisé.',
+    examens: [
+      { nom: 'Injection intramusculaire', raison: 'Administration d\'antibiotiques, vitamines, antiparasitaires. Absorption rapide et efficace.', duree: '10 min' },
+      { nom: 'Perfusion intraveineuse', raison: 'Réhydratation, administration de médicaments à effet rapide ou traitement de la déshydratation.', duree: '30-120 min' },
+      { nom: 'Prise de sang', raison: 'Prélèvement veineux pour analyses biologiques. Réalisé par des préleveurs expérimentés.', duree: '10 min' },
+      { nom: 'Pansement et soins de plaie', raison: 'Nettoyage, désinfection et pansement de plaies traumatiques, brûlures ou plaies chroniques.', duree: '15-30 min' },
+      { nom: 'Suture de plaie', raison: 'Fermeture de coupures et plaies ouvertes avec fils résorbables ou non. Anesthésie locale incluse.', duree: '20-40 min' },
+      { nom: 'Électrocardiogramme (ECG)', raison: 'Enregistrer l\'activité électrique du cœur. Indiqué en cas de douleurs thoraciques ou palpitations.', duree: '15 min' },
+      { nom: 'Ablation de fils / points', raison: 'Retrait des sutures après cicatrisation complète d\'une plaie opératoire ou traumatique.', duree: '15 min' },
+    ],
   },
 }
 
-export default function ServiceDetailPage() {
-  const params = useParams()
-  const slug   = params?.slug as string
-  const svc    = SERVICES_DATA[slug]
-
-  if (!svc) return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center' }}>
-      <div style={{ textAlign:'center' }}>
-        <p style={{ fontSize:'1.2rem', color:'#64748b', marginBottom:16 }}>Service introuvable</p>
-        <Link href="/services" style={{ color:'#1641C8', fontWeight:700 }}>← Retour aux services</Link>
+// ── Composant carrousel pharmacie ────────────────────────────────────────────
+function PharmacieCarrousel({ produits }: { produits: { nom: string; categorie: string; disponible: boolean; expiration?: string }[] }) {
+  const [idx, setIdx] = useState(0)
+  useEffect(() => {
+    const timer = setInterval(() => setIdx(i => (i + 1) % produits.length), 2800)
+    return () => clearInterval(timer)
+  }, [produits.length])
+  const p = produits[idx]
+  return (
+    <div style={{ background: 'white', borderRadius: 20, border: '1px solid #e2e8f0', padding: '28px 32px', maxWidth: 480 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 20 }}>
+        <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#22c55e', animation: 'blink 1.8s infinite' }} />
+        <span style={{ fontWeight: 700, color: '#0f172a', fontSize: 14 }}>Produits disponibles</span>
+      </div>
+      <div key={idx} style={{ animation: 'fadeSlideIn 0.4s ease both' }}>
+        <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '1.1rem', marginBottom: 6 }}>{p.nom}</div>
+        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 12 }}>{p.categorie}</div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <span style={{ padding: '4px 12px', borderRadius: 20, fontSize: 12, fontWeight: 700, background: p.disponible ? '#dcfce7' : '#fee2e2', color: p.disponible ? '#16a34a' : '#dc2626' }}>
+            {p.disponible ? 'En stock' : 'Rupture temporaire'}
+          </span>
+          {p.disponible && p.expiration && (
+            <span style={{ fontSize: 12, color: '#94a3b8' }}>Exp. {p.expiration}</span>
+          )}
+        </div>
+      </div>
+      <div style={{ display: 'flex', gap: 6, marginTop: 20 }}>
+        {produits.map((_, i) => (
+          <button key={i} onClick={() => setIdx(i)} style={{ width: i === idx ? 24 : 8, height: 8, borderRadius: 4, border: 'none', cursor: 'pointer', background: i === idx ? '#dc2626' : '#e2e8f0', transition: 'all 0.3s', padding: 0 }} />
+        ))}
       </div>
     </div>
   )
+}
+
+// ── Assistant IA ─────────────────────────────────────────────────────────────
+function AiAssistant({ service }: { service: string }) {
+  const [open, setOpen] = useState(false)
+  const [question, setQuestion] = useState('')
+  const [messages, setMessages] = useState<{ role: string; content: string }[]>([
+    { role: 'assistant', content: `Bonjour ! Je suis l'assistant de la Clinique de la Rebecca. Comment puis-je vous aider concernant notre service ${service} ?` }
+  ])
+  const [loading, setLoading] = useState(false)
+  const bottomRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages])
+
+  const send = async () => {
+    if (!question.trim() || loading) return
+    const q = question.trim()
+    setQuestion('')
+    setMessages(m => [...m, { role: 'user', content: q }])
+    setLoading(true)
+    try {
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: q, history: messages, context: `Service: ${service} - Clinique de la Rebecca, Delmas, Haïti` }),
+      })
+      const data = await res.json()
+      const reply = data.reply || data.message || 'Je n\'ai pas pu répondre. Veuillez contacter la clinique directement.'
+      setMessages(m => [...m, { role: 'assistant', content: reply }])
+    } catch {
+      setMessages(m => [...m, { role: 'assistant', content: 'Désolé, je rencontre une difficulté technique. Appelez-nous au +509 3888-0000.' }])
+    } finally { setLoading(false) }
+  }
 
   return (
-    <div style={{ minHeight:'100vh', background:'#f8fafc' }}>
-      <Navbar variant="public" />
-
-      {/* Hero */}
-      <div style={{ background:`linear-gradient(135deg,#0f1e3d,${svc.couleur})`, padding:'56px 20px 40px' }}>
-        <div style={{ maxWidth:900, margin:'0 auto' }}>
-          <Link href="/services" style={{ color:'rgba(255,255,255,0.7)', fontSize:13, textDecoration:'none', display:'inline-flex', alignItems:'center', gap:6, marginBottom:20 }}>
-            <i className="fa-solid fa-arrow-left" /> Tous les services
-          </Link>
-          <div style={{ display:'flex', alignItems:'center', gap:16 }}>
-            <div style={{ width:64, height:64, borderRadius:18, background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center' }}>
-              <i className={`fa-solid ${svc.icon}`} style={{ color:'white', fontSize:28 }} />
+    <div style={{ position: 'fixed', bottom: 24, right: 24, zIndex: 999 }}>
+      {open && (
+        <div className="ai-chat-window" style={{ width: 360, marginBottom: 12, maxHeight: 480, display: 'flex', flexDirection: 'column' }}>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg,#0f1e3d,#1641C8)', borderRadius: '20px 20px 0 0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#22c55e' }} />
+              <span style={{ color: 'white', fontWeight: 700, fontSize: 14 }}>Assistant Rebecca</span>
             </div>
-            <div>
-              <h1 style={{ color:'white', fontWeight:900, fontSize:'clamp(1.6rem,4vw,2.4rem)', margin:0 }}>{svc.titre}</h1>
-            </div>
+            <button onClick={() => setOpen(false)} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: 16 }}>✕</button>
           </div>
-          <p style={{ color:'rgba(255,255,255,0.8)', fontSize:'1rem', maxWidth:600, margin:'16px 0 0', lineHeight:1.7 }}>{svc.description}</p>
-        </div>
-      </div>
-
-      <div style={{ maxWidth:900, margin:'0 auto', padding:'36px 20px' }}>
-        <div style={{ display:'grid', gridTemplateColumns: svc.medecins?.length > 0 ? '1fr 320px' : '1fr', gap:24 }}>
-
-          {/* Médecins */}
-          {svc.medecins?.length > 0 && (
-            <div>
-              <h2 style={{ fontWeight:800, fontSize:'1.1rem', color:'#0f172a', marginBottom:16 }}>
-                Nos spécialistes
-              </h2>
-              <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                {svc.medecins.map((m: any, i: number) => (
-                  <div key={i} style={{ background:'white', borderRadius:16, padding:18, border:'1px solid #e2e8f0', display:'flex', gap:14, alignItems:'center' }}>
-                    <div style={{ width:48, height:48, borderRadius:12, background:`linear-gradient(135deg,${svc.couleur},#0d9488)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
-                      {m.emoji}
-                    </div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontWeight:800, color:'#0f172a', fontSize:14 }}>{m.nom}</div>
-                      <div style={{ color:svc.couleur, fontSize:12, fontWeight:600 }}>{m.specialite}</div>
-                      {m.tel && <div style={{ color:'#94a3b8', fontSize:12, marginTop:3 }}>📞 {m.tel}</div>}
-                    </div>
-                    {m.prix > 0 && (
-                      <span style={{ background:svc.bg, color:svc.couleur, borderRadius:50, padding:'4px 12px', fontSize:12, fontWeight:700, whiteSpace:'nowrap' }}>
-                        {m.prix.toLocaleString()} HTG
-                      </span>
-                    )}
-                  </div>
-                ))}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px 14px', display: 'flex', flexDirection: 'column', gap: 10, maxHeight: 320 }}>
+            {messages.map((m, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: m.role === 'user' ? 'flex-end' : 'flex-start' }}>
+                <div style={{
+                  maxWidth: '82%', padding: '10px 14px', borderRadius: m.role === 'user' ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
+                  background: m.role === 'user' ? '#1641C8' : '#f8fafc', color: m.role === 'user' ? 'white' : '#0f172a',
+                  fontSize: 13, lineHeight: 1.55, border: m.role === 'assistant' ? '1px solid #e2e8f0' : 'none'
+                }}>{m.content}</div>
               </div>
-            </div>
-          )}
-
-          {/* Sidebar infos */}
-          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-            {/* Tarifs vedettes */}
-            {(svc.tarifs_vedettes || svc.examens_vedettes || svc.infos) && (
-              <div style={{ background:'white', borderRadius:16, padding:20, border:'1px solid #e2e8f0' }}>
-                <h3 style={{ fontWeight:700, color:'#0f172a', fontSize:14, marginBottom:12 }}>
-                  {svc.tarifs_vedettes ? '💰 Tarifs principaux' : svc.examens_vedettes ? '🔬 Examens populaires' : 'ℹ️ Informations'}
-                </h3>
-                {(svc.tarifs_vedettes || svc.examens_vedettes)?.map((t: string, i: number) => (
-                  <div key={i} style={{ padding:'8px 0', borderBottom:'1px solid #f1f5f9', fontSize:13, color:'#475569', display:'flex', justifyContent:'space-between' }}>
-                    <span>{t.split('—')[0]}</span>
-                    <span style={{ fontWeight:700, color:svc.couleur }}>{t.split('—')[1]}</span>
-                  </div>
-                ))}
-                {svc.infos?.map((info: string, i: number) => (
-                  <div key={i} style={{ padding:'7px 0', borderBottom:'1px solid #f1f5f9', fontSize:13, color:'#64748b', display:'flex', gap:8 }}>
-                    <span style={{ color:svc.couleur }}>✓</span> {info}
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* CTA */}
-            <div style={{ background:`linear-gradient(135deg,${svc.couleur},#0d9488)`, borderRadius:16, padding:20, textAlign:'center' }}>
-              <p style={{ color:'white', fontWeight:700, margin:'0 0 14px', fontSize:15 }}>Prendre rendez-vous</p>
-              <Link href="/consultation" style={{ background:'white', color:svc.couleur, textDecoration:'none', borderRadius:10, padding:'10px 20px', fontWeight:700, fontSize:14, display:'inline-block' }}>
-                Réserver maintenant
-              </Link>
-            </div>
+            ))}
+            {loading && <div style={{ display: 'flex', gap: 5, padding: '8px 14px' }}>{[0,1,2].map(i => <div key={i} style={{ width: 7, height: 7, borderRadius: '50%', background: '#94a3b8', animation: `blink 1.2s ${i*0.2}s infinite` }} />)}</div>}
+            <div ref={bottomRef} />
+          </div>
+          <div style={{ padding: '12px 14px', borderTop: '1px solid #f1f5f9', display: 'flex', gap: 8 }}>
+            <input
+              value={question}
+              onChange={e => setQuestion(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && send()}
+              placeholder="Posez une question…"
+              style={{ flex: 1, padding: '9px 14px', borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 13, outline: 'none', background: 'white' }}
+            />
+            <button onClick={send} disabled={loading || !question.trim()} style={{ width: 38, height: 38, borderRadius: 12, background: '#1641C8', border: 'none', cursor: 'pointer', color: 'white', flexShrink: 0, opacity: !question.trim() ? 0.5 : 1 }}>
+              <i className="fa-solid fa-paper-plane" style={{ fontSize: 13 }} />
+            </button>
           </div>
         </div>
+      )}
+      <button onClick={() => setOpen(v => !v)} className="ai-chat-toggle" style={{ marginLeft: 'auto', display: 'flex' }}>
+        <i className={`fa-solid ${open ? 'fa-xmark' : 'fa-comment-medical'}`} />
+      </button>
+    </div>
+  )
+}
+
+// ── Page principale ───────────────────────────────────────────────────────────
+export default function ServiceDetailPage() {
+  const params = useParams()
+  const slug = params.slug as string
+  const [rdvOpen, setRdvOpen] = useState(false)
+
+  const s = SERVICES_DATA[slug]
+
+  if (!s) return (
+    <>
+      <Navbar onRdvClick={() => setRdvOpen(true)} />
+      <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748b', paddingTop: 70 }}>
+        <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }} />
+        <p style={{ fontSize: 18, fontWeight: 600 }}>Service non trouvé</p>
+        <Link href="/services" style={{ color: '#1641C8', marginTop: 12, fontWeight: 600 }}>Voir tous les services</Link>
       </div>
       <Footer />
-    </div>
+    </>
+  )
+
+  return (
+    <>
+      <Navbar onRdvClick={() => setRdvOpen(true)} />
+      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
+
+      {/* Hero */}
+      <div style={{ background: s.bg, padding: '120px 5% 72px', textAlign: 'center', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: -80, right: -80, width: 300, height: 300, borderRadius: '50%', background: 'rgba(255,255,255,0.05)' }} />
+        <div className="breadcrumb" style={{ marginBottom: 24 }}>
+          <Link href="/" style={{ color: 'rgba(255,255,255,0.6)' }}>Accueil</Link>
+          <span style={{ color: 'rgba(255,255,255,0.4)' }}> / </span>
+          <Link href="/services" style={{ color: 'rgba(255,255,255,0.6)' }}>Services</Link>
+          <span style={{ color: 'rgba(255,255,255,0.4)' }}> / </span>
+          <span style={{ color: 'rgba(255,255,255,0.9)' }}>{s.titre}</span>
+        </div>
+        <div style={{ width: 72, height: 72, borderRadius: 20, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', backdropFilter: 'blur(8px)' }}>
+          <i className={`fa-solid ${s.icon}`} style={{ color: 'white', fontSize: 30 }} />
+        </div>
+        <h1 style={{ color: 'white', fontWeight: 900, fontSize: 'clamp(2rem,4vw,3rem)', marginBottom: 14 }}>{s.titre}</h1>
+        <p style={{ color: 'rgba(255,255,255,0.78)', fontSize: '1.05rem', maxWidth: 560, margin: '0 auto 32px', lineHeight: 1.7 }}>{s.desc}</p>
+        <button onClick={() => setRdvOpen(true)} className="btn-primary" style={{ background: 'rgba(255,255,255,0.95)', color: s.couleur }}>
+          Prendre rendez-vous
+        </button>
+      </div>
+
+      {/* Corps */}
+      <section style={{ maxWidth: 1100, margin: '0 auto', padding: '72px 5%' }}>
+
+        {/* Description */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 48, marginBottom: 60, alignItems: 'start' }}>
+          <div>
+            <span className="section-tag" style={{ background: s.couleur + '15', color: s.couleur }}>À propos</span>
+            <h2 className="section-title" style={{ fontSize: '1.6rem' }}>Pourquoi choisir notre {s.titre.toLowerCase()} ?</h2>
+            <p style={{ color: '#64748b', lineHeight: 1.8, fontSize: 15 }}>{s.longDesc}</p>
+            <div style={{ marginTop: 24, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              {[
+                { icon: 'fa-clock', label: 'Résultats rapides' },
+                { icon: 'fa-shield-check', label: 'Matériel certifié' },
+                { icon: 'fa-user-nurse', label: 'Personnel qualifié' },
+              ].map(b => (
+                <div key={b.label} style={{ display: 'flex', alignItems: 'center', gap: 8, background: s.couleur + '10', borderRadius: 50, padding: '8px 16px' }}>
+                  <i className={`fa-solid ${b.icon}`} style={{ color: s.couleur, fontSize: 13 }} />
+                  <span style={{ fontSize: 13, fontWeight: 600, color: '#0f172a' }}>{b.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div style={{ background: s.couleur + '08', borderRadius: 20, padding: 28, border: `1px solid ${s.couleur}20` }}>
+            <div style={{ fontSize: 14, fontWeight: 700, color: '#0f172a', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <i className="fa-solid fa-location-dot" style={{ color: s.couleur }} />
+              Clinique de la Rebecca
+            </div>
+            {[
+              { icon: 'fa-map-pin', text: 'Delmas, Haïti — Accès facile' },
+              { icon: 'fa-calendar', text: 'Lundi – Samedi, 7h00 – 17h00' },
+              { icon: 'fa-phone', text: '+509 3888-0000' },
+            ].map(i => (
+              <div key={i.text} style={{ display: 'flex', gap: 10, alignItems: 'center', marginBottom: 12 }}>
+                <i className={`fa-solid ${i.icon}`} style={{ color: s.couleur, width: 16, textAlign: 'center' }} />
+                <span style={{ color: '#475569', fontSize: 14 }}>{i.text}</span>
+              </div>
+            ))}
+            <button onClick={() => setRdvOpen(true)} style={{ width: '100%', marginTop: 16, background: s.couleur, color: 'white', border: 'none', borderRadius: 12, padding: '12px 0', fontWeight: 700, cursor: 'pointer', fontSize: 14 }}>
+              Prendre rendez-vous
+            </button>
+          </div>
+        </div>
+
+        {/* Pharmacie : carrousel produits */}
+        {s.pharmacie && s.produits && (
+          <div style={{ marginBottom: 60 }}>
+            <span className="section-tag" style={{ background: '#fee2e2', color: '#dc2626' }}>Disponibilités</span>
+            <h2 className="section-title" style={{ fontSize: '1.5rem', marginBottom: 24 }}>Produits en pharmacie</h2>
+            <p style={{ color: '#64748b', marginBottom: 28, lineHeight: 1.7 }}>Nos médicaments sont référencés par votre médecin. Présentez votre ordonnance à la pharmacie. Stock mis à jour régulièrement.</p>
+            <PharmacieCarrousel produits={s.produits} />
+          </div>
+        )}
+
+        {/* Examens / actes disponibles */}
+        {s.examens.length > 0 && (
+          <div>
+            <span className="section-tag" style={{ background: s.couleur + '15', color: s.couleur }}>Actes disponibles</span>
+            <h2 className="section-title" style={{ fontSize: '1.5rem', marginBottom: 8 }}>Ce que nous proposons</h2>
+            <p style={{ color: '#64748b', marginBottom: 36 }}>Chaque acte inclut une consultation préalable avec notre équipe.</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {s.examens.map((e, i) => (
+                <div key={i} style={{ background: 'white', borderRadius: 16, padding: '22px 24px', border: '1px solid #e2e8f0', display: 'grid', gridTemplateColumns: '1fr auto', gap: 16, alignItems: 'start', transition: 'all 0.2s' }}
+                  onMouseEnter={el => { el.currentTarget.style.borderColor = s.couleur + '50'; el.currentTarget.style.boxShadow = `0 4px 20px ${s.couleur}15` }}
+                  onMouseLeave={el => { el.currentTarget.style.borderColor = '#e2e8f0'; el.currentTarget.style.boxShadow = 'none' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                      <div style={{ width: 8, height: 8, borderRadius: '50%', background: s.couleur, flexShrink: 0 }} />
+                      <h4 style={{ fontWeight: 800, color: '#0f172a', fontSize: 15, margin: 0 }}>{e.nom}</h4>
+                    </div>
+                    <p style={{ color: '#64748b', fontSize: 13.5, lineHeight: 1.65, margin: 0, paddingLeft: 18 }}>{e.raison}</p>
+                  </div>
+                  {e.duree && (
+                    <div style={{ background: s.couleur + '12', borderRadius: 50, padding: '5px 14px', fontSize: 12, fontWeight: 700, color: s.couleur, whiteSpace: 'nowrap', flexShrink: 0 }}>
+                      {e.duree}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </section>
+
+      <AiAssistant service={s.titre} />
+      <Footer />
+    </>
   )
 }

@@ -118,7 +118,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
               <div className="nav-dropdown">
                 <div className="dropdown-title">Nos 9 services</div>
                 {SERVICES.map((s) => (
-                  <Link key={s.href} href="/services">
+                  <Link key={s.href} href={s.href}>
                     <i className={`fa-solid ${s.icon}`} />{s.label}
                   </Link>
                 ))}
@@ -134,7 +134,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
               <div className="nav-dropdown">
                 <div className="dropdown-title">12 spécialités</div>
                 {SPECIALITES.map((s) => (
-                  <Link key={s.slug} href="/specialites">
+                  <Link key={s.slug} href={`/specialites/${s.slug}`}>
                     <i className={`fa-solid ${s.icon}`} />{s.label}
                   </Link>
                 ))}
@@ -171,6 +171,11 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                 border-slate-200 text-slate-700 font-semibold text-[13.5px]
                 hover:border-[#1641C8] hover:text-[#1641C8] hover:bg-blue-50 transition-all">
                 <i className="fa-regular fa-user mr-1.5" />Connexion
+              </Link>
+              <Link href="/register" className="px-4 py-2 rounded-full border-[1.5px]
+                border-teal-200 text-teal-700 font-semibold text-[13.5px]
+                hover:border-[#0d9488] hover:text-[#0d9488] hover:bg-teal-50 transition-all">
+                <i className="fa-solid fa-user-plus mr-1.5" />S'inscrire
               </Link>
               <button
                 onClick={onRdvClick}
@@ -295,6 +300,13 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                         hover:border-[#1641C8] hover:text-[#1641C8] transition-all"
                       onClick={() => setMobileOpen(false)}>
                       <i className="fa-regular fa-user" /> Connexion
+                    </Link>
+                    <Link href="/register"
+                      className="flex items-center gap-2 justify-center px-4 py-3 rounded-xl
+                        border-[1.5px] border-teal-200 text-teal-700 font-semibold text-[14px]
+                        hover:border-[#0d9488] hover:text-[#0d9488] transition-all"
+                      onClick={() => setMobileOpen(false)}>
+                      <i className="fa-solid fa-user-plus" /> S'inscrire
                     </Link>
                     <button
                       onClick={() => { onRdvClick?.(); setMobileOpen(false) }}

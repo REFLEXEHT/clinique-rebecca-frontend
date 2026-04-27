@@ -19,10 +19,13 @@ export default function ConsultationContent() {
 
   const { register, handleSubmit, reset, formState:{errors} } = useForm<FormData>()
 
+  const [rdvInfo, setRdvInfo] = useState<{type_rdv?:string;lien_video?:string;numero_rdv?:string}|null>(null)
+
   const onSubmit = async (data: FormData) => {
     setLoading(true)
     try {
-      await rdvApi.create({ ...data, patient_nom:data.nom, patient_telephone:data.telephone, patient_email:data.email, date_rdv:new Date(data.date_rdv).toISOString() })
+      const res = await rdvApi.create({ ...data, patient_nom:data.nom, patient_telephone:data.telephone, patient_email:data.email, date_rdv:new Date(data.date_rdv).toISOString() })
+      setRdvInfo(res.data)
       setSuccess(true); reset()
       toast.success('Votre demande a été envoyée !')
     } catch { toast.error('Erreur lors de la soumission') }
@@ -39,10 +42,25 @@ export default function ConsultationContent() {
             <i className="fa-solid fa-check" style={{ color:'#16a34a', fontSize:28 }} />
           </div>
           <h2 style={{ fontWeight:900, color:'#0f172a', fontSize:'1.5rem', marginBottom:12 }}>Demande envoyée</h2>
-          <p style={{ color:'#64748b', lineHeight:1.7, marginBottom:28 }}>Notre équipe vous contactera rapidement pour confirmer votre rendez-vous.</p>
-          <button onClick={() => { setSuccess(false); setTypeChoisi(null) }} style={{ background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', border:'none', borderRadius:12, padding:'12px 28px', fontWeight:700, cursor:'pointer' }}>
-            Prendre un autre rendez-vous
-          </button>
+          <p style={{ color:'#64748b', lineHeight:1.7, marginBottom:20 }}>Notre équipe vous contactera rapidement pour confirmer votre rendez-vous.</p>
+          {typeChoisi === 'video' && (
+            <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:14, padding:'16px 20px', marginBottom:20, textAlign:'left' }}>
+              <div style={{ fontWeight:700, color:'#1641C8', fontSize:14, marginBottom:8, display:'flex', alignItems:'center', gap:8 }}>
+                <i className="fa-solid fa-video" /> Consultation vidéo
+              </div>
+              <p style={{ color:'#374151', fontSize:13, lineHeight:1.6, margin:0 }}>
+                Un lien Jitsi Meet vous sera envoyé par email et SMS une fois votre RDV confirmé par notre équipe. La consultation se fait directement depuis votre navigateur, sans application à installer.
+              </p>
+            </div>
+          )}
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            <button onClick={() => { setSuccess(false); setTypeChoisi(null) }} style={{ background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', border:'none', borderRadius:12, padding:'12px 28px', fontWeight:700, cursor:'pointer' }}>
+              Prendre un autre rendez-vous
+            </button>
+            <a href="/" style={{ display:'block', textAlign:'center', color:'#64748b', fontSize:13, marginTop:4, textDecoration:'none' }}>
+              <i className="fa-solid fa-house" style={{ marginRight:6 }} />Retour à l'accueil
+            </a>
+          </div>
         </div>
       </div>
       <Footer />
