@@ -18,6 +18,16 @@ const AuthContext = createContext<AuthContextType>({
   login: () => {}, logout: () => {}, loading: true,
 })
 
+/** Vérifie si le JWT est expiré sans dépendance externe */
+function isTokenExpired(token: string): boolean {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]))
+    return payload.exp ? Date.now() / 1000 > payload.exp : false
+  } catch {
+    return true
+  }
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
@@ -27,11 +37,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const t = localStorage.getItem('rb_token')
       const u = localStorage.getItem('rb_user')
-      if (t && u) {
+      if (t && u && !isTokenExpired(t)) {
         setToken(t)
         setUser(JSON.parse(u))
+      } else if (t) {
+        // Token expiré — nettoyer
+        localStorage.removeItem('rb_token')
+        localStorage.removeItem('rb_user')
       }
-    } catch {}
+    } catch {
+      // Données corrompues
+      localStorage.removeItem('rb_token')
+      localStorage.removeItem('rb_user')
+    }
     setLoading(false)
   }, [])
 
@@ -49,7 +67,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null)
   }
 
-  // Always render Provider with consistent initial state (no hydration mismatch)
   return (
     <AuthContext.Provider value={{
       user, token,
@@ -65,7 +82,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 export const useAuth = () => useContext(AuthContext)
 
 export function withAuth(roles: Role[]) {
-  return function(Component: React.ComponentType<any>) {
+  return function (Component: React.ComponentType<any>) {
     return function ProtectedRoute(props: any) {
       const { isAuthenticated, role, loading } = useAuth()
       useEffect(() => {
