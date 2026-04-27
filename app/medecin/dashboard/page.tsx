@@ -163,7 +163,7 @@ export default function MedecinDashboard() {
           </div>
         )}
 
-        {/* TABLEAU DE BORD */}}
+        {/* TABLEAU DE BORD */}
         {onglet==='tableau' && (
           <>
             <div style={{ marginBottom:28 }}>
