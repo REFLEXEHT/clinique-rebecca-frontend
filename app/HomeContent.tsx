@@ -158,7 +158,7 @@ export default function HomeContent() {
                 { val: `${nbSpec}+`, label: 'Médecins' },
                 { val: '9',          label: 'Services' },
                 { val: '12',         label: 'Spécialités' },
-                { val: '6j/7',       label: 'Disponible' },
+                { val: '7j/7',       label: 'Disponible' },
               ].map(s => (
                 <div className="hero-stat-item" key={s.label}>
                   <span className="hero-stat-num">{s.val}</span>
