@@ -65,17 +65,25 @@ export default function Footer() {
           <p style={{ fontSize: 13, lineHeight: 1.7, marginBottom: 20, maxWidth: 260 }}>
             Des soins médicaux de qualité en Haïti. Consultations en ligne et suivi personnalisé disponible.
           </p>
-          {/* Coordonnées */}
+          {/* Coordonnées — chaque ligne est un lien cliquable */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 20 }}>
             {[
-              { icon: 'fa-location-dot', text: 'Delmas, Haïti' },
-              { icon: 'fa-phone',        text: '+509 3888-0000' },
-              { icon: 'fa-clock',        text: 'Lundi – Samedi, 7h00 – 17h00' },
+              { icon: 'fa-location-dot', text: 'Delmas, Haïti',                href: 'https://maps.google.com/?q=Delmas,+Haiti', external: true },
+              { icon: 'fa-phone',        text: '+509 3888-0000',               href: 'tel:+50938880000',                          external: false },
+              { icon: 'fa-clock',        text: 'Lundi – Samedi, 7h00 – 17h00',href: '/consultation',                             external: false },
             ].map(c => (
-              <div key={c.text} style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <a
+                key={c.text}
+                href={c.href}
+                target={c.external ? '_blank' : undefined}
+                rel={c.external ? 'noreferrer' : undefined}
+                style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none', color: 'rgba(255,255,255,0.55)', transition: 'color 0.15s' }}
+                onMouseEnter={e => { (e.currentTarget as HTMLElement).style.color = '#4ade80' }}
+                onMouseLeave={e => { (e.currentTarget as HTMLElement).style.color = 'rgba(255,255,255,0.55)' }}
+              >
                 <i className={`fa-solid ${c.icon}`} style={{ color: '#1641C8', fontSize: 12, width: 14, textAlign: 'center' }} />
                 <span style={{ fontSize: 12 }}>{c.text}</span>
-              </div>
+              </a>
             ))}
           </div>
           {/* Réseaux sociaux */}
