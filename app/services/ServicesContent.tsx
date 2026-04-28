@@ -3,66 +3,98 @@ import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import RdvModal from '@/components/ui/RdvModal'
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 
+// Laboratoire et Pharmacie → page combinée /services/labo-pharmacie
 const SERVICES = [
-  { slug:'clinique-externe', titre:'Clinique externe', desc:'Consultations générales et spécialisées avec nos médecins qualifiés.', icon:'fa-stethoscope', couleur:'#1641C8', nb:22, details:['Médecine générale','Spécialités médicales','Consultations vidéo','Urgences légères'] },
-  { slug:'dentisterie', titre:'Dentisterie', desc:'Soins dentaires complets assurés par notre chirurgien-dentiste expérimenté.', icon:'fa-tooth', couleur:'#7c3aed', nb:1, details:['Consultation','Extraction dentaire','Prophylaxie','Orthodontie','Prothèses'] },
-  { slug:'laboratoire', titre:"Laboratoire d'analyses", desc:'Analyses biologiques réalisées avec des équipements modernes. Résultats rapides.', icon:'fa-flask-vial', couleur:'#0d9488', nb:2, details:['NFS complète','Glycémie','Bilan lipidique','Sérologies','ECBU'] },
-  { slug:'pharmacie', titre:'Pharmacie', desc:'Médicaments disponibles sur place. Ordonnances honorées immédiatement.', icon:'fa-pills', couleur:'#dc2626', nb:1, details:['Médicaments sur ordonnance','Médicaments OTC','Matériel médical'] },
-  { slug:'physiotherapie', titre:'Physiothérapie', desc:'Rééducation fonctionnelle, traitement des douleurs chroniques.', icon:'fa-person-walking', couleur:'#d97706', nb:1, details:['Kinésithérapie','Rééducation post-op','Traitement douleurs'] },
-  { slug:'optometrie', titre:'Optométrie', desc:'Bilan visuel complet et prescription de verres correcteurs.', icon:'fa-glasses', couleur:'#059669', nb:1, details:["Bilan visuel","Prescription lunettes","Fond d'oeil"] },
-  { slug:'sop', titre:'Salle SOP', desc:'Bloc opératoire équipé pour les interventions chirurgicales.', icon:'fa-scalpel', couleur:'#374151', nb:6, details:['Chirurgie générale','Chirurgie pédiatrique','Neurochirurgie','Orthopédie'] },
-  { slug:'maternite', titre:'Maternité', desc:"Suivi de grossesse, accouchement et soins mère-enfant.", icon:'fa-baby', couleur:'#be185d', nb:5, details:['Suivi prénatal','Accouchement','Césarienne','Soins néonataux'] },
-  { slug:'gestes', titre:'Gestes médicaux', desc:'Soins infirmiers et gestes techniques courants.', icon:'fa-syringe', couleur:'#6366f1', nb:3, details:['Injections IM/IV','Perfusions','Pansements','Sutures'] },
+  { key: 'physio',    titre: 'Physiothérapie',         href: '/services/physiotherapie', photo: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&q=80', couleur: '#d97706' },
+  { key: 'clinique',  titre: 'Clinique externe',        href: '/specialites',             photo: 'https://images.unsplash.com/photo-1504813184591-01572f98c85f?w=600&q=80', couleur: '#1641C8' },
+  { key: 'sop',       titre: 'Salle SOP',               href: '/services/sop',            photo: 'https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=600&q=80', couleur: '#374151' },
+  { key: 'mat1',      titre: 'Maternité',               href: '/services/maternite',      photo: 'https://images.unsplash.com/photo-1491013516836-7db643ee125a?w=600&q=80', couleur: '#be185d' },
+  { key: 'opto1',     titre: 'Optométrie',              href: '/services/optometrie',     photo: 'https://images.unsplash.com/photo-1581093588401-fbb62a02f120?w=600&q=80', couleur: '#059669' },
+  { key: 'gestes',    titre: 'Gestes médicaux',         href: '/services/gestes',         photo: 'https://images.unsplash.com/photo-1559757148-5c350d0d3c56?w=600&q=80', couleur: '#6366f1' },
+  { key: 'mat2',      titre: 'Maternité',               href: '/services/maternite',      photo: 'https://images.unsplash.com/photo-1565489428748-3a3a4e2c5e28?w=600&q=80', couleur: '#be185d' },
+  { key: 'opto2',     titre: 'Optométrie',              href: '/services/optometrie',     photo: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=600&q=80', couleur: '#059669' },
+  { key: 'labo',      titre: 'Para-clinique & Pharmacie', href: '/services/labo-pharmacie', photo: 'https://images.unsplash.com/photo-1576671081837-49000212a370?w=600&q=80', couleur: '#0d9488' },
 ]
 
 export default function ServicesContent() {
   const [rdvOpen, setRdvOpen] = useState(false)
+
   return (
     <>
       <Navbar onRdvClick={() => setRdvOpen(true)} />
       <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
-      <div style={{ background:'linear-gradient(135deg,#0f1e3d 0%,#1641C8 55%,#0d9488 100%)', padding:'100px 5% 60px', textAlign:'center' }}>
-        <h1 style={{ color:'white', fontWeight:900, fontSize:'clamp(1.8rem,4vw,3rem)', marginBottom:16 }}>Nos services médicaux</h1>
-        <p style={{ color:'rgba(255,255,255,0.72)', fontSize:'1.05rem', maxWidth:540, margin:'0 auto' }}>Une gamme complète de soins médicaux et paramédicaux pour toute la famille.</p>
+
+      {/* En-tête */}
+      <div style={{ paddingTop: 70, background: 'white', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '36px 5% 28px', textAlign: 'center' }}>
+          <h1 style={{ fontWeight: 900, fontSize: 'clamp(1.6rem,3vw,2.2rem)', color: '#0f172a', marginBottom: 8 }}>
+            Nos services
+          </h1>
+          <div style={{ width: 48, height: 3, background: '#1641C8', borderRadius: 2, margin: '0 auto 14px' }} />
+          <p style={{ color: '#64748b', fontSize: 15 }}>Rencontrez nos médecins et spécialistes</p>
+        </div>
       </div>
-      <div style={{ maxWidth:1200, margin:'0 auto', padding:'60px 5%' }}>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(340px, 1fr))', gap:24 }}>
-          {SERVICES.map(s => (
-            <div key={s.slug} style={{ background:'white', borderRadius:20, border:'1px solid #e2e8f0', overflow:'hidden', transition:'all 0.22s' }}
-              onMouseEnter={e => { const d=e.currentTarget; d.style.transform='translateY(-4px)'; d.style.boxShadow='0 16px 48px rgba(0,0,0,0.1)' }}
-              onMouseLeave={e => { const d=e.currentTarget; d.style.transform='none'; d.style.boxShadow='none' }}>
-              <div style={{ height:4, background:s.couleur }} />
-              <div style={{ padding:28 }}>
-                <div style={{ display:'flex', alignItems:'flex-start', gap:16, marginBottom:16 }}>
-                  <div style={{ width:52, height:52, borderRadius:16, background:s.couleur+'14', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <i className={`fa-solid ${s.icon}`} style={{ color:s.couleur, fontSize:22 }} />
-                  </div>
-                  <div>
-                    <h3 style={{ fontWeight:800, color:'#0f172a', fontSize:'1.05rem', marginBottom:4 }}>{s.titre}</h3>
-                    <span style={{ color:'#64748b', fontSize:12, fontWeight:600 }}>{s.nb} professionnel{s.nb>1?'s':''}</span>
-                  </div>
+
+      {/* Grille photo 3 colonnes */}
+      <div style={{ background: '#f8fafc', minHeight: '80vh', padding: '32px 5% 64px' }}>
+        <div style={{
+          maxWidth: 960,
+          margin: '0 auto',
+          display: 'grid',
+          gridTemplateColumns: 'repeat(3, 1fr)',
+          gap: 16,
+        }}>
+          {SERVICES.map((s) => (
+            <Link key={s.key} href={s.href} style={{ textDecoration: 'none', display: 'block' }}>
+              <div
+                style={{
+                  background: 'white',
+                  borderRadius: 16,
+                  overflow: 'hidden',
+                  border: '1px solid #e2e8f0',
+                  transition: 'all 0.22s',
+                  cursor: 'pointer',
+                }}
+                onMouseEnter={e => {
+                  const d = e.currentTarget
+                  d.style.transform = 'translateY(-4px)'
+                  d.style.boxShadow = `0 12px 32px ${s.couleur}25`
+                  d.style.borderColor = s.couleur + '60'
+                }}
+                onMouseLeave={e => {
+                  const d = e.currentTarget
+                  d.style.transform = 'none'
+                  d.style.boxShadow = 'none'
+                  d.style.borderColor = '#e2e8f0'
+                }}
+              >
+                {/* Photo */}
+                <div style={{ position: 'relative', height: 160, overflow: 'hidden', background: s.couleur + '15' }}>
+                  <img
+                    src={s.photo}
+                    alt={s.titre}
+                    style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+                    onError={e => { e.currentTarget.style.display = 'none' }}
+                  />
+                  <div style={{
+                    position: 'absolute', bottom: 0, left: 0, right: 0,
+                    height: 48,
+                    background: 'linear-gradient(to top, rgba(0,0,0,0.25), transparent)',
+                    pointerEvents: 'none',
+                  }} />
                 </div>
-                <p style={{ color:'#64748b', fontSize:14, lineHeight:1.65, marginBottom:20 }}>{s.desc}</p>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:20 }}>
-                  {s.details.slice(0,4).map(d => (
-                    <span key={d} style={{ background:s.couleur+'10', color:s.couleur, borderRadius:20, padding:'3px 10px', fontSize:12, fontWeight:600 }}>{d}</span>
-                  ))}
-                </div>
-                <div style={{ display:'flex', gap:10 }}>
-                  <Link href={`/services/${s.slug}`} style={{ flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:8, background:s.couleur, color:'white', borderRadius:12, padding:'10px 0', fontWeight:700, fontSize:14, textDecoration:'none' }}>
-                    Voir le service
-                  </Link>
-                  <button onClick={() => setRdvOpen(true)} style={{ width:42, height:42, borderRadius:12, background:s.couleur+'12', border:'none', color:s.couleur, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center' }}>
-                    <i className="fa-solid fa-calendar-plus" />
-                  </button>
+                {/* Titre */}
+                <div style={{ padding: '14px 16px 16px', textAlign: 'center' }}>
+                  <span style={{ fontWeight: 800, color: '#0f172a', fontSize: 14 }}>{s.titre}</span>
                 </div>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
+
       <Footer />
     </>
   )
