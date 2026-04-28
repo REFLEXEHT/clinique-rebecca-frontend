@@ -35,6 +35,7 @@ function cacheKey(text: string, lang: Lang): string {
 }
 
 function getFromCache(text: string, lang: Lang): string | null {
+  if (typeof window === 'undefined') return null
   try {
     return localStorage.getItem(cacheKey(text, lang))
   } catch { return null }
@@ -84,6 +85,9 @@ function saveOriginals(nodes: Text[]) {
 
 // ── Traducteur principal ──────────────────────────────────────────────────────
 export async function translatePage(lang: Lang, apiBase = '/api'): Promise<void> {
+  // Guard: ne s'exécute que côté client
+  if (typeof window === 'undefined' || typeof document === 'undefined') return
+
   // Sauvegarder la langue choisie
   try { localStorage.setItem('rb_lang', lang) } catch {}
 

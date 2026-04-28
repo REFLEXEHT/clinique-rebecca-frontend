@@ -1,11 +1,6 @@
 'use client'
-/**
- * TranslationContext — Fournit la langue courante à toute l'application
- * et déclenche la traduction IA sur chaque changement de page.
- */
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { translatePage, getCurrentLang, type Lang } from '@/lib/translator'
-import { usePathname } from 'next/navigation'
 
 interface TranslationContextType {
   lang: Lang
@@ -22,24 +17,42 @@ const TranslationContext = createContext<TranslationContextType>({
 export function TranslationProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState]   = useState<Lang>('fr')
   const [translating, setTranslating] = useState(false)
-  const pathname = usePathname()
+  const [mounted, setMounted]  = useState(false)
 
-  // Initialiser avec la langue sauvegardée
+  // Initialiser après le montage (évite SSR mismatch)
   useEffect(() => {
+    setMounted(true)
     const saved = getCurrentLang()
     setLangState(saved)
   }, [])
 
-  // Retarder légèrement après chaque changement de page pour laisser
-  // React finir le rendu avant de scanner le DOM
+  // Re-traduire quand la route change (détection via MutationObserver sur le body)
   useEffect(() => {
-    if (lang === 'fr') return
+    if (!mounted || lang === 'fr') return
+
+    // Petit délai pour laisser React finir le rendu
     const timer = setTimeout(() => {
       setTranslating(true)
       translatePage(lang).finally(() => setTranslating(false))
-    }, 350)
+    }, 400)
+
     return () => clearTimeout(timer)
-  }, [lang, pathname])
+  }, [lang, mounted])
+
+  // Écouter les changements de route via popstate + click sur liens
+  useEffect(() => {
+    if (!mounted || lang === 'fr') return
+
+    const onNavigate = () => {
+      setTimeout(() => {
+        setTranslating(true)
+        translatePage(lang).finally(() => setTranslating(false))
+      }, 500)
+    }
+
+    window.addEventListener('popstate', onNavigate)
+    return () => window.removeEventListener('popstate', onNavigate)
+  }, [mounted, lang])
 
   const setLang = useCallback((newLang: Lang) => {
     setLangState(newLang)
@@ -54,8 +67,7 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
   return (
     <TranslationContext.Provider value={{ lang, setLang, translating }}>
       {children}
-      {/* Indicateur de chargement discret pendant la traduction */}
-      {translating && (
+      {translating && mounted && (
         <div style={{
           position: 'fixed', bottom: 80, left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(15,23,42,0.88)', color: 'white',
