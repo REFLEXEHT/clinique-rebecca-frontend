@@ -1,260 +1,187 @@
 'use client'
 export const dynamic = 'force-dynamic'
-import { useState } from 'react'
+// app/specialistes/[id]/page.tsx — Profil public spécialiste (lecture seule)
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import toast from 'react-hot-toast'
-import { authApi } from '@/lib/api'
-import { useAuth } from '@/context/AuthContext'
+import Navbar from '@/components/layout/Navbar'
+import Footer from '@/components/layout/Footer'
+import RdvModal from '@/components/ui/RdvModal'
+import { specialistesApi } from '@/lib/api'
+import { Specialiste } from '@/types'
 
-const ROLES = [
-  { value:'patient',   label:'Patient',        icon:'fa-user',          color:'#1641C8', desc:'Accédez à vos RDV et résultats' },
-  { value:'medecin',   label:'Médecin',         icon:'fa-user-doctor',   color:'#0d9488', desc:'Gérez vos consultations' },
-  { value:'caissier',  label:'Caissier',        icon:'fa-cash-register', color:'#d97706', desc:'Encaissements et paiements' },
-  { value:'labo',      label:'Laboratoire',     icon:'fa-flask-vial',    color:'#0891b2', desc:'Analyses et résultats' },
-  { value:'pharmacie', label:'Pharmacie',       icon:'fa-pills',         color:'#be185d', desc:'Gestion des stocks' },
-]
-
-const SPECIALITES_MEDECIN = [
-  'Chirurgie générale','Neurochirurgie','Neurologie','Orthopédie','Pédiatrie',
-  'Dermatologie','Urologie','ORL','Gynécologie','Chirurgie pédiatrique',
-  'Médecine interne','Ophtalmologie','Cardiologie','Endocrinologie',
-]
-
-const TYPES_MEDECIN = [
-  { value:'investisseur',           label:'Médecin Investisseur',       desc:'70% consultations · 80% gestes', icon:'fa-chart-line',  color:'#1641C8' },
-  { value:'affilie',                label:'Médecin Affilié',            desc:'60% consultations · 70% gestes', icon:'fa-handshake',   color:'#0d9488' },
-  { value:'exploitant',             label:'Médecin Exploitant',         desc:'100% revenus + loyer fixe',      icon:'fa-building',    color:'#d97706' },
-  { value:'investisseur_exploitant',label:'Investisseur-Exploitant',    desc:'100% revenus + loyer fixe',      icon:'fa-star',        color:'#7c3aed' },
-]
-
-interface FormData {
-  nom: string; email: string; telephone: string
-  password: string; confirmPassword: string
-  specialite?: string; type_medecin?: string
+const SPECS_DATA: Record<number, Specialiste & { tags: string[]; bio: string; disponibilites: string; experience: string }> = {
+  1: { id:1, nom:'Dr. Michel Dubois', specialite:'Chirurgie générale', description:'Chirurgien senior', emoji:'🔬', categorie:'chirurgie', email:'m.dubois@cliniquerebecca.ht', telephone:'+509 3456-0001', actif:true, ordre:0, bio:'Chirurgien général spécialisé dans la chirurgie digestive et laparoscopique. Plus de 15 ans d\'expérience dans les interventions chirurgicales complexes, formé à l\'Hôpital Universitaire d\'État d\'Haïti et en France.', tags:['Chirurgie digestive','Laparoscopie','Urgences chirurgicales','Hernies'], disponibilites:'Lun–Ven 08h–17h · Sam 08h–12h', experience:'15 ans d\'expérience' },
+  2: { id:2, nom:'Dr. Anne-Marie Pierre', specialite:'Neurochirurgie', description:'Neurochirurgie pédiatrique', emoji:'🧠', categorie:'neurochirurgie', email:'am.pierre@cliniquerebecca.ht', telephone:'+509 3456-0002', actif:true, ordre:0, bio:'Experte en neurochirurgie pédiatrique et adulte, spécialisée dans le traitement des tumeurs cérébrales, des malformations vasculaires et de la pathologie de la colonne vertébrale.', tags:['Tumeurs cérébrales','Chirurgie de la colonne','Neurochirurgie pédiatrique'], disponibilites:'Mar–Jeu 08h–16h', experience:'12 ans d\'expérience' },
+  3: { id:3, nom:'Dr. Jean-Claude Étienne', specialite:'Neurologie', description:'Épilepsie, AVC', emoji:'🧬', categorie:'neurologie', email:'jc.etienne@cliniquerebecca.ht', telephone:'+509 3456-0003', actif:true, ordre:0, bio:'Neurologue expérimenté dans le diagnostic et le traitement de l\'épilepsie, des AVC et des pathologies démyélinisantes comme la sclérose en plaques.', tags:['Épilepsie','AVC','Sclérose en plaques'], disponibilites:'Lun–Ven 08h–17h', experience:'10 ans d\'expérience' },
+  4: { id:4, nom:'Dr. Sophie Lamour', specialite:'Orthopédie', description:'Traumatologie', emoji:'🦴', categorie:'orthopedie', email:'s.lamour@cliniquerebecca.ht', telephone:'+509 3456-0004', actif:true, ordre:0, bio:'Orthopédiste spécialisée en traumatologie et chirurgie prothétique. Prise en charge des fractures complexes, des arthroses sévères et remplacement articulaire.', tags:['Prothèse de hanche','Fractures complexes','Arthroscopie'], disponibilites:'Lun–Sam 08h–17h', experience:'13 ans d\'expérience' },
+  5: { id:5, nom:'Dr. Paul Désir', specialite:'Pédiatrie', description:'Néonatologie', emoji:'👶', categorie:'pediatrie', email:'p.desir@cliniquerebecca.ht', telephone:'+509 3456-0005', actif:true, ordre:0, bio:'Pédiatre dévoué spécialisé en néonatologie et pédiatrie générale. Suivi de croissance, vaccinations, maladies infectieuses de l\'enfant et maladies chroniques pédiatriques.', tags:['Néonatologie','Pédiatrie générale','Vaccinations','Maladies chroniques'], disponibilites:'Lun–Ven 08h–17h · Sam 08h–15h', experience:'11 ans d\'expérience' },
+  6: { id:6, nom:'Dr. Isabelle François', specialite:'Dermatologie', description:'Maladies de peau', emoji:'🌸', categorie:'dermatologie', email:'i.francois@cliniquerebecca.ht', telephone:'+509 3456-0006', actif:true, ordre:0, bio:'Dermatologue spécialisée dans les maladies inflammatoires de la peau, les infections cutanées, les pathologies pigmentaires et la dermatologie cosmétique.', tags:['Eczéma','Psoriasis','Acné','Dermatologie cosmétique'], disponibilites:'Lun–Ven 09h–17h', experience:'9 ans d\'expérience' },
+  7: { id:7, nom:'Dr. Henri Nazaire', specialite:'Urologie', description:'Prostate, système urinaire', emoji:'💊', categorie:'urologie', email:'h.nazaire@cliniquerebecca.ht', telephone:'+509 3456-0007', actif:true, ordre:0, bio:'Urologue expérimenté dans le traitement des pathologies de la prostate, des lithiases urinaires, des infections urinaires récidivantes et des troubles de la fertilité masculine.', tags:['Prostate','Lithiase urinaire','Fertilité masculine'], disponibilites:'Lun–Ven 08h–17h', experience:'14 ans d\'expérience' },
+  8: { id:8, nom:'Dr. Marie-Rose Cajuste', specialite:'ORL', description:'Oreille, nez, gorge', emoji:'👂', categorie:'orl', email:'mr.cajuste@cliniquerebecca.ht', telephone:'+509 3456-0008', actif:true, ordre:0, bio:'Spécialiste en oto-rhino-laryngologie. Prise en charge des pathologies de l\'oreille, du nez, des sinus, de la gorge et du larynx, avec ou sans chirurgie.', tags:['Sinusite','Troubles auditifs','Chirurgie ORL','Amygdales'], disponibilites:'Lun–Sam 07h–16h', experience:'8 ans d\'expérience' },
+  9: { id:9, nom:'Dr. Claudette Joseph', specialite:'Gynécologie-Obstétrique', description:'Suivi grossesse', emoji:'🌺', categorie:'gynecologie', email:'c.joseph@cliniquerebecca.ht', telephone:'+509 3456-0009', actif:true, ordre:0, bio:'Gynécologue-obstétricienne assurant le suivi de grossesse, les accouchements, et la santé reproductive de la femme tout au long de sa vie.', tags:['Suivi grossesse','Accouchement','Ménopause','Contraception'], disponibilites:'Lun–Sam 07h–17h', experience:'16 ans d\'expérience' },
+  10: { id:10, nom:'Dr. Patrick Dorival', specialite:'Chirurgie pédiatrique', description:'Chirurgie nourrissons', emoji:'🏥', categorie:'chir-ped', email:'p.dorival@cliniquerebecca.ht', telephone:'+509 3456-0010', actif:true, ordre:0, bio:'Chirurgien pédiatrique spécialisé dans les interventions chez les nourrissons et jeunes enfants, y compris les malformations congénitales.', tags:['Chirurgie néonatale','Hernies','Appendicite','Malformations'], disponibilites:'Lun–Ven 08h–16h', experience:'10 ans d\'expérience' },
+  11: { id:11, nom:'Dr. Réginald Louis', specialite:'Médecine interne', description:'Diabète, hypertension', emoji:'❤️', categorie:'medecine-interne', email:'r.louis@cliniquerebecca.ht', telephone:'+509 3456-0011', actif:true, ordre:0, bio:'Interniste expérimenté dans la prise en charge des maladies chroniques complexes. Diabète, hypertension, dyslipidémie, maladies auto-immunes et polyvasculaires.', tags:['Diabète','Hypertension','Maladies auto-immunes','Gériatrie'], disponibilites:'Lun–Sam 07h–17h', experience:'18 ans d\'expérience' },
+  12: { id:12, nom:'Dr. Nathalie Vincent', specialite:'Ophtalmologie', description:'Chirurgie oculaire', emoji:'👁️', categorie:'ophtalmologie', email:'n.vincent@cliniquerebecca.ht', telephone:'+509 3456-0012', actif:true, ordre:0, bio:'Ophtalmologue spécialisée en chirurgie de la cataracte, traitement du glaucome, pathologies rétiniennes et réfraction oculaire.', tags:['Cataracte','Glaucome','Rétine','Réfraction'], disponibilites:'Mar–Sam 08h–17h', experience:'12 ans d\'expérience' },
 }
 
-export default function RegisterPage() {
-  const [loading, setLoading] = useState(false)
-  const [selectedRole, setSelectedRole] = useState('patient')
-  const [selectedTypeMedecin, setSelectedTypeMedecin] = useState('')
-  const [success, setSuccess] = useState(false)
-  const [showPwd, setShowPwd] = useState(false)
-  const { login } = useAuth()
-  const router = useRouter()
-  const { register, handleSubmit, watch, formState: { errors } } = useForm<FormData>()
-  const pwd = watch('password')
-  const isMedecin = selectedRole === 'medecin'
+export default function SpecialistePage() {
+  const params = useParams()
+  const id = Number(params.id)
+  const [rdvOpen, setRdvOpen] = useState(false)
+  const [spec, setSpec] = useState(SPECS_DATA[id] || null)
 
-  const onSubmit = async (data: FormData) => {
-    if (isMedecin && !data.specialite) { toast.error('Sélectionnez une spécialité.'); return }
-    if (isMedecin && !selectedTypeMedecin) { toast.error('Sélectionnez le type de médecin.'); return }
-    setLoading(true)
-    try {
-      const payload: Record<string, unknown> = {
-        nom: data.nom, email: data.email, telephone: data.telephone,
-        password: data.password, role: selectedRole,
-        ...(isMedecin ? { specialite: data.specialite, type_medecin: selectedTypeMedecin } : {})
-      }
-      const res = await authApi.register(payload)
-      if (res.data?.access_token && res.data?.user) {
-        login(res.data.access_token, res.data.user)
-        toast.success(`Bienvenue, ${res.data.user.nom} !`)
-        router.push('/patient/dashboard')
-      } else { setSuccess(true) }
-    } catch (err: unknown) {
-      const e = err as { response?: { data?: { detail?: unknown } }; code?: string }
-      const msg = e.response?.data?.detail
-      if (typeof msg === 'string') toast.error(msg)
-      else if (Array.isArray(msg)) toast.error((msg as {msg:string}[]).map(x => x.msg).join(', '))
-      else if (e.code === 'ERR_NETWORK') toast.error('Serveur inaccessible.')
-      else toast.error("Erreur lors de l'inscription")
-    } finally { setLoading(false) }
-  }
+  useEffect(() => {
+    if (id) {
+      specialistesApi.getById(id)
+        .then(r => setSpec(prev => ({ ...SPECS_DATA[id], ...r.data, tags: SPECS_DATA[id]?.tags || [], bio: SPECS_DATA[id]?.bio || '' })))
+        .catch(() => setSpec(SPECS_DATA[id] || null))
+    }
+  }, [id])
 
-  if (success) return (
-    <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center', background:'linear-gradient(135deg,#0f1e3d,#1641C8 60%,#0d9488)', padding:24 }}>
-      <div style={{ background:'white', borderRadius:24, padding:48, textAlign:'center', maxWidth:420, width:'100%', boxShadow:'0 32px 80px rgba(0,0,0,0.3)' }}>
-        <div style={{ width:72, height:72, borderRadius:'50%', background:'#dcfce7', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 20px' }}>
-          <i className="fa-solid fa-clock" style={{ color:'#16a34a', fontSize:28 }} />
-        </div>
-        <h2 style={{ fontWeight:900, color:'#0f172a', fontSize:'1.5rem', marginBottom:10 }}>Compte soumis !</h2>
-        <p style={{ color:'#64748b', lineHeight:1.7, marginBottom:8 }}>Votre compte <strong style={{ textTransform:'capitalize' }}>{selectedRole}</strong> est en attente de validation par l'administrateur.</p>
-        <p style={{ color:'#94a3b8', fontSize:13, marginBottom:28 }}>Vous recevrez une notification dès l'activation.</p>
-        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-          <Link href="/login" style={{ display:'block', background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', textDecoration:'none', borderRadius:12, padding:'13px 0', fontWeight:700, textAlign:'center' }}>
-            <i className="fa-solid fa-right-to-bracket" style={{ marginRight:8 }} />Se connecter
-          </Link>
-          <Link href="/" style={{ display:'block', background:'white', color:'#64748b', textDecoration:'none', borderRadius:12, padding:'13px 0', fontWeight:600, textAlign:'center', border:'1px solid #e2e8f0', fontSize:14 }}>
-            <i className="fa-solid fa-house" style={{ marginRight:8 }} />Retour à l&#39;accueil
-          </Link>
-        </div>
+  if (!spec) return (
+    <>
+      <Navbar onRdvClick={() => setRdvOpen(true)} />
+      <div className="min-h-screen flex items-center justify-center text-slate-400 pt-[70px]">
+        Spécialiste introuvable
       </div>
-    </div>
+    </>
   )
 
   return (
-    <div style={{ minHeight:'100vh', display:'grid', gridTemplateColumns:'1fr 1.4fr', background:'white' }}>
+    <>
+      <Navbar onRdvClick={() => setRdvOpen(true)} />
+      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
 
-      {/* ── PANNEAU GAUCHE ──────────────────────────────────────────────── */}
-      <div style={{ background:'linear-gradient(160deg,#0f1e3d 0%,#1641C8 55%,#0d9488 100%)', display:'flex', flexDirection:'column', justifyContent:'center', padding:'56px 48px', position:'relative', overflow:'hidden' }}>
-        <div style={{ position:'absolute', top:-100, right:-100, width:350, height:350, borderRadius:'50%', background:'rgba(255,255,255,0.04)' }} />
-        <div style={{ position:'absolute', bottom:-80, left:-60, width:280, height:280, borderRadius:'50%', background:'rgba(13,148,136,0.12)' }} />
-        <div style={{ position:'relative', color:'white' }}>
-          <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:40 }}>
-            <div style={{ width:44, height:44, background:'rgba(255,255,255,0.15)', borderRadius:12, display:'flex', alignItems:'center', justifyContent:'center', backdropFilter:'blur(8px)' }}>
-              <i className="fa-solid fa-hospital-user" style={{ fontSize:20 }} />
-            </div>
-            <div>
-              <div style={{ fontSize:10, fontWeight:700, letterSpacing:3, color:'rgba(255,255,255,0.5)', textTransform:'uppercase' }}>Clinique de la</div>
-              <div style={{ fontSize:18, fontWeight:900 }}>REBECCA</div>
-            </div>
-          </div>
-
-          <h2 style={{ fontSize:'2rem', fontWeight:900, lineHeight:1.2, marginBottom:12 }}>Rejoignez<br /><em style={{ fontStyle:'italic', color:'#5eead4', fontFamily:'Georgia,serif' }}>notre famille</em><br />de soins</h2>
-          <p style={{ color:'rgba(255,255,255,0.68)', lineHeight:1.7, marginBottom:40, fontSize:15 }}>Créez votre espace santé personnel en quelques minutes. Accédez à vos rendez-vous, résultats et médecins.</p>
-
-          {/* Avantages */}
-          {[
-            { icon:'fa-shield-heart', color:'#5eead4', txt:'Données médicales sécurisées' },
-            { icon:'fa-bell', color:'#5eead4', txt:'Rappels RDV automatiques par SMS' },
-            { icon:'fa-flask', color:'#5eead4', txt:'Résultats labo sur votre téléphone' },
-            { icon:'fa-video', color:'#5eead4', txt:'Consultations vidéo disponibles' },
-          ].map(a => (
-            <div key={a.txt} style={{ display:'flex', alignItems:'center', gap:12, marginBottom:14 }}>
-              <div style={{ width:36, height:36, borderRadius:10, background:'rgba(13,148,136,0.25)', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                <i className={`fa-solid ${a.icon}`} style={{ color:a.color, fontSize:14 }} />
-              </div>
-              <span style={{ color:'rgba(255,255,255,0.82)', fontSize:14 }}>{a.txt}</span>
-            </div>
-          ))}
-
-          <div style={{ marginTop:36, paddingTop:24, borderTop:'1px solid rgba(255,255,255,0.12)' }}>
-            <p style={{ color:'rgba(255,255,255,0.5)', fontSize:12 }}>Déjà inscrit ?</p>
-            <Link href="/login" style={{ color:'#5eead4', fontWeight:700, textDecoration:'none', fontSize:15 }}>
-              <i className="fa-solid fa-right-to-bracket" style={{ marginRight:6 }} />Se connecter →
-            </Link>
-          </div>
+      {/* Header */}
+      <div className="page-header">
+        <div className="breadcrumb">
+          <Link href="/">Accueil</Link> / <Link href="/specialites">Spécialités</Link> / <span>{spec.nom}</span>
         </div>
       </div>
 
-      {/* ── PANNEAU DROIT — formulaire ───────────────────────────────────── */}
-      <div style={{ overflowY:'auto', padding:'48px 56px', background:'#fafbfc', display:'flex', flexDirection:'column', justifyContent:'center' }}>
-        <div style={{ maxWidth:480, width:'100%', margin:'0 auto' }}>
-          <h1 style={{ fontSize:'1.7rem', fontWeight:900, color:'#0f172a', marginBottom:4 }}>Créer un compte</h1>
-          <p style={{ color:'#64748b', marginBottom:28, fontSize:15 }}>Choisissez votre profil et remplissez vos informations</p>
-
-          {/* Sélection rôle */}
-          <div style={{ marginBottom:24 }}>
-            <p style={{ fontSize:12, fontWeight:700, color:'#94a3b8', textTransform:'uppercase', letterSpacing:2, marginBottom:12 }}>Je suis</p>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:8 }}>
-              {ROLES.map(r => (
-                <button key={r.value} type="button" onClick={() => { setSelectedRole(r.value); setSelectedTypeMedecin('') }} style={{
-                  padding:'12px 6px', borderRadius:14, border:`2px solid ${selectedRole===r.value ? r.color : '#e2e8f0'}`,
-                  background: selectedRole===r.value ? `${r.color}10` : 'white',
-                  cursor:'pointer', textAlign:'center', transition:'all 0.2s'
-                }}>
-                  <i className={`fa-solid ${r.icon}`} style={{ color:r.color, fontSize:20, display:'block', marginBottom:6 }} />
-                  <span style={{ fontSize:10, fontWeight:700, color:selectedRole===r.value ? r.color : '#94a3b8' }}>{r.label}</span>
+      <div className="py-14 px-[5%] max-w-[900px] mx-auto">
+        {/* Card profil */}
+        <div className="card p-8 mb-8 shadow-lg">
+          <div className="flex gap-8 items-start">
+            <div className="w-[100px] h-[100px] rounded-3xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-5xl flex-shrink-0 shadow-md">
+              {spec.emoji}
+            </div>
+            <div className="flex-1">
+              <h1 className="font-extrabold text-[26px] text-slate-800 mb-1">{spec.nom}</h1>
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <span className="badge-blue text-sm px-3 py-1">{spec.specialite}</span>
+                {(spec as any).experience && <span className="badge-gray text-xs">{(spec as any).experience}</span>}
+                <span className="text-yellow-400 text-sm">★★★★★</span>
+              </div>
+              <p className="text-slate-500 text-[15px] leading-relaxed mb-5">{spec.bio || spec.description}</p>
+              <div className="flex flex-wrap gap-2 mb-5">
+                {spec.tags?.map(tag => (
+                  <span key={tag} className="px-3 py-1 bg-blue-50 text-[#1641C8] text-xs font-bold rounded-full border border-blue-100">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-4">
+                <button onClick={() => setRdvOpen(true)} className="btn-primary">
+                  <i className="fa-regular fa-calendar-check"/> Prendre rendez-vous
                 </button>
+                <Link href="/consultation" className="btn-secondary">
+                  <i className="fa-solid fa-video"/> Consultation vidéo
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-[1fr_300px] gap-6">
+          <div className="space-y-5">
+            {/* Domaines d'expertise */}
+            <div className="card p-6">
+              <h3 className="font-extrabold text-[16px] mb-4 flex items-center gap-2">
+                <i className="fa-solid fa-microscope text-[#1641C8]"/> Domaines d'expertise
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                {spec.tags?.map(tag => (
+                  <div key={tag} className="flex items-center gap-2.5 p-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-semibold text-slate-700">
+                    <i className="fa-solid fa-check text-green-500 text-xs"/> {tag}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Informations pratiques */}
+            <div className="card p-6">
+              <h3 className="font-extrabold text-[16px] mb-4 flex items-center gap-2">
+                <i className="fa-solid fa-circle-info text-[#1641C8]"/> Informations pratiques
+              </h3>
+              <div className="space-y-3">
+                {[
+                  { icon:'fa-clock', label:'Disponibilités', value:(spec as any).disponibilites || 'Lun–Ven 08h–17h' },
+                  { icon:'fa-location-dot', label:'Lieu', value:'Clinique de la Rebecca, Haïti' },
+                  { icon:'fa-language', label:'Langues', value:'Français · Créole haïtien' },
+                  { icon:'fa-money-bill', label:'Consultation', value:'À partir de 1 500 HTG' },
+                ].map(i => (
+                  <div key={i.label} className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-[#1641C8] flex-shrink-0 mt-0.5">
+                      <i className={`fa-solid ${i.icon} text-xs`}/>
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{i.label}</div>
+                      <div className="font-semibold text-slate-700 text-sm">{i.value}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar : contact + RDV */}
+          <div className="space-y-4">
+            <div className="card p-5 border-2 border-[#1641C8]/10">
+              <h4 className="font-extrabold text-[14px] mb-4">Prendre rendez-vous</h4>
+              <button onClick={() => setRdvOpen(true)} className="btn-primary w-full justify-center mb-3">
+                <i className="fa-regular fa-calendar-check"/> En personne
+              </button>
+              <Link href="/consultation" className="btn-secondary w-full justify-center text-sm no-underline inline-flex">
+                <i className="fa-solid fa-video"/> Consultation vidéo
+              </Link>
+              <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
+                {spec.telephone && (
+                  <a href={`https://wa.me/${spec.telephone.replace(/[^0-9]/g,'')}`} target="_blank" rel="noreferrer"
+                    className="flex items-center gap-2 text-sm text-green-600 font-medium no-underline hover:text-green-700">
+                    <i className="fa-brands fa-whatsapp text-green-500"/> {spec.telephone}
+                  </a>
+                )}
+                {spec.email && (
+                  <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <i className="fa-solid fa-envelope"/> {spec.email}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Témoignages */}
+            <div className="card p-5">
+              <h4 className="font-extrabold text-[14px] mb-3">Avis patients</h4>
+              {[
+                { n:'M.T.', note:'★★★★★', txt:'Médecin très professionnel et à l\'écoute.' },
+                { n:'P.J.', note:'★★★★★', txt:'Excellent suivi, je recommande vivement.' },
+              ].map(a => (
+                <div key={a.n} className="mb-3 last:mb-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-7 h-7 rounded-full bg-blue-100 text-[#1641C8] flex items-center justify-center text-xs font-bold">{a.n}</div>
+                    <span className="text-yellow-400 text-xs">{a.note}</span>
+                  </div>
+                  <p className="text-slate-500 text-xs italic leading-relaxed">"{a.txt}"</p>
+                </div>
               ))}
             </div>
-            {selectedRole !== 'patient' && (
-              <div style={{ marginTop:10, background:'#fffbeb', border:'1px solid #fcd34d', borderRadius:10, padding:'10px 14px', display:'flex', gap:10, alignItems:'flex-start' }}>
-                <i className="fa-solid fa-triangle-exclamation" style={{ color:'#d97706', marginTop:2 }} />
-                <span style={{ color:'#92400e', fontSize:13 }}>Ce compte nécessite une validation par l'administrateur avant activation.</span>
-              </div>
-            )}
           </div>
-
-          <form onSubmit={handleSubmit(onSubmit)}>
-            {/* Champs de base */}
-            {[
-              { name:'nom' as const,       label:'Nom complet *',       type:'text',  placeholder:'Prénom Nom',       req:true },
-              { name:'email' as const,     label:'Email *',             type:'email', placeholder:'votre@email.com',  req:true },
-              { name:'telephone' as const, label:'Téléphone WhatsApp',  type:'tel',   placeholder:'+509 3xxx-xxxx',   req:false },
-            ].map(f => (
-              <div key={f.name} style={{ marginBottom:16 }}>
-                <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:14, marginBottom:6 }}>{f.label}</label>
-                <input {...register(f.name, f.req ? { required:true } : {})} type={f.type} placeholder={f.placeholder}
-                  style={{ width:'100%', padding:'12px 14px', borderRadius:10, border:`1px solid ${errors[f.name]?'#ef4444':'#d1d5db'}`, fontSize:15, outline:'none', boxSizing:'border-box', background:'white' }} />
-              </div>
-            ))}
-
-            {/* Section médecin */}
-            {isMedecin && (
-              <div style={{ background:'white', border:'1px solid #e2e8f0', borderRadius:16, overflow:'hidden', marginBottom:16 }}>
-                <div style={{ background:'linear-gradient(135deg,#f0f9ff,#e0f2fe)', padding:'14px 18px', borderBottom:'1px solid #e2e8f0' }}>
-                  <p style={{ fontWeight:700, color:'#0369a1', fontSize:13, margin:0 }}>
-                    <i className="fa-solid fa-user-doctor" style={{ marginRight:8 }} />Profil médical
-                  </p>
-                </div>
-                <div style={{ padding:18 }}>
-                  <div style={{ marginBottom:16 }}>
-                    <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:14, marginBottom:6 }}>Spécialité *</label>
-                    <select {...register('specialite')} style={{ width:'100%', padding:'12px 14px', borderRadius:10, border:'1px solid #d1d5db', fontSize:14, background:'white', boxSizing:'border-box' }}>
-                      <option value="">Choisir une spécialité…</option>
-                      {SPECIALITES_MEDECIN.map(s => <option key={s} value={s}>{s}</option>)}
-                    </select>
-                  </div>
-                  <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:14, marginBottom:10 }}>Type de médecin *</label>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8 }}>
-                    {TYPES_MEDECIN.map(t => (
-                      <button key={t.value} type="button" onClick={() => setSelectedTypeMedecin(t.value)} style={{
-                        padding:14, borderRadius:12, border:`2px solid ${selectedTypeMedecin===t.value ? t.color : '#e2e8f0'}`,
-                        background: selectedTypeMedecin===t.value ? `${t.color}08` : 'white',
-                        cursor:'pointer', textAlign:'left', transition:'all 0.2s'
-                      }}>
-                        <i className={`fa-solid ${t.icon}`} style={{ color:t.color, marginBottom:6, display:'block' }} />
-                        <div style={{ fontWeight:700, color:selectedTypeMedecin===t.value ? t.color : '#0f172a', fontSize:12, marginBottom:3 }}>{t.label}</div>
-                        <div style={{ color:'#94a3b8', fontSize:11 }}>{t.desc}</div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Mots de passe */}
-            {[
-              { name:'password' as const,        label:'Mot de passe *',        validate:{ required:true, minLength:{ value:6, message:'6 caractères min.' } } },
-              { name:'confirmPassword' as const,  label:'Confirmer le mot de passe *', validate:{ required:true, validate: (v: string) => v === pwd || 'Mots de passe différents' } },
-            ].map(f => (
-              <div key={f.name} style={{ marginBottom:16 }}>
-                <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:14, marginBottom:6 }}>{f.label}</label>
-                <div style={{ position:'relative' }}>
-                  <input {...register(f.name, f.validate as Parameters<typeof register>[1])} type={showPwd?'text':'password'} placeholder="••••••••"
-                    style={{ width:'100%', padding:'12px 44px 12px 14px', borderRadius:10, border:`1px solid ${errors[f.name]?'#ef4444':'#d1d5db'}`, fontSize:15, outline:'none', boxSizing:'border-box', background:'white' }} />
-                  {f.name === 'password' && (
-                    <button type="button" onClick={() => setShowPwd(!showPwd)} style={{ position:'absolute', right:14, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'#94a3b8', cursor:'pointer' }}>
-                      <i className={`fa-solid ${showPwd?'fa-eye-slash':'fa-eye'}`} />
-                    </button>
-                  )}
-                </div>
-                {errors[f.name] && <p style={{ color:'#ef4444', fontSize:12, marginTop:4 }}>{errors[f.name]?.message as string}</p>}
-              </div>
-            ))}
-
-            <button type="submit" disabled={loading} style={{
-              width:'100%', background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white',
-              border:'none', borderRadius:12, padding:'14px 0', fontWeight:700, fontSize:'1rem',
-              cursor:loading?'not-allowed':'pointer', opacity:loading?0.75:1,
-              boxShadow:'0 4px 16px rgba(22,65,200,0.3)', marginTop:8
-            }}>
-              {loading
-                ? <><i className="fa-solid fa-spinner fa-spin" style={{ marginRight:8 }} />Création en cours…</>
-                : <><i className="fa-solid fa-user-plus" style={{ marginRight:8 }} />Créer mon compte</>
-              }
-            </button>
-          </form>
-
-          <p style={{ textAlign:'center', color:'#64748b', fontSize:14, marginTop:20 }}>
-            Déjà un compte ?{' '}
-            <Link href="/login" style={{ color:'#1641C8', fontWeight:700, textDecoration:'none' }}>Se connecter</Link>
-          </p>
         </div>
       </div>
-    </div>
+
+      <Footer />
+    </>
   )
 }

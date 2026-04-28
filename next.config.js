@@ -22,25 +22,19 @@ const nextConfig = {
     ]
   },
 
+  // API proxy rewrites — évite les erreurs CORS en production (Vercel → Render)
   async rewrites() {
     const backendUrl =
       process.env.NEXT_PUBLIC_API_URL ||
       'https://clinique-rebecca-api.onrender.com'
+    // Strip trailing /api if present to avoid double /api/api
     const base = backendUrl.replace(/\/api\/?$/, '')
-
-    return {
-      // FIX: "beforeFiles" → les routes API Next.js internes (/api/translate etc.)
-      // sont résolues EN PREMIER et ne passent PAS par le proxy backend.
-      // "afterFiles" → seulement si aucune route Next.js ne matche, on proxifie.
-      beforeFiles: [],
-      afterFiles: [
-        {
-          source: '/api/:path*',
-          destination: `${base}/api/:path*`,
-        },
-      ],
-      fallback: [],
-    }
+    return [
+      {
+        source: '/api/:path*',
+        destination: `${base}/api/:path*`,
+      },
+    ]
   },
 }
 

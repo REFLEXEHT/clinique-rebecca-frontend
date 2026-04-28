@@ -7,10 +7,12 @@ import RdvModal from '@/components/ui/RdvModal'
 import { specialistesApi } from '@/lib/api'
 import { LOGO_SRC } from '@/lib/images'
 
+// ─── Données statiques ────────────────────────────────────────────────────────
+
 const AVANTAGES = [
-  'Gérer vos rendez-vous facilement',
-  "Consulter vos résultats d'analyses",
-  'Communiquer avec votre médecin',
+  { icon: 'fa-calendar-check', text: 'Gérer vos rendez-vous facilement' },
+  { icon: 'fa-flask-vial',     text: "Consulter vos résultats d'analyses" },
+  { icon: 'fa-comments',       text: 'Communiquer avec votre médecin' },
 ]
 
 const SERVICES_GRILLE = [
@@ -25,11 +27,7 @@ const SERVICES_GRILLE = [
   { titre: 'Gestes médicaux',   icon: 'fa-syringe',        href: '/services/gestes',         couleur: '#6366f1' },
 ]
 
-// SVG logo inline — transparent background, blue brand color
-// Place ce SVG dans /public/logo.svg si tu veux l'utiliser comme fichier
-// Ici on utilise LOGO_SRC depuis lib/images.ts (qui pointe vers /public/logo.png)
-// Le fond noir visible dans l'image de logo est juste le fond de l'écran de capture —
-// le vrai logo PNG/SVG doit avoir un fond transparent.
+// ─── Composant principal ──────────────────────────────────────────────────────
 
 export default function HomeContent() {
   const [rdvOpen, setRdvOpen] = useState(false)
@@ -46,259 +44,342 @@ export default function HomeContent() {
       <Navbar onRdvClick={() => setRdvOpen(true)} />
       <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
 
-      {/* ══ HERO ════════════════════════════════════════════════════════════ */}
-      <section style={{
-        display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
-        minHeight: 'calc(100vh - 70px)',
-        marginTop: 70,
-        background: '#f0f4ff',
-      }}>
-        {/* Colonne gauche */}
-        <div style={{
-          display: 'flex', flexDirection: 'column', justifyContent: 'center',
-          padding: '64px 6% 64px 8%',
-        }}>
+      {/* ══ HERO ══════════════════════════════════════════════════════════════
+          Utilise les classes définies dans globals.css :
+          .hero-section, .hero-left, .hero-right, .hero-photo-wrap,
+          .hero-float, .hero-title, .hero-desc, .hero-stats
+      ═══════════════════════════════════════════════════════════════════════ */}
+      <section className="hero-section" style={{ background: '#f4f7ff' }}>
+
+        {/* Blobs de fond animés */}
+        <div className="hero-bg-blobs">
+          <div className="blob blob-1" />
+          <div className="blob blob-2" />
+          <div className="blob blob-3" />
+        </div>
+
+        {/* ── Colonne gauche ── */}
+        <div className="hero-left">
+
           {/* Logo */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 36 }}>
+          <div style={{ marginBottom: 32 }}>
             <img
               src={LOGO_SRC}
               alt="Clinique de la Rebecca"
-              style={{ height: 64, width: 'auto', objectFit: 'contain' }}
+              className="logo-img"
+              style={{ height: 60 }}
               onError={(e) => {
-                // Fallback SVG logo — fond transparent, couleur bleue
                 const el = e.target as HTMLImageElement
-                el.src = `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 260 70'%3E%3Cg fill='%231641C8'%3E%3C!-- symbole croix + profil --%3E%3Crect x='0' y='20' width='10' height='30' rx='3'/%3E%3Crect x='-10' y='30' width='30' height='10' rx='3' transform='translate(10 0)'/%3E%3Cellipse cx='32' cy='25' rx='8' ry='9' fill='none' stroke='%231641C8' stroke-width='4'/%3E%3Cpath d='M24 34 Q20 60 32 62 Q44 60 40 34' fill='%231641C8'/%3E%3C/g%3E%3Ctext x='55' y='26' font-family=%22Arial,sans-serif%22 font-size='13' font-weight='600' letter-spacing='3' fill='%231641C8'%3ECLINIQUE DE LA%3C/text%3E%3Ctext x='55' y='56' font-family=%22Arial,sans-serif%22 font-size='28' font-weight='900' fill='%231641C8'%3EREBECCA%3C/text%3E%3C/svg%3E`
+                el.style.display = 'none'
               }}
             />
           </div>
 
-          <h1 style={{
-            fontWeight: 900,
-            fontSize: 'clamp(2rem, 3.5vw, 2.8rem)',
-            color: '#0f1e3d',
-            lineHeight: 1.2,
-            marginBottom: 16,
-          }}>
+          {/* Titre principal — reproduction exacte de la maquette */}
+          <h1 className="hero-title" style={{ marginBottom: 8 }}>
             Bienvenue à la<br />
-            <span style={{ color: '#1641C8' }}>Clinique de la Rebecca</span>
+            <span className="hero-title-accent">Clinique de la Rebecca</span>
           </h1>
 
+          {/* Sous-titre */}
           <p style={{
-            color: '#475569',
-            fontSize: '1.05rem',
-            marginBottom: 28,
-            paddingBottom: 28,
+            color: '#64748b',
+            fontSize: 16,
+            marginBottom: 24,
+            paddingBottom: 24,
             borderBottom: '2px solid #e2e8f0',
+            maxWidth: 420,
           }}>
             Votre espace santé personnel
           </p>
 
-          {/* Avantages avec coche */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 40 }}>
+          {/* Avantages avec coches vertes — identique à la maquette */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 36 }}>
             {AVANTAGES.map(a => (
-              <div key={a} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <div key={a.text} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{
-                  width: 26, height: 26, borderRadius: '50%',
+                  width: 28, height: 28, borderRadius: '50%',
                   background: '#0d9488',
                   display: 'flex', alignItems: 'center', justifyContent: 'center',
                   flexShrink: 0,
                 }}>
                   <i className="fa-solid fa-check" style={{ color: 'white', fontSize: 11 }} />
                 </div>
-                <span style={{ color: '#334155', fontSize: '1rem', fontWeight: 500 }}>{a}</span>
+                <span style={{ color: '#334155', fontSize: '1rem', fontWeight: 500 }}>{a.text}</span>
               </div>
             ))}
           </div>
 
           {/* Boutons CTA */}
-          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 14, flexWrap: 'wrap', marginBottom: 48 }}>
             <button
               onClick={() => setRdvOpen(true)}
-              style={{
-                display: 'inline-flex', alignItems: 'center', gap: 10,
-                background: '#1641C8', color: 'white',
-                border: 'none', borderRadius: 10,
-                padding: '14px 28px',
-                fontWeight: 700, fontSize: '1rem',
-                cursor: 'pointer',
-                boxShadow: '0 4px 20px rgba(22,65,200,0.35)',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={e => { e.currentTarget.style.background = '#0f2fa3'; e.currentTarget.style.transform = 'translateY(-2px)' }}
-              onMouseLeave={e => { e.currentTarget.style.background = '#1641C8'; e.currentTarget.style.transform = 'none' }}
+              className="btn-primary btn-glow"
+              style={{ borderRadius: 10, padding: '14px 28px' }}
             >
-              <i className="fa-regular fa-circle-play" style={{ fontSize: 18 }} />
+              <i className="fa-regular fa-circle-play" style={{ fontSize: 17 }} />
               Prendre rendez-vous
             </button>
 
-            <Link href="/specialites" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              background: 'white', color: '#1641C8',
-              border: '2px solid #1641C8', borderRadius: 10,
-              padding: '13px 24px',
-              fontWeight: 700, fontSize: '0.95rem',
-              textDecoration: 'none', transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#eff6ff' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'white' }}>
+            <Link
+              href="/specialites"
+              className="btn-secondary"
+              style={{ borderRadius: 10, padding: '13px 24px', fontSize: '0.95rem' }}
+            >
               Nos spécialistes
             </Link>
           </div>
 
           {/* Stats rapides */}
           <div style={{
-            display: 'flex', gap: 32, marginTop: 48,
-            paddingTop: 28, borderTop: '1px solid #e2e8f0',
+            paddingTop: 28,
+            borderTop: '1px solid #e2e8f0',
           }}>
-            {[
-              { val: `${nbSpec}+`, label: 'Médecins' },
-              { val: '9',          label: 'Services' },
-              { val: '12',         label: 'Spécialités' },
-              { val: '6j/7',       label: 'Disponible' },
-            ].map(s => (
-              <div key={s.label}>
-                <div style={{ fontWeight: 900, fontSize: '1.5rem', color: '#1641C8' }}>{s.val}</div>
-                <div style={{ fontSize: 12, color: '#94a3b8', fontWeight: 600, marginTop: 2 }}>{s.label}</div>
-              </div>
-            ))}
+            <div className="hero-stats">
+              {[
+                { val: `${nbSpec}+`, label: 'Médecins' },
+                { val: '9',          label: 'Services' },
+                { val: '12',         label: 'Spécialités' },
+                { val: '6j/7',       label: 'Disponible' },
+              ].map(s => (
+                <div className="hero-stat-item" key={s.label}>
+                  <span className="hero-stat-num">{s.val}</span>
+                  <span className="hero-stat-label">{s.label}</span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Colonne droite — photo réception */}
-        <div style={{ position: 'relative', overflow: 'hidden' }}>
-          <img
-            src="/reception.jpg"
-            alt="Réception Clinique de la Rebecca"
-            style={{
-              width: '100%', height: '100%',
-              objectFit: 'cover', objectPosition: 'center',
-              display: 'block',
-            }}
-            onError={(e) => {
-              const el = e.target as HTMLImageElement
-              el.parentElement!.style.background = 'linear-gradient(160deg,#1641C8 0%,#0d9488 100%)'
-              el.style.display = 'none'
-              const div = document.createElement('div')
-              div.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px'
-              div.innerHTML = '<i class="fa-solid fa-hospital" style="font-size:80px;color:rgba(255,255,255,0.3)"></i>'
-              el.parentElement!.appendChild(div)
-            }}
-          />
-          {/* Overlay léger */}
-          <div style={{
-            position: 'absolute', inset: 0,
-            background: 'linear-gradient(to right, rgba(240,244,255,0.15), transparent)',
-          }} />
+        {/* ── Colonne droite — photo réception ── */}
+        <div className="hero-right">
+          <div className="hero-photo-wrap">
+            <img
+              src="/reception.jpg"
+              alt="Réception Clinique de la Rebecca"
+              className="hero-photo"
+              onError={(e) => {
+                const el = e.target as HTMLImageElement
+                if (el.parentElement) {
+                  el.parentElement.style.background =
+                    'linear-gradient(160deg,#1641C8 0%,#0d9488 100%)'
+                }
+                el.style.display = 'none'
+              }}
+            />
+            {/* Overlay doux */}
+            <div style={{
+              position: 'absolute', inset: 0,
+              background: 'linear-gradient(to right, rgba(244,247,255,0.18), transparent)',
+              pointerEvents: 'none',
+            }} />
+          </div>
+
+          {/* Floating card — disponibilité */}
+          <div className="hero-float hero-float-top">
+            <div style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: 'linear-gradient(135deg,#1641C8,#0d9488)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <i className="fa-solid fa-clock" style={{ color: 'white', fontSize: 16 }} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 13, color: '#0f172a' }}>Ouvert maintenant</div>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>Lun – Sam · 7h00 – 17h00</div>
+            </div>
+          </div>
+
+          {/* Floating card — satisfaction */}
+          <div className="hero-float hero-float-bottom">
+            <div style={{
+              width: 40, height: 40, borderRadius: 10,
+              background: 'linear-gradient(135deg,#f59e0b,#ef4444)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <i className="fa-solid fa-star" style={{ color: 'white', fontSize: 16 }} />
+            </div>
+            <div>
+              <div style={{ fontWeight: 800, fontSize: 13, color: '#0f172a' }}>4.9 / 5 · Patients satisfaits</div>
+              <div style={{ fontSize: 11, color: '#64748b', marginTop: 1 }}>+1 200 avis vérifiés</div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ══ SERVICES ════════════════════════════════════════════════════════ */}
+      {/* ══ SERVICES ══════════════════════════════════════════════════════════ */}
       <section style={{ background: 'white', padding: '80px 8%' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+
+          {/* En-tête section */}
           <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <div style={{
-              display: 'inline-block',
-              background: '#eff6ff', color: '#1641C8',
-              borderRadius: 50, padding: '5px 18px',
-              fontSize: 12, fontWeight: 700, letterSpacing: 1,
-              textTransform: 'uppercase', marginBottom: 14,
-            }}>
+            <span className="section-tag">
+              <i className="fa-solid fa-grid-2" />
               Nos 9 services
-            </div>
-            <h2 style={{ fontWeight: 900, fontSize: 'clamp(1.5rem,2.5vw,2.1rem)', color: '#0f172a', marginBottom: 10 }}>
-              Des soins complets <em style={{ color: '#1641C8', fontStyle: 'normal' }}>sous un même toit</em>
+            </span>
+            <h2 className="section-title">
+              Des soins complets <em>sous un même toit</em>
             </h2>
-            <p style={{ color: '#64748b', maxWidth: 480, margin: '0 auto', lineHeight: 1.7 }}>
+            <p className="section-sub" style={{ maxWidth: 480, margin: '0 auto' }}>
               De la consultation médicale à la chirurgie, en passant par le laboratoire et la pharmacie.
             </p>
           </div>
 
+          {/* Grille services */}
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))',
             gap: 16,
           }}>
             {SERVICES_GRILLE.map(s => (
               <Link key={s.titre} href={s.href} style={{ textDecoration: 'none' }}>
-                <div style={{
-                  background: '#f8fafc',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: 16,
-                  padding: '22px 18px',
-                  textAlign: 'center',
-                  transition: 'all 0.2s',
-                  cursor: 'pointer',
-                }}
-                onMouseEnter={e => {
-                  const d = e.currentTarget
-                  d.style.borderColor = s.couleur + '50'
-                  d.style.background = s.couleur + '08'
-                  d.style.transform = 'translateY(-3px)'
-                  d.style.boxShadow = `0 8px 24px ${s.couleur}18`
-                }}
-                onMouseLeave={e => {
-                  const d = e.currentTarget
-                  d.style.borderColor = '#e2e8f0'
-                  d.style.background = '#f8fafc'
-                  d.style.transform = 'none'
-                  d.style.boxShadow = 'none'
-                }}>
+                <div
+                  className="card-hover"
+                  style={{ padding: '22px 18px', textAlign: 'center', cursor: 'pointer' }}
+                  onMouseEnter={e => {
+                    const d = e.currentTarget
+                    d.style.borderColor = s.couleur + '50'
+                    d.style.background  = s.couleur + '06'
+                    d.style.boxShadow   = `0 8px 28px ${s.couleur}20`
+                  }}
+                  onMouseLeave={e => {
+                    const d = e.currentTarget
+                    d.style.borderColor = ''
+                    d.style.background  = ''
+                    d.style.boxShadow   = ''
+                  }}
+                >
                   <div style={{
-                    width: 44, height: 44, borderRadius: 12,
-                    background: s.couleur + '15',
+                    width: 48, height: 48, borderRadius: 14,
+                    background: s.couleur + '14',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 12px',
+                    margin: '0 auto 14px',
                   }}>
-                    <i className={`fa-solid ${s.icon}`} style={{ color: s.couleur, fontSize: 18 }} />
+                    <i className={`fa-solid ${s.icon}`} style={{ color: s.couleur, fontSize: 20 }} />
                   </div>
-                  <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 13.5 }}>{s.titre}</div>
+                  <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 13.5, lineHeight: 1.35 }}>
+                    {s.titre}
+                  </div>
                 </div>
               </Link>
+            ))}
+          </div>
+
+          {/* Lien vers tous les services */}
+          <div style={{ textAlign: 'center', marginTop: 40 }}>
+            <Link href="/services" className="btn-secondary" style={{ fontSize: '0.9rem' }}>
+              <i className="fa-solid fa-arrow-right" />
+              Voir tous nos services
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ══ POURQUOI NOUS ═════════════════════════════════════════════════════ */}
+      <section style={{ background: '#f8fafc', padding: '72px 8%' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ textAlign: 'center', marginBottom: 48 }}>
+            <span className="section-tag">
+              <i className="fa-solid fa-heart-pulse" />
+              Pourquoi nous choisir
+            </span>
+            <h2 className="section-title">
+              Une clinique <em>à votre écoute</em>
+            </h2>
+          </div>
+
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+            gap: 24,
+          }}>
+            {[
+              { icon: 'fa-user-doctor',  couleur: '#1641C8', titre: 'Médecins spécialisés',    desc: 'Plus de 30 médecins et spécialistes expérimentés disponibles 6 jours sur 7.' },
+              { icon: 'fa-flask-vial',   couleur: '#0d9488', titre: 'Laboratoire sur place',    desc: 'Résultats rapides disponibles directement dans votre espace patient en ligne.' },
+              { icon: 'fa-video',        couleur: '#7c3aed', titre: 'Consultation vidéo',       desc: 'Consultez votre médecin depuis chez vous, en toute sécurité et confidentialité.' },
+              { icon: 'fa-shield-heart', couleur: '#be185d', titre: 'Suivi personnalisé',       desc: 'Dossier médical numérique, rappels automatiques et communication directe.' },
+            ].map(c => (
+              <div key={c.titre} className="card" style={{ padding: '28px 24px' }}>
+                <div style={{
+                  width: 52, height: 52, borderRadius: 16,
+                  background: c.couleur + '14',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  marginBottom: 18,
+                }}>
+                  <i className={`fa-solid ${c.icon}`} style={{ color: c.couleur, fontSize: 22 }} />
+                </div>
+                <h3 style={{ fontWeight: 800, fontSize: 16, color: '#0f172a', marginBottom: 8 }}>
+                  {c.titre}
+                </h3>
+                <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.7, margin: 0 }}>
+                  {c.desc}
+                </p>
+              </div>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ══ CTA FINAL ═══════════════════════════════════════════════════════ */}
+      {/* ══ CTA FINAL ═════════════════════════════════════════════════════════ */}
       <section style={{
         background: 'linear-gradient(135deg, #0f1e3d 0%, #1641C8 60%, #0d9488 100%)',
-        padding: '72px 8%',
+        padding: '80px 8%',
         textAlign: 'center',
+        position: 'relative',
+        overflow: 'hidden',
       }}>
-        <div style={{ maxWidth: 560, margin: '0 auto' }}>
-          <h2 style={{ color: 'white', fontWeight: 900, fontSize: 'clamp(1.5rem,3vw,2.2rem)', marginBottom: 14 }}>
-            Prenez soin de vous dès aujourd'hui
+        {/* Cercles décoratifs */}
+        <div style={{
+          position: 'absolute', top: -80, right: -80,
+          width: 320, height: 320, borderRadius: '50%',
+          background: 'rgba(255,255,255,0.04)',
+          pointerEvents: 'none',
+        }} />
+        <div style={{
+          position: 'absolute', bottom: -60, left: -60,
+          width: 250, height: 250, borderRadius: '50%',
+          background: 'rgba(13,148,136,0.15)',
+          pointerEvents: 'none',
+        }} />
+
+        <div style={{ maxWidth: 580, margin: '0 auto', position: 'relative' }}>
+          <span style={{
+            display: 'inline-flex', alignItems: 'center', gap: 6,
+            background: 'rgba(255,255,255,0.12)',
+            color: 'rgba(255,255,255,0.85)',
+            borderRadius: 50, padding: '5px 16px',
+            fontSize: 11, fontWeight: 700, letterSpacing: 2,
+            textTransform: 'uppercase', marginBottom: 20,
+            border: '1px solid rgba(255,255,255,0.18)',
+          }}>
+            <i className="fa-solid fa-calendar-check" />
+            Disponible maintenant
+          </span>
+
+          <h2 style={{
+            color: 'white', fontWeight: 900,
+            fontSize: 'clamp(1.6rem,3vw,2.4rem)',
+            marginBottom: 16, lineHeight: 1.2,
+          }}>
+            Prenez soin de vous<br />dès aujourd&apos;hui
           </h2>
-          <p style={{ color: 'rgba(255,255,255,0.72)', lineHeight: 1.75, marginBottom: 32 }}>
+          <p style={{ color: 'rgba(255,255,255,0.72)', lineHeight: 1.75, marginBottom: 36, fontSize: 15 }}>
             Consultation en cabinet ou par vidéo, disponible 6 jours sur 7.
             Notre équipe vous accueille avec bienveillance.
           </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', gap: 14, justifyContent: 'center', flexWrap: 'wrap' }}>
             <button
               onClick={() => setRdvOpen(true)}
-              style={{
-                background: 'white', color: '#1641C8', border: 'none',
-                borderRadius: 10, padding: '13px 28px',
-                fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer',
-                transition: 'all 0.2s',
-              }}
+              className="btn-outline-white"
+              style={{ background: 'white', color: '#1641C8', border: 'none', fontWeight: 800 }}
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)' }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'none' }}
             >
+              <i className="fa-regular fa-calendar-check" />
               Prendre rendez-vous
             </button>
-            <Link href="/consultation" style={{
-              display: 'inline-flex', alignItems: 'center', gap: 8,
-              background: 'rgba(255,255,255,0.12)', color: 'white',
-              border: '1.5px solid rgba(255,255,255,0.35)',
-              borderRadius: 10, padding: '12px 24px',
-              fontWeight: 600, fontSize: '0.95rem', textDecoration: 'none',
-              transition: 'all 0.2s',
-            }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.2)' }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.12)' }}>
-              <i className="fa-solid fa-video" style={{ fontSize: 14 }} />
+            <Link href="/consultation" className="btn-outline-white">
+              <i className="fa-solid fa-video" />
               Consultation en ligne
             </Link>
           </div>
