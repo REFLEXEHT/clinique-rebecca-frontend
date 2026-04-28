@@ -7,15 +7,15 @@ import RdvModal from '@/components/ui/RdvModal'
 
 // ── Données examens laboratoire ───────────────────────────────────────────────
 const EXAMENS = [
-  { nom: 'Numération formule sanguine (NFS)', duree: '1h',    importance: 'Essentiel', raison: 'Détecte les anémies, infections et troubles de la coagulation. Recommandé en cas de fatigue chronique, fièvre persistante ou surveillance de traitement.' },
-  { nom: 'Glycémie à jeun',                   duree: '30 min', importance: 'Courant',   raison: 'Dépiste ou surveille le diabète. Recommandé dès 40 ans ou en cas d'antécédents familiaux de diabète.' },
-  { nom: 'HbA1c (hémoglobine glyquée)',        duree: '2h',    importance: 'Essentiel', raison: 'Évalue l'équilibre du diabète sur les 3 derniers mois. Indispensable pour ajuster le traitement antidiabétique.' },
-  { nom: 'Bilan lipidique',                    duree: '2h',    importance: 'Courant',   raison: 'Mesure le cholestérol total, HDL, LDL et les triglycérides. Prévention des maladies cardiovasculaires.' },
-  { nom: 'Fonction rénale (créatinine, urée)', duree: '2h',    importance: 'Important', raison: 'Évalue la santé des reins. Obligatoire avant tout traitement à élimination rénale.' },
-  { nom: 'Bilan hépatique (ALAT, ASAT)',        duree: '2h',    importance: 'Important', raison: 'Surveille la santé du foie. Recommandé en cas de traitement prolongé ou de consommation d'alcool.' },
-  { nom: 'Sérologie VIH',                      duree: '30 min', importance: 'Courant',   raison: 'Dépistage du VIH. Recommandé une fois par an pour toute personne sexuellement active.' },
-  { nom: 'Test de grossesse (β-hCG)',           duree: '30 min', importance: 'Courant',   raison: 'Confirme une grossesse dès 10 jours après une relation. Résultat quantitatif et qualitatif.' },
-  { nom: 'Analyse d\'urine (ECBU)',             duree: '24h',   importance: 'Courant',   raison: 'Détecte infections urinaires, présence de protéines ou de sang. Indiqué en cas de brûlures urinaires.' },
+  { nom: "Numération formule sanguine (NFS)", duree: "1h",     importance: "Essentiel", raison: "Détecte les anémies, infections et troubles de la coagulation. Recommandé en cas de fatigue chronique, fièvre persistante ou surveillance de traitement." },
+  { nom: "Glycémie à jeun",                   duree: "30 min", importance: "Courant",   raison: "Dépiste ou surveille le diabète. Recommandé dès 40 ans ou en cas d'antécédents familiaux de diabète." },
+  { nom: "HbA1c (hémoglobine glyquée)",        duree: "2h",    importance: "Essentiel", raison: "Évalue l'équilibre du diabète sur les 3 derniers mois. Indispensable pour ajuster le traitement antidiabétique." },
+  { nom: "Bilan lipidique",                    duree: "2h",    importance: "Courant",   raison: "Mesure le cholestérol total, HDL, LDL et les triglycérides. Prévention des maladies cardiovasculaires." },
+  { nom: "Fonction rénale (créatinine, urée)", duree: "2h",    importance: "Important", raison: "Évalue la santé des reins. Obligatoire avant tout traitement à élimination rénale." },
+  { nom: "Bilan hépatique (ALAT, ASAT)",       duree: "2h",    importance: "Important", raison: "Surveille la santé du foie. Recommandé en cas de traitement prolongé ou de consommation d'alcool." },
+  { nom: "Sérologie VIH",                      duree: "30 min", importance: "Courant",  raison: "Dépistage du VIH. Recommandé une fois par an pour toute personne sexuellement active." },
+  { nom: "Test de grossesse (β-hCG)",          duree: "30 min", importance: "Courant",  raison: "Confirme une grossesse dès 10 jours après une relation. Résultat quantitatif et qualitatif." },
+  { nom: "Analyse d'urine (ECBU)",             duree: "24h",   importance: "Courant",   raison: "Détecte les infections urinaires, présence de protéines ou de sang. Indiqué en cas de brûlures urinaires." },
 ]
 
 // ── Données médicaments pharmacie ────────────────────────────────────────────
