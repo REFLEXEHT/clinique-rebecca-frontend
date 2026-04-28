@@ -1,9 +1,16 @@
 'use client'
 import { AuthProvider } from '@/context/AuthContext'
 import { TranslationProvider } from '@/context/TranslationContext'
-import { Toaster } from 'react-hot-toast'
+import dynamic from 'next/dynamic'
+import { ReactNode } from 'react'
 
-export default function ClientProviders({ children }: { children: React.ReactNode }) {
+// Toaster chargé uniquement côté client — évite le crash SSR de react-hot-toast
+const Toaster = dynamic(
+  () => import('react-hot-toast').then(m => m.Toaster),
+  { ssr: false }
+)
+
+export default function ClientProviders({ children }: { children: ReactNode }) {
   return (
     <AuthProvider>
       <TranslationProvider>
