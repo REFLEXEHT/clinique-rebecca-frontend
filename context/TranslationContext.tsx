@@ -9,16 +9,15 @@ interface TranslationContextType {
 }
 
 const TranslationContext = createContext<TranslationContextType>({
-  lang: 'fr',
-  setLang: () => {},
-  translating: false,
+  lang: 'fr', setLang: () => {}, translating: false,
 })
 
 export function TranslationProvider({ children }: { children: ReactNode }) {
-  const [lang, setLangState]   = useState<Lang>('fr')
+  const [lang, setLangState]       = useState<Lang>('fr')
   const [translating, setTranslating] = useState(false)
-  const [mounted, setMounted]  = useState(false)
-  const langRef = useRef<Lang>('fr')
+  const [mounted, setMounted]      = useState(false)
+  const langRef                    = useRef<Lang>('fr')
+  const translatingRef             = useRef(false)  // ← FIX: évite la boucle
 
   useEffect(() => {
     setMounted(true)
@@ -27,31 +26,40 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
     langRef.current = saved
   }, [])
 
-  // Translate after mount if non-french saved
   useEffect(() => {
     if (!mounted || langRef.current === 'fr') return
     const timer = setTimeout(() => {
       setTranslating(true)
-      translatePage(langRef.current).finally(() => setTranslating(false))
+      translatingRef.current = true
+      translatePage(langRef.current).finally(() => {
+        setTranslating(false)
+        translatingRef.current = false
+      })
     }, 500)
     return () => clearTimeout(timer)
   }, [mounted])
 
-  // MutationObserver: retranslate when DOM changes (route changes in Next.js)
   useEffect(() => {
     if (!mounted) return
     let debounce: ReturnType<typeof setTimeout> | null = null
 
     const observer = new MutationObserver(() => {
-      if (langRef.current === 'fr') return
+      // NE PAS re-traduire si une traduction est déjà en cours
+      if (langRef.current === 'fr' || translatingRef.current) return
       if (debounce) clearTimeout(debounce)
       debounce = setTimeout(() => {
+        if (translatingRef.current) return  // double-check
         setTranslating(true)
-        translatePage(langRef.current).finally(() => setTranslating(false))
-      }, 600)
+        translatingRef.current = true
+        translatePage(langRef.current).finally(() => {
+          setTranslating(false)
+          translatingRef.current = false
+        })
+      }, 800)
     })
 
-    // Observe main content area for subtree changes (Next.js route changes swap main content)
+    // Observer UNIQUEMENT le swap de route Next.js (main direct children)
+    // PAS subtree:true — sinon chaque modification de texte re-déclenche l'observer
     const main = document.querySelector('main') || document.body
     observer.observe(main, { childList: true, subtree: false })
 
@@ -68,8 +76,13 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
       translatePage('fr')
       return
     }
+    if (translatingRef.current) return  // évite les doubles appels
     setTranslating(true)
-    translatePage(newLang).finally(() => setTranslating(false))
+    translatingRef.current = true
+    translatePage(newLang).finally(() => {
+      setTranslating(false)
+      translatingRef.current = false
+    })
   }, [])
 
   return (
@@ -82,14 +95,8 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
           padding: '8px 18px', borderRadius: 50, fontSize: 12, fontWeight: 600,
           display: 'flex', alignItems: 'center', gap: 8, zIndex: 9999,
           backdropFilter: 'blur(8px)', pointerEvents: 'none',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.3)',
         }}>
-          <div style={{
-            width: 12, height: 12, borderRadius: '50%',
-            border: '2px solid rgba(255,255,255,0.3)',
-            borderTopColor: 'white',
-            animation: 'spin 0.7s linear infinite',
-          }} />
+          <div style={{ width: 12, height: 12, borderRadius: '50%', border: '2px solid rgba(255,255,255,0.3)', borderTopColor: 'white', animation: 'spin 0.7s linear infinite' }} />
           Traduction en cours…
         </div>
       )}
