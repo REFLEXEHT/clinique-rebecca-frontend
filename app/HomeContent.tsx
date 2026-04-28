@@ -25,7 +25,7 @@ const AVANTAGES = [
 const ATOUTS = [
   { icon: 'fa-flask-vial',      couleur: '#0d9488', titre: 'Laboratoire et pharmacie sur place', desc: 'Analyses médicales et médicaments disponibles directement à la clinique, sans déplacement supplémentaire.' },
   { icon: 'fa-heart-pulse',     couleur: '#be185d', titre: 'Soins personnalisés et intégrés',    desc: 'Dossier médical numérique partagé entre tous vos médecins pour un suivi cohérent et des soins adaptés à votre profil.' },
-  { icon: 'fa-calendar-check',  couleur: '#1641C8', titre: 'Ouvert 7 jours sur 7',              desc: 'La clinique vous accueille tous les jours de la semaine pour les consultations, urgences et soins courants.' },
+  { icon: 'fa-calendar-check',  couleur: '#1641C8', titre: 'Ouvert 7 jours sur 7',              desc: 'La clinique vous accueille tous les jours de la semaine pour les consultations et soins courants.' },
   { icon: 'fa-shield-heart',    couleur: '#7c3aed', titre: 'Suivi personnalisé',                desc: 'Rappels automatiques de rendez-vous, résultats accessibles en ligne et communication directe avec votre médecin.' },
 ]
 
