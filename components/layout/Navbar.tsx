@@ -9,8 +9,8 @@ import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
 const SERVICES = [
   { labelKey: 'Clinique externe', icon: 'fa-stethoscope', href: '/specialites' },
   { labelKey: 'Dentisterie',      icon: 'fa-tooth',       href: '/services/dentisterie' },
-  { labelKey: 'Laboratoire',      icon: 'fa-flask-vial',  href: '/services/laboratoire' },
-  { labelKey: 'Pharmacie',        icon: 'fa-pills',       href: '/services/pharmacie' },
+  { labelKey: 'Laboratoire',      icon: 'fa-flask-vial',  href: '/services/labo-pharmacie' },
+  { labelKey: 'Pharmacie',        icon: 'fa-pills',       href: '/services/labo-pharmacie' },
   { labelKey: 'Physiothérapie',   icon: 'fa-person-walking', href: '/services/physiotherapie' },
   { labelKey: 'Optométrie',       icon: 'fa-glasses',     href: '/services/optometrie' },
   { labelKey: 'Salle SOP',        icon: 'fa-scalpel',     href: '/services/sop' },
@@ -103,13 +103,15 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
             </Link>
 
             <div className="nav-item relative nav-dropdown-trigger">
-              <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm
+              <Link href="/services" className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm
                 font-medium text-slate-600 hover:text-[#1641C8] hover:bg-blue-50
-                transition-all border-none bg-transparent cursor-pointer font-sans">
+                transition-all cursor-pointer">
                 Services <i className="fa-solid fa-chevron-down text-[10px]" />
-              </button>
+              </Link>
               <div className="nav-dropdown">
-                <div className="dropdown-title">Nos 9 services</div>
+                <Link href="/services" style={{ fontWeight: 700, color: '#1641C8', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 4, display: 'block' }}>
+                  <i className="fa-solid fa-grid-2" /> Voir tous les services
+                </Link>
                 {SERVICES.map(s => (
                   <Link key={s.href} href={s.href}>
                     <i className={`fa-solid ${s.icon}`} />{s.labelKey}
@@ -119,13 +121,15 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
             </div>
 
             <div className="nav-item relative nav-dropdown-trigger">
-              <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm
+              <Link href="/specialites" className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm
                 font-medium text-slate-600 hover:text-[#1641C8] hover:bg-blue-50
-                transition-all border-none bg-transparent cursor-pointer font-sans">
+                transition-all cursor-pointer">
                 Spécialités <i className="fa-solid fa-chevron-down text-[10px]" />
-              </button>
+              </Link>
               <div className="nav-dropdown">
-                <div className="dropdown-title">12 spécialités</div>
+                <Link href="/specialites" style={{ fontWeight: 700, color: '#1641C8', borderBottom: '1px solid #e2e8f0', paddingBottom: 8, marginBottom: 4, display: 'block' }}>
+                  <i className="fa-solid fa-user-doctor" /> Voir tous nos médecins
+                </Link>
                 {SPECIALITES.map(s => (
                   <Link key={s.slug} href={`/specialites/${s.slug}`}>
                     <i className={`fa-solid ${s.icon}`} />{s.label}
@@ -165,11 +169,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                 hover:border-[#1641C8] hover:text-[#1641C8] hover:bg-blue-50 transition-all">
                 <i className="fa-regular fa-user mr-1.5" />Connexion
               </Link>
-              <Link href="/register" className="px-4 py-2 rounded-full border-[1.5px]
-                border-teal-200 text-teal-700 font-semibold text-[13.5px]
-                hover:border-[#0d9488] hover:text-[#0d9488] hover:bg-teal-50 transition-all">
-                <i className="fa-solid fa-user-plus mr-1.5" />S'inscrire
-              </Link>
+
               <button onClick={onRdvClick}
                 className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1641C8]
                   text-white font-bold text-[13.5px] border-none cursor-pointer
@@ -285,13 +285,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                       onClick={() => setMobileOpen(false)}>
                       <i className="fa-regular fa-user" /> Connexion
                     </Link>
-                    <Link href="/register"
-                      className="flex items-center gap-2 justify-center px-4 py-3 rounded-xl
-                        border-[1.5px] border-teal-200 text-teal-700 font-semibold text-[14px]
-                        hover:border-[#0d9488] hover:text-[#0d9488] transition-all"
-                      onClick={() => setMobileOpen(false)}>
-                      <i className="fa-solid fa-user-plus" /> S'inscrire
-                    </Link>
+
                     <button onClick={() => { onRdvClick?.(); setMobileOpen(false) }}
                       className="w-full btn-primary justify-center py-3">
                       <i className="fa-regular fa-calendar-check" /> Prendre RDV
