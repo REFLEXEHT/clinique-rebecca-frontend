@@ -1,5 +1,5 @@
 'use client'
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react'
 import { translatePage, getCurrentLang, type Lang } from '@/lib/translator'
 
 interface TranslationContextType {
@@ -18,44 +18,52 @@ export function TranslationProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState]   = useState<Lang>('fr')
   const [translating, setTranslating] = useState(false)
   const [mounted, setMounted]  = useState(false)
+  const langRef = useRef<Lang>('fr')
 
-  // Initialiser après le montage (évite SSR mismatch)
   useEffect(() => {
     setMounted(true)
     const saved = getCurrentLang()
     setLangState(saved)
+    langRef.current = saved
   }, [])
 
-  // Re-traduire quand la route change (détection via MutationObserver sur le body)
+  // Translate after mount if non-french saved
   useEffect(() => {
-    if (!mounted || lang === 'fr') return
-
-    // Petit délai pour laisser React finir le rendu
+    if (!mounted || langRef.current === 'fr') return
     const timer = setTimeout(() => {
       setTranslating(true)
-      translatePage(lang).finally(() => setTranslating(false))
-    }, 400)
-
+      translatePage(langRef.current).finally(() => setTranslating(false))
+    }, 500)
     return () => clearTimeout(timer)
-  }, [lang, mounted])
+  }, [mounted])
 
-  // Écouter les changements de route via popstate + click sur liens
+  // MutationObserver: retranslate when DOM changes (route changes in Next.js)
   useEffect(() => {
-    if (!mounted || lang === 'fr') return
+    if (!mounted) return
+    let debounce: ReturnType<typeof setTimeout> | null = null
 
-    const onNavigate = () => {
-      setTimeout(() => {
+    const observer = new MutationObserver(() => {
+      if (langRef.current === 'fr') return
+      if (debounce) clearTimeout(debounce)
+      debounce = setTimeout(() => {
         setTranslating(true)
-        translatePage(lang).finally(() => setTranslating(false))
-      }, 500)
-    }
+        translatePage(langRef.current).finally(() => setTranslating(false))
+      }, 600)
+    })
 
-    window.addEventListener('popstate', onNavigate)
-    return () => window.removeEventListener('popstate', onNavigate)
-  }, [mounted, lang])
+    // Observe main content area for subtree changes (Next.js route changes swap main content)
+    const main = document.querySelector('main') || document.body
+    observer.observe(main, { childList: true, subtree: false })
+
+    return () => {
+      observer.disconnect()
+      if (debounce) clearTimeout(debounce)
+    }
+  }, [mounted])
 
   const setLang = useCallback((newLang: Lang) => {
     setLangState(newLang)
+    langRef.current = newLang
     if (newLang === 'fr') {
       translatePage('fr')
       return

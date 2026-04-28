@@ -5,32 +5,33 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { LOGO_SRC } from '@/lib/images'
 import LanguageSwitcher from '@/components/ui/LanguageSwitcher'
+import RdvModal from '@/components/ui/RdvModal'
 
 const SERVICES = [
-  { labelKey: 'Clinique externe', icon: 'fa-stethoscope', href: '/specialites' },
-  { labelKey: 'Dentisterie',      icon: 'fa-tooth',       href: '/services/dentisterie' },
-  { labelKey: 'Laboratoire',      icon: 'fa-flask-vial',  href: '/services/labo-pharmacie' },
-  { labelKey: 'Pharmacie',        icon: 'fa-pills',       href: '/services/labo-pharmacie' },
-  { labelKey: 'Physiothérapie',   icon: 'fa-person-walking', href: '/services/physiotherapie' },
-  { labelKey: 'Optométrie',       icon: 'fa-glasses',     href: '/services/optometrie' },
-  { labelKey: 'Salle SOP',        icon: 'fa-scalpel',     href: '/services/sop' },
-  { labelKey: 'Maternité',        icon: 'fa-baby',        href: '/services/maternite' },
-  { labelKey: 'Gestes médicaux',  icon: 'fa-syringe',     href: '/services/gestes' },
+  { labelKey: 'Clinique externe',    icon: 'fa-stethoscope',    href: '/services/clinique-externe' },
+  { labelKey: 'Gestes médicaux',     icon: 'fa-syringe',        href: '/services/gestes' },
+  { labelKey: 'Hospitalisation',     icon: 'fa-bed-pulse',      href: '/services/hospitalisation' },
+  { labelKey: 'Para-clinique',       icon: 'fa-flask-vial',     href: '/services/labo-pharmacie' },
+  { labelKey: 'Dentisterie',         icon: 'fa-tooth',          href: '/services/dentisterie' },
+  { labelKey: 'Optométrie',          icon: 'fa-glasses',        href: '/services/optometrie' },
+  { labelKey: 'Physiothérapie',      icon: 'fa-person-walking', href: '/services/physiotherapie' },
+  { labelKey: 'Maternité',           icon: 'fa-baby',           href: '/services/maternite' },
+  { labelKey: 'Salle SOP',           icon: 'fa-scalpel',        href: '/services/sop' },
 ]
 
 const SPECIALITES = [
-  { label: 'Chirurgie générale',   icon: 'fa-scalpel',        slug: 'chirurgie' },
-  { label: 'Neurochirurgie',       icon: 'fa-brain',           slug: 'neurochirurgie' },
-  { label: 'Neurologie',           icon: 'fa-brain',           slug: 'neurologie' },
-  { label: 'Orthopédie',           icon: 'fa-bone',            slug: 'orthopedie' },
-  { label: 'Pédiatrie',            icon: 'fa-child',           slug: 'pediatrie' },
-  { label: 'Dermatologie',         icon: 'fa-hand-dots',       slug: 'dermatologie' },
-  { label: 'Urologie',             icon: 'fa-kidneys',         slug: 'urologie' },
-  { label: 'ORL',                  icon: 'fa-ear-listen',      slug: 'orl' },
-  { label: 'Gynécologie',          icon: 'fa-venus',           slug: 'gynecologie' },
-  { label: 'Chirurgie pédiatrique',icon: 'fa-child-reaching',  slug: 'chir-ped' },
-  { label: 'Médecine interne',     icon: 'fa-heart-pulse',     slug: 'medecine-interne' },
-  { label: 'Ophtalmologie',        icon: 'fa-eye',             slug: 'ophtalmologie' },
+  { label: 'Chirurgie générale',    icon: 'fa-scalpel',         slug: 'chirurgie' },
+  { label: 'Neurochirurgie',        icon: 'fa-brain',           slug: 'neurochirurgie' },
+  { label: 'Neurologie',            icon: 'fa-brain',           slug: 'neurologie' },
+  { label: 'Orthopédie',            icon: 'fa-bone',            slug: 'orthopedie' },
+  { label: 'Pédiatrie',             icon: 'fa-child',           slug: 'pediatrie' },
+  { label: 'Dermatologie',          icon: 'fa-hand-dots',       slug: 'dermatologie' },
+  { label: 'Urologie',              icon: 'fa-kidneys',         slug: 'urologie' },
+  { label: 'ORL',                   icon: 'fa-ear-listen',      slug: 'orl' },
+  { label: 'Gynécologie',           icon: 'fa-venus',           slug: 'gynecologie' },
+  { label: 'Chirurgie pédiatrique', icon: 'fa-child-reaching',  slug: 'chir-ped' },
+  { label: 'Médecine interne',      icon: 'fa-heart-pulse',     slug: 'medecine-interne' },
+  { label: 'Ophtalmologie',         icon: 'fa-eye',             slug: 'ophtalmologie' },
 ]
 
 interface NavbarProps {
@@ -43,6 +44,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
   const [mobileOpen, setMobileOpen]       = useState(false)
   const [mobileSection, setMobileSection] = useState<string | null>(null)
   const [mounted, setMounted]             = useState(false)
+  const [rdvOpen, setRdvOpen]             = useState(false)
   const { user, isAuthenticated, logout } = useAuth()
   const router   = useRouter()
   const pathname = usePathname()
@@ -61,6 +63,12 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
     document.addEventListener('mousedown', handler)
     return () => document.removeEventListener('mousedown', handler)
   }, [mobileOpen])
+
+  const handleRdvClick = () => {
+    if (onRdvClick) onRdvClick()
+    else setRdvOpen(true)
+    setMobileOpen(false)
+  }
 
   const getDashboardHref = () => {
     if (!user) return '/login'
@@ -88,6 +96,11 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
 
   return (
     <>
+      {/* Internal RDV modal when navbar is standalone (no parent-level modal) */}
+      {!onRdvClick && mounted && (
+        <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
+      )}
+
       <nav className={`fixed top-0 left-0 right-0 z-50 h-[70px] flex items-center
         px-[4%] bg-white/97 border-b border-slate-200 transition-shadow duration-300
         ${scrolled ? 'shadow-xl' : 'shadow-sm'}`}>
@@ -104,8 +117,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
 
             <div className="nav-item relative nav-dropdown-trigger">
               <Link href="/services" className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm
-                font-medium text-slate-600 hover:text-[#1641C8] hover:bg-blue-50
-                transition-all cursor-pointer">
+                font-medium text-slate-600 hover:text-[#1641C8] hover:bg-blue-50 transition-all cursor-pointer">
                 Services <i className="fa-solid fa-chevron-down text-[10px]" />
               </Link>
               <div className="nav-dropdown">
@@ -122,8 +134,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
 
             <div className="nav-item relative nav-dropdown-trigger">
               <Link href="/specialites" className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm
-                font-medium text-slate-600 hover:text-[#1641C8] hover:bg-blue-50
-                transition-all cursor-pointer">
+                font-medium text-slate-600 hover:text-[#1641C8] hover:bg-blue-50 transition-all cursor-pointer">
                 Spécialités <i className="fa-solid fa-chevron-down text-[10px]" />
               </Link>
               <div className="nav-dropdown">
@@ -145,7 +156,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
           </div>
         )}
 
-        {/* Right side desktop */}
+        {/* Right side desktop - NO "Prendre RDV" button per requirements */}
         <div className="hidden md:flex items-center gap-2 ml-auto">
           <LanguageSwitcher />
           {mounted && isAuthenticated ? (
@@ -163,21 +174,11 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
               </button>
             </>
           ) : (
-            <>
-              <Link href="/login" className="px-4 py-2 rounded-full border-[1.5px]
-                border-slate-200 text-slate-700 font-semibold text-[13.5px]
-                hover:border-[#1641C8] hover:text-[#1641C8] hover:bg-blue-50 transition-all">
-                <i className="fa-regular fa-user mr-1.5" />Connexion
-              </Link>
-
-              <button onClick={onRdvClick}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1641C8]
-                  text-white font-bold text-[13.5px] border-none cursor-pointer
-                  hover:bg-[#0f2fa3] hover:-translate-y-0.5 hover:shadow-lg
-                  hover:shadow-blue-200 transition-all">
-                <i className="fa-regular fa-calendar-check" />Prendre RDV
-              </button>
-            </>
+            <Link href="/login" className="px-4 py-2 rounded-full border-[1.5px]
+              border-slate-200 text-slate-700 font-semibold text-[13.5px]
+              hover:border-[#1641C8] hover:text-[#1641C8] hover:bg-blue-50 transition-all">
+              <i className="fa-regular fa-user mr-1.5" />Connexion
+            </Link>
           )}
         </div>
 
@@ -256,7 +257,6 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                 <i className="fa-solid fa-video w-5 text-center text-[#1641C8]" /> Consultation
               </Link>
 
-              {/* Langue mobile */}
               <div className="px-4 py-2">
                 <LanguageSwitcher />
               </div>
@@ -277,20 +277,13 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                     </button>
                   </>
                 ) : (
-                  <>
-                    <Link href="/login"
-                      className="flex items-center gap-2 justify-center px-4 py-3 rounded-xl
-                        border-[1.5px] border-slate-200 text-slate-700 font-semibold text-[14px]
-                        hover:border-[#1641C8] hover:text-[#1641C8] transition-all"
-                      onClick={() => setMobileOpen(false)}>
-                      <i className="fa-regular fa-user" /> Connexion
-                    </Link>
-
-                    <button onClick={() => { onRdvClick?.(); setMobileOpen(false) }}
-                      className="w-full btn-primary justify-center py-3">
-                      <i className="fa-regular fa-calendar-check" /> Prendre RDV
-                    </button>
-                  </>
+                  <Link href="/login"
+                    className="flex items-center gap-2 justify-center px-4 py-3 rounded-xl
+                      border-[1.5px] border-slate-200 text-slate-700 font-semibold text-[14px]
+                      hover:border-[#1641C8] hover:text-[#1641C8] transition-all"
+                    onClick={() => setMobileOpen(false)}>
+                    <i className="fa-regular fa-user" /> Connexion
+                  </Link>
                 )}
               </div>
             </div>

@@ -1,6 +1,5 @@
 'use client'
 export const dynamic = 'force-dynamic'
-// app/specialistes/[id]/page.tsx — Profil public spécialiste (lecture seule)
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
@@ -8,127 +7,205 @@ import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import RdvModal from '@/components/ui/RdvModal'
 import { specialistesApi } from '@/lib/api'
-import { Specialiste } from '@/types'
 
-const SPECS_DATA: Record<number, Specialiste & { tags: string[]; bio: string; disponibilites: string; experience: string }> = {
-  1: { id:1, nom:'Dr. Michel Dubois', specialite:'Chirurgie générale', description:'Chirurgien senior', emoji:'🔬', categorie:'chirurgie', email:'m.dubois@cliniquerebecca.ht', telephone:'+509 3456-0001', actif:true, ordre:0, bio:'Chirurgien général spécialisé dans la chirurgie digestive et laparoscopique. Plus de 15 ans d\'expérience dans les interventions chirurgicales complexes, formé à l\'Hôpital Universitaire d\'État d\'Haïti et en France.', tags:['Chirurgie digestive','Laparoscopie','Urgences chirurgicales','Hernies'], disponibilites:'Lun–Ven 08h–17h · Sam 08h–12h', experience:'15 ans d\'expérience' },
-  2: { id:2, nom:'Dr. Anne-Marie Pierre', specialite:'Neurochirurgie', description:'Neurochirurgie pédiatrique', emoji:'🧠', categorie:'neurochirurgie', email:'am.pierre@cliniquerebecca.ht', telephone:'+509 3456-0002', actif:true, ordre:0, bio:'Experte en neurochirurgie pédiatrique et adulte, spécialisée dans le traitement des tumeurs cérébrales, des malformations vasculaires et de la pathologie de la colonne vertébrale.', tags:['Tumeurs cérébrales','Chirurgie de la colonne','Neurochirurgie pédiatrique'], disponibilites:'Mar–Jeu 08h–16h', experience:'12 ans d\'expérience' },
-  3: { id:3, nom:'Dr. Jean-Claude Étienne', specialite:'Neurologie', description:'Épilepsie, AVC', emoji:'🧬', categorie:'neurologie', email:'jc.etienne@cliniquerebecca.ht', telephone:'+509 3456-0003', actif:true, ordre:0, bio:'Neurologue expérimenté dans le diagnostic et le traitement de l\'épilepsie, des AVC et des pathologies démyélinisantes comme la sclérose en plaques.', tags:['Épilepsie','AVC','Sclérose en plaques'], disponibilites:'Lun–Ven 08h–17h', experience:'10 ans d\'expérience' },
-  4: { id:4, nom:'Dr. Sophie Lamour', specialite:'Orthopédie', description:'Traumatologie', emoji:'🦴', categorie:'orthopedie', email:'s.lamour@cliniquerebecca.ht', telephone:'+509 3456-0004', actif:true, ordre:0, bio:'Orthopédiste spécialisée en traumatologie et chirurgie prothétique. Prise en charge des fractures complexes, des arthroses sévères et remplacement articulaire.', tags:['Prothèse de hanche','Fractures complexes','Arthroscopie'], disponibilites:'Lun–Sam 08h–17h', experience:'13 ans d\'expérience' },
-  5: { id:5, nom:'Dr. Paul Désir', specialite:'Pédiatrie', description:'Néonatologie', emoji:'👶', categorie:'pediatrie', email:'p.desir@cliniquerebecca.ht', telephone:'+509 3456-0005', actif:true, ordre:0, bio:'Pédiatre dévoué spécialisé en néonatologie et pédiatrie générale. Suivi de croissance, vaccinations, maladies infectieuses de l\'enfant et maladies chroniques pédiatriques.', tags:['Néonatologie','Pédiatrie générale','Vaccinations','Maladies chroniques'], disponibilites:'Lun–Ven 08h–17h · Sam 08h–15h', experience:'11 ans d\'expérience' },
-  6: { id:6, nom:'Dr. Isabelle François', specialite:'Dermatologie', description:'Maladies de peau', emoji:'🌸', categorie:'dermatologie', email:'i.francois@cliniquerebecca.ht', telephone:'+509 3456-0006', actif:true, ordre:0, bio:'Dermatologue spécialisée dans les maladies inflammatoires de la peau, les infections cutanées, les pathologies pigmentaires et la dermatologie cosmétique.', tags:['Eczéma','Psoriasis','Acné','Dermatologie cosmétique'], disponibilites:'Lun–Ven 09h–17h', experience:'9 ans d\'expérience' },
-  7: { id:7, nom:'Dr. Henri Nazaire', specialite:'Urologie', description:'Prostate, système urinaire', emoji:'💊', categorie:'urologie', email:'h.nazaire@cliniquerebecca.ht', telephone:'+509 3456-0007', actif:true, ordre:0, bio:'Urologue expérimenté dans le traitement des pathologies de la prostate, des lithiases urinaires, des infections urinaires récidivantes et des troubles de la fertilité masculine.', tags:['Prostate','Lithiase urinaire','Fertilité masculine'], disponibilites:'Lun–Ven 08h–17h', experience:'14 ans d\'expérience' },
-  8: { id:8, nom:'Dr. Marie-Rose Cajuste', specialite:'ORL', description:'Oreille, nez, gorge', emoji:'👂', categorie:'orl', email:'mr.cajuste@cliniquerebecca.ht', telephone:'+509 3456-0008', actif:true, ordre:0, bio:'Spécialiste en oto-rhino-laryngologie. Prise en charge des pathologies de l\'oreille, du nez, des sinus, de la gorge et du larynx, avec ou sans chirurgie.', tags:['Sinusite','Troubles auditifs','Chirurgie ORL','Amygdales'], disponibilites:'Lun–Sam 07h–16h', experience:'8 ans d\'expérience' },
-  9: { id:9, nom:'Dr. Claudette Joseph', specialite:'Gynécologie-Obstétrique', description:'Suivi grossesse', emoji:'🌺', categorie:'gynecologie', email:'c.joseph@cliniquerebecca.ht', telephone:'+509 3456-0009', actif:true, ordre:0, bio:'Gynécologue-obstétricienne assurant le suivi de grossesse, les accouchements, et la santé reproductive de la femme tout au long de sa vie.', tags:['Suivi grossesse','Accouchement','Ménopause','Contraception'], disponibilites:'Lun–Sam 07h–17h', experience:'16 ans d\'expérience' },
-  10: { id:10, nom:'Dr. Patrick Dorival', specialite:'Chirurgie pédiatrique', description:'Chirurgie nourrissons', emoji:'🏥', categorie:'chir-ped', email:'p.dorival@cliniquerebecca.ht', telephone:'+509 3456-0010', actif:true, ordre:0, bio:'Chirurgien pédiatrique spécialisé dans les interventions chez les nourrissons et jeunes enfants, y compris les malformations congénitales.', tags:['Chirurgie néonatale','Hernies','Appendicite','Malformations'], disponibilites:'Lun–Ven 08h–16h', experience:'10 ans d\'expérience' },
-  11: { id:11, nom:'Dr. Réginald Louis', specialite:'Médecine interne', description:'Diabète, hypertension', emoji:'❤️', categorie:'medecine-interne', email:'r.louis@cliniquerebecca.ht', telephone:'+509 3456-0011', actif:true, ordre:0, bio:'Interniste expérimenté dans la prise en charge des maladies chroniques complexes. Diabète, hypertension, dyslipidémie, maladies auto-immunes et polyvasculaires.', tags:['Diabète','Hypertension','Maladies auto-immunes','Gériatrie'], disponibilites:'Lun–Sam 07h–17h', experience:'18 ans d\'expérience' },
-  12: { id:12, nom:'Dr. Nathalie Vincent', specialite:'Ophtalmologie', description:'Chirurgie oculaire', emoji:'👁️', categorie:'ophtalmologie', email:'n.vincent@cliniquerebecca.ht', telephone:'+509 3456-0012', actif:true, ordre:0, bio:'Ophtalmologue spécialisée en chirurgie de la cataracte, traitement du glaucome, pathologies rétiniennes et réfraction oculaire.', tags:['Cataracte','Glaucome','Rétine','Réfraction'], disponibilites:'Mar–Sam 08h–17h', experience:'12 ans d\'expérience' },
+// Données de fallback enrichies pour chaque médecin connu par son id
+const FALLBACK_DATA: Record<number, any> = {
+  1:  { tags: ['Endoscopie', 'Lithiase urinaire', 'Incontinence', 'Prostate'],           bio: 'Urologue expert avec plus de 10 ans d\'expérience en endoscopie urologique et traitement de la lithiase urinaire. Formé à l\'Université d\'État d\'Haïti.', disponibilites: 'Lun–Ven 08h–16h', experience: '10 ans' },
+  2:  { tags: ['Grossesse à risque', 'Accouchement', 'Contraception', 'Ménopause'],       bio: 'Gynécologue-obstétricien spécialisé dans le suivi des grossesses à risque et la chirurgie gynécologique mini-invasive.', disponibilites: 'Lun–Sam 07h–15h', experience: '8 ans' },
+  3:  { tags: ['Anesthésie générale', 'Soins intensifs', 'Analgésie', 'Réanimation'],     bio: 'Anesthésiste-réanimatrice experte en anesthésie pour interventions chirurgicales et soins intensifs post-opératoires.', disponibilites: 'Lun–Ven 07h–15h', experience: '9 ans' },
+  4:  { tags: ['Diabète', 'Hypertension', 'Maladies chroniques', 'Approche préventive'], bio: 'Interniste avec une approche globale et préventive des maladies chroniques. Suivi personnalisé de chaque patient.', disponibilites: 'Lun–Sam 08h–17h', experience: '12 ans' },
+  5:  { tags: ["Chirurgie d'urgence", 'Hernie', 'Appendicite', 'Laparoscopie'],          bio: "Chirurgien senior avec une expertise reconnue en chirurgie d'urgence et chirurgie digestive laparoscopique.", disponibilites: 'Lun–Sam 07h–15h', experience: '15 ans' },
+  6:  { tags: ['Chirurgie mini-invasive', 'Kystectomie', 'Hystérectomie', 'Laparoscopie'], bio: 'Expert en chirurgie gynécologique mini-invasive, permettant des suites opératoires plus courtes et moins douloureuses.', disponibilites: 'Mar–Jeu 08h–14h', experience: '11 ans' },
+  7:  { tags: ['Gynécologie médicale', 'Planning familial', 'Infections gynéco', 'Suivi'],  bio: 'Spécialisée en gynécologie médicale et planning familial. Approche douce et bienveillante pour chaque patiente.', disponibilites: 'Lun–Ven 08h–16h', experience: '7 ans' },
+  8:  { tags: ['Néonatologie', 'Pédiatrie générale', 'Vaccinations', 'Croissance'],        bio: 'Pédiatre spécialisé en néonatologie et suivi pédiatrique général. Prise en charge des nouveau-nés et enfants jusqu\'à 15 ans.', disponibilites: 'Lun–Sam 07h–16h', experience: '10 ans' },
+  9:  { tags: ['Suivi gynécologique', 'MST', 'Fertilité', 'Ménopause'],                   bio: 'Gynécologue avec une approche holistique et bienveillante. Spécialisé dans le suivi global de la santé de la femme.', disponibilites: 'Lun–Ven 08h–16h', experience: '9 ans' },
+  10: { tags: ['Traumatologie sportive', 'Fractures', 'Arthroscopie', 'Genou'],           bio: 'Orthopédiste spécialisé en traumatologie sportive et chirurgie arthroscopique du genou et de l\'épaule.', disponibilites: 'Lun–Sam 07h–17h', experience: '8 ans' },
+  11: { tags: ['Maladies chroniques', 'Diabète', 'Hypertension', 'Insuffisances'],        bio: 'Interniste spécialisée dans la gestion des maladies chroniques complexes. Coordination du suivi multidisciplinaire.', disponibilites: 'Mar–Sam 08h–16h', experience: '11 ans' },
+  12: { tags: ['Néonatologie', 'Pédiatrie sociale', 'Développement enfant', 'Vaccins'],   bio: "Pédiatre dévouée à la santé des enfants de la naissance à l'adolescence. Spécialisée en pédiatrie sociale.", disponibilites: 'Lun–Ven 07h–15h', experience: '8 ans' },
+  13: { tags: ['Rhinologie', 'Chirurgie des sinus', 'Surdité', 'Amygdales'],              bio: 'ORL avec expertise en rhinologie et chirurgie endoscopique des sinus. Prise en charge des pathologies de l\'oreille et du nez.', disponibilites: 'Lun–Sam 07h–16h', experience: '9 ans' },
+  14: { tags: ['Chirurgie générale', 'Urgences', 'Hernies', 'Appendicite'],               bio: 'Chirurgien généraliste avec plus de 10 ans de pratique en Haïti. Expertise en chirurgie des urgences.', disponibilites: 'Lun–Sam 07h–17h', experience: '10 ans' },
+  15: { tags: ['Chirurgie digestive', 'Laparoscopie', 'Côlon', 'Vésicule'],              bio: 'Spécialiste en chirurgie digestive et laparoscopique. Chirurgie mini-invasive du côlon, de la vésicule et des hernies.', disponibilites: 'Lun–Ven 08h–16h', experience: '9 ans' },
+  16: { tags: ['Pédiatrie générale', 'Nourrissons', 'Adolescents', 'Nutrition'],          bio: "Pédiatre dévouée à la santé des enfants. Suivi de croissance, vaccinations et prise en charge des maladies courantes de l'enfance.", disponibilites: 'Lun–Sam 07h–16h', experience: '7 ans' },
+  17: { tags: ['Neurochirurgie rachidienne', 'Tumeurs cérébrales', 'Traumatismes crâniens'], bio: 'Neurochirurgien formé en France, spécialisé en chirurgie rachidienne et traitement des tumeurs cérébrales.', disponibilites: 'Mer–Ven 08h–14h', experience: '14 ans' },
+  18: { tags: ['Prothèses articulaires', 'Fractures complexes', 'Orthopédie traumato'],   bio: 'Formé en Haïti et aux États-Unis, spécialisé en chirurgie orthopédique prothétique et reconstruction osseuse.', disponibilites: 'Lun–Sam 07h–17h', experience: '13 ans' },
+  19: { tags: ['Genou', 'Épaule', 'Traumatologie', 'Arthroscopie'],                       bio: "Orthopédiste spécialisé en pathologies du genou et de l'épaule. Expert en arthroscopie et chirurgie mini-invasive.", disponibilites: 'Lun–Ven 08h–17h', experience: '10 ans' },
+  20: { tags: ['Chirurgie néonatale', 'Malformations congénitales', 'Hernies enfant'],    bio: 'Chirurgien pédiatrique formé en Europe, spécialisé dans les interventions chez les nourrissons et jeunes enfants.', disponibilites: 'Mar–Sam 08h–14h', experience: '12 ans' },
+  21: { tags: ['Eczéma', 'Psoriasis', 'Acné', 'Dermatologie esthétique'],                bio: 'Dermatologue avec expertise en dermatologie esthétique et médicale. Prise en charge des maladies inflammatoires cutanées.', disponibilites: 'Lun–Ven 09h–16h', experience: '8 ans' },
+  22: { tags: ['Épilepsie', 'Maladies neuromusculaires', 'Sclérose en plaques', 'AVC'],   bio: 'Neurologue spécialisé en épilepsie et maladies neuromusculaires. Prise en charge des pathologies du système nerveux.', disponibilites: 'Lun–Mer 08h–16h', experience: '14 ans' },
+  23: { tags: ['Prothèses articulaires', 'Arthrose', 'Hanche', 'Genou'],                 bio: 'Orthopédiste avec spécialisation en prothèses articulaires de la hanche et du genou. Expertise en chirurgie reconstructive.', disponibilites: 'Lun–Sam 07h–16h', experience: '11 ans' },
+  24: { tags: ["Infertilité", 'Grossesse', 'Gynécologie médico-chirurgicale'],            bio: "Gynécologue avec un intérêt particulier pour le traitement de l'infertilité féminine et le suivi obstétrical.", disponibilites: 'Lun–Sam 08h–16h', experience: '10 ans' },
+  25: { tags: ['Gynécologie communautaire', 'Contraception', 'Infections'],               bio: 'Gynécologue engagé auprès des communautés défavorisées. Consultations accessibles et bienveillantes.', disponibilites: 'Lun–Ven 07h–15h', experience: '9 ans' },
+  26: { tags: ['Orthodontie', 'Extraction', 'Soins conservateurs', 'Prothèses dentaires'], bio: 'Chirurgien-dentiste spécialisé en orthodontie et soins conservateurs. Cabinet moderne et équipé.', disponibilites: 'Lun–Sam 08h–17h', experience: '8 ans' },
+  27: { tags: ['Rééducation post-op', 'Lombalgies', 'AVC', 'Kinésithérapie'],            bio: 'Physiothérapeute diplômée spécialisée en rééducation post-chirurgicale et traitement des lombalgies chroniques.', disponibilites: 'Lun–Sam 07h–16h', experience: '7 ans' },
+  28: { tags: ['Basse vision', 'Verres progressifs', 'Glaucome', 'Fond d\'œil'],         bio: 'Optométriste avec expertise en basse vision et adaptation de verres progressifs. Bilans visuels complets.', disponibilites: 'Lun–Sam 08h–17h', experience: '9 ans' },
+  29: { tags: ['TCC', 'Thérapie individuelle', 'Anxiété', 'Dépression'],                 bio: 'Psychologue clinicien spécialisé en thérapies cognitives et comportementales. Suivi individuel adulte.', disponibilites: 'Lun–Ven 09h–17h', experience: '10 ans' },
+  30: { tags: ['Radiographie', 'Échographie', 'Scanner', 'Imagerie diagnostique'],       bio: 'Radiologue expert en imagerie médicale diagnostique. Interprétation de radiographies, échographies et scanners.', disponibilites: 'Lun–Sam 07h–15h', experience: '12 ans' },
 }
 
 export default function SpecialistePage() {
   const params = useParams()
   const id = Number(params.id)
   const [rdvOpen, setRdvOpen] = useState(false)
-  const [spec, setSpec] = useState(SPECS_DATA[id] || null)
+  const [spec, setSpec] = useState<any | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    if (id) {
-      specialistesApi.getById(id)
-        .then(r => setSpec(prev => ({ ...SPECS_DATA[id], ...r.data, tags: SPECS_DATA[id]?.tags || [], bio: SPECS_DATA[id]?.bio || '' })))
-        .catch(() => setSpec(SPECS_DATA[id] || null))
-    }
+    if (!id) return
+    setLoading(true)
+    specialistesApi.getById(id)
+      .then(r => {
+        const apiData = r.data || {}
+        const enriched = { ...apiData, ...(FALLBACK_DATA[id] || {}) }
+        setSpec(enriched)
+      })
+      .catch(() => {
+        // Use fallback only if no API data
+        const fb = FALLBACK_DATA[id]
+        if (fb) setSpec(fb)
+      })
+      .finally(() => setLoading(false))
   }, [id])
 
-  if (!spec) return (
+  if (loading) return (
     <>
       <Navbar onRdvClick={() => setRdvOpen(true)} />
-      <div className="min-h-screen flex items-center justify-center text-slate-400 pt-[70px]">
-        Spécialiste introuvable
+      <div style={{ minHeight: '80vh', display: 'flex', alignItems: 'center', justifyContent: 'center', paddingTop: 70 }}>
+        <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: 32, color: '#1641C8' }} />
       </div>
     </>
   )
 
+  if (!spec) return (
+    <>
+      <Navbar onRdvClick={() => setRdvOpen(true)} />
+      <div style={{ minHeight: '80vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#64748b', paddingTop: 70 }}>
+        <i className="fa-solid fa-triangle-exclamation" style={{ fontSize: 48, marginBottom: 16, opacity: 0.3 }} />
+        <p style={{ fontSize: 18, fontWeight: 600 }}>Spécialiste introuvable</p>
+        <Link href="/specialites" style={{ color: '#1641C8', marginTop: 12, fontWeight: 600, textDecoration: 'none' }}>
+          ← Retour à la liste des médecins
+        </Link>
+      </div>
+    </>
+  )
+
+  const displayName = spec.nom || 'Médecin'
+  const displaySpec = spec.specialite || 'Spécialiste'
+  const displayBio  = spec.bio || spec.parcours || spec.description || 'Médecin expérimenté de la Clinique de la Rebecca.'
+  const tags        = spec.tags || []
+  const experience  = spec.experience || spec.annees_experience ? `${spec.annees_experience} ans d'expérience` : null
+  const disponibilites = spec.disponibilites || 'Lun–Sam 07h–17h'
+  const telephone   = spec.telephone
+  const email       = spec.email
+  const photoUrl    = spec.photo_url || spec.avatar_url || null
+  const prix        = spec.prix_consultation || 0
+
   return (
     <>
       <Navbar onRdvClick={() => setRdvOpen(true)} />
-      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
+      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} defaultSpec={displaySpec} />
 
       {/* Header */}
-      <div className="page-header">
-        <div className="breadcrumb">
-          <Link href="/">Accueil</Link> / <Link href="/specialites">Spécialités</Link> / <span>{spec.nom}</span>
+      <div style={{ paddingTop: 70, background: 'linear-gradient(135deg,#0f1e3d,#1641C8)', padding: '100px 5% 40px' }}>
+        <div style={{ maxWidth: 900, margin: '0 auto' }}>
+          <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginBottom: 20 }}>
+            <Link href="/" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>Accueil</Link>
+            {' / '}
+            <Link href="/specialites" style={{ color: 'rgba(255,255,255,0.6)', textDecoration: 'none' }}>Médecins</Link>
+            {' / '}
+            <span style={{ color: 'rgba(255,255,255,0.9)' }}>{displayName}</span>
+          </div>
         </div>
       </div>
 
-      <div className="py-14 px-[5%] max-w-[900px] mx-auto">
-        {/* Card profil */}
-        <div className="card p-8 mb-8 shadow-lg">
-          <div className="flex gap-8 items-start">
-            <div className="w-[100px] h-[100px] rounded-3xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-5xl flex-shrink-0 shadow-md">
-              {spec.emoji}
+      <div style={{ maxWidth: 900, margin: '-30px auto 0', padding: '0 5% 64px' }}>
+
+        {/* Card profil principale */}
+        <div style={{ background: 'white', borderRadius: 24, padding: 32, boxShadow: '0 8px 40px rgba(0,0,0,0.12)', marginBottom: 24, border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', gap: 28, alignItems: 'flex-start', flexWrap: 'wrap' }}>
+
+            {/* Photo ou avatar */}
+            <div style={{ width: 110, height: 110, borderRadius: 24, background: 'linear-gradient(135deg,#1641C8,#0d9488)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, overflow: 'hidden', boxShadow: '0 4px 20px rgba(22,65,200,0.25)' }}>
+              {photoUrl ? (
+                <img src={photoUrl} alt={displayName} style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  onError={e => { e.currentTarget.style.display = 'none' }} />
+              ) : (
+                <i className="fa-solid fa-circle-user" style={{ color: 'white', fontSize: 52 }} />
+              )}
             </div>
-            <div className="flex-1">
-              <h1 className="font-extrabold text-[26px] text-slate-800 mb-1">{spec.nom}</h1>
-              <div className="flex items-center gap-2 mb-3 flex-wrap">
-                <span className="badge-blue text-sm px-3 py-1">{spec.specialite}</span>
-                {(spec as any).experience && <span className="badge-gray text-xs">{(spec as any).experience}</span>}
-                <span className="text-yellow-400 text-sm">★★★★★</span>
+
+            {/* Infos */}
+            <div style={{ flex: 1, minWidth: 200 }}>
+              <h1 style={{ fontWeight: 900, fontSize: 'clamp(1.2rem,3vw,1.7rem)', color: '#0f172a', marginBottom: 6 }}>{displayName}</h1>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', marginBottom: 12 }}>
+                <span style={{ background: '#eff6ff', color: '#1641C8', borderRadius: 50, padding: '4px 14px', fontSize: 13, fontWeight: 700 }}>{displaySpec}</span>
+                {experience && <span style={{ background: '#f1f5f9', color: '#475569', borderRadius: 50, padding: '4px 14px', fontSize: 12, fontWeight: 600 }}>{experience}</span>}
+                <span style={{ color: '#f59e0b', fontSize: 13 }}>★★★★★</span>
               </div>
-              <p className="text-slate-500 text-[15px] leading-relaxed mb-5">{spec.bio || spec.description}</p>
-              <div className="flex flex-wrap gap-2 mb-5">
-                {spec.tags?.map(tag => (
-                  <span key={tag} className="px-3 py-1 bg-blue-50 text-[#1641C8] text-xs font-bold rounded-full border border-blue-100">
-                    {tag}
-                  </span>
-                ))}
-              </div>
-              <div className="flex gap-4">
-                <button onClick={() => setRdvOpen(true)} className="btn-primary">
-                  <i className="fa-regular fa-calendar-check"/> Prendre rendez-vous
+
+              <p style={{ color: '#475569', fontSize: 15, lineHeight: 1.7, marginBottom: 16 }}>{displayBio}</p>
+
+              {tags.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 20 }}>
+                  {tags.map((tag: string) => (
+                    <span key={tag} style={{ padding: '4px 12px', borderRadius: 50, fontSize: 12, fontWeight: 600, background: '#eff6ff', color: '#1641C8', border: '1px solid #dbeafe' }}>{tag}</span>
+                  ))}
+                </div>
+              )}
+
+              <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                <button onClick={() => setRdvOpen(true)}
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'linear-gradient(135deg,#1641C8,#0d9488)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 24px', fontWeight: 700, fontSize: 14, cursor: 'pointer' }}>
+                  <i className="fa-regular fa-calendar-check" /> Prendre rendez-vous
                 </button>
-                <Link href="/consultation" className="btn-secondary">
-                  <i className="fa-solid fa-video"/> Consultation vidéo
+                <Link href="/consultation"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'white', color: '#1641C8', border: '2px solid #1641C8', borderRadius: 12, padding: '11px 22px', fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
+                  <i className="fa-solid fa-video" /> Vidéo
                 </Link>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="grid grid-cols-[1fr_300px] gap-6">
-          <div className="space-y-5">
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 20, alignItems: 'start' }}>
+
+          {/* Colonne principale */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+
             {/* Domaines d'expertise */}
-            <div className="card p-6">
-              <h3 className="font-extrabold text-[16px] mb-4 flex items-center gap-2">
-                <i className="fa-solid fa-microscope text-[#1641C8]"/> Domaines d'expertise
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                {spec.tags?.map(tag => (
-                  <div key={tag} className="flex items-center gap-2.5 p-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-semibold text-slate-700">
-                    <i className="fa-solid fa-check text-green-500 text-xs"/> {tag}
-                  </div>
-                ))}
+            {tags.length > 0 && (
+              <div style={{ background: 'white', borderRadius: 18, padding: 24, border: '1px solid #e2e8f0' }}>
+                <h3 style={{ fontWeight: 800, fontSize: 16, color: '#0f172a', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <i className="fa-solid fa-microscope" style={{ color: '#1641C8' }} /> Domaines d&apos;expertise
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                  {tags.map((tag: string) => (
+                    <div key={tag} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '12px 14px', background: '#f8fafc', borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 13, fontWeight: 600, color: '#374151' }}>
+                      <i className="fa-solid fa-check" style={{ color: '#22c55e', fontSize: 11 }} /> {tag}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Informations pratiques */}
-            <div className="card p-6">
-              <h3 className="font-extrabold text-[16px] mb-4 flex items-center gap-2">
-                <i className="fa-solid fa-circle-info text-[#1641C8]"/> Informations pratiques
+            <div style={{ background: 'white', borderRadius: 18, padding: 24, border: '1px solid #e2e8f0' }}>
+              <h3 style={{ fontWeight: 800, fontSize: 16, color: '#0f172a', marginBottom: 16, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <i className="fa-solid fa-circle-info" style={{ color: '#1641C8' }} /> Informations pratiques
               </h3>
-              <div className="space-y-3">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 {[
-                  { icon:'fa-clock', label:'Disponibilités', value:(spec as any).disponibilites || 'Lun–Ven 08h–17h' },
-                  { icon:'fa-location-dot', label:'Lieu', value:'Clinique de la Rebecca, Haïti' },
-                  { icon:'fa-language', label:'Langues', value:'Français · Créole haïtien' },
-                  { icon:'fa-money-bill', label:'Consultation', value:'À partir de 1 500 HTG' },
-                ].map(i => (
-                  <div key={i.label} className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-[#1641C8] flex-shrink-0 mt-0.5">
-                      <i className={`fa-solid ${i.icon} text-xs`}/>
+                  { icon: 'fa-clock',        label: 'Disponibilités',       value: disponibilites },
+                  { icon: 'fa-location-dot', label: 'Lieu',                 value: 'Clinique de la Rebecca, Delmas, Haïti' },
+                  { icon: 'fa-language',     label: 'Langues',              value: 'Français · Créole haïtien' },
+                  { icon: 'fa-money-bill',   label: 'Consultation',         value: prix > 0 ? `${prix.toLocaleString()} HTG` : 'Sur devis' },
+                ].map(item => (
+                  <div key={item.label} style={{ display: 'flex', alignItems: 'flex-start', gap: 12 }}>
+                    <div style={{ width: 34, height: 34, background: '#eff6ff', borderRadius: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, marginTop: 1 }}>
+                      <i className={`fa-solid ${item.icon}`} style={{ color: '#1641C8', fontSize: 13 }} />
                     </div>
                     <div>
-                      <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{i.label}</div>
-                      <div className="font-semibold text-slate-700 text-sm">{i.value}</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 2 }}>{item.label}</div>
+                      <div style={{ fontWeight: 600, color: '#374151', fontSize: 14 }}>{item.value}</div>
                     </div>
                   </div>
                 ))}
@@ -136,47 +213,56 @@ export default function SpecialistePage() {
             </div>
           </div>
 
-          {/* Sidebar : contact + RDV */}
-          <div className="space-y-4">
-            <div className="card p-5 border-2 border-[#1641C8]/10">
-              <h4 className="font-extrabold text-[14px] mb-4">Prendre rendez-vous</h4>
-              <button onClick={() => setRdvOpen(true)} className="btn-primary w-full justify-center mb-3">
-                <i className="fa-regular fa-calendar-check"/> En personne
+          {/* Sidebar */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+
+            {/* Prendre RDV */}
+            <div style={{ background: 'white', borderRadius: 18, padding: 20, border: '2px solid #1641C820' }}>
+              <h4 style={{ fontWeight: 800, fontSize: 14, color: '#0f172a', marginBottom: 16 }}>Prendre rendez-vous</h4>
+              <button onClick={() => setRdvOpen(true)} style={{ width: '100%', background: 'linear-gradient(135deg,#1641C8,#0d9488)', color: 'white', border: 'none', borderRadius: 12, padding: '12px 0', fontWeight: 700, fontSize: 14, cursor: 'pointer', marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                <i className="fa-regular fa-calendar-check" /> En personne
               </button>
-              <Link href="/consultation" className="btn-secondary w-full justify-center text-sm no-underline inline-flex">
-                <i className="fa-solid fa-video"/> Consultation vidéo
+              <Link href="/consultation" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, padding: '11px 0', background: 'white', color: '#1641C8', border: '2px solid #1641C8', borderRadius: 12, fontWeight: 700, fontSize: 13, textDecoration: 'none' }}>
+                <i className="fa-solid fa-video" /> Consultation vidéo
               </Link>
-              <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
-                {spec.telephone && (
-                  <a href={`https://wa.me/${spec.telephone.replace(/[^0-9]/g,'')}`} target="_blank" rel="noreferrer"
-                    className="flex items-center gap-2 text-sm text-green-600 font-medium no-underline hover:text-green-700">
-                    <i className="fa-brands fa-whatsapp text-green-500"/> {spec.telephone}
-                  </a>
-                )}
-                {spec.email && (
-                  <div className="flex items-center gap-2 text-sm text-slate-400">
-                    <i className="fa-solid fa-envelope"/> {spec.email}
-                  </div>
-                )}
-              </div>
+              {(telephone || email) && (
+                <div style={{ marginTop: 16, paddingTop: 14, borderTop: '1px solid #f1f5f9' }}>
+                  {telephone && (
+                    <a href={`https://wa.me/509${telephone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noreferrer"
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#16a34a', fontWeight: 600, textDecoration: 'none', marginBottom: 8 }}>
+                      <i className="fa-brands fa-whatsapp" style={{ color: '#22c55e', fontSize: 16 }} /> {telephone}
+                    </a>
+                  )}
+                  {email && (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: '#64748b' }}>
+                      <i className="fa-solid fa-envelope" /> {email}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
-            {/* Témoignages */}
-            <div className="card p-5">
-              <h4 className="font-extrabold text-[14px] mb-3">Avis patients</h4>
+            {/* Avis patients */}
+            <div style={{ background: 'white', borderRadius: 18, padding: 20, border: '1px solid #e2e8f0' }}>
+              <h4 style={{ fontWeight: 800, fontSize: 14, color: '#0f172a', marginBottom: 14 }}>Avis patients</h4>
               {[
-                { n:'M.T.', note:'★★★★★', txt:'Médecin très professionnel et à l\'écoute.' },
-                { n:'P.J.', note:'★★★★★', txt:'Excellent suivi, je recommande vivement.' },
+                { initiales: 'M.T.', note: '★★★★★', txt: 'Médecin très professionnel et à l\'écoute.' },
+                { initiales: 'P.J.', note: '★★★★★', txt: 'Excellent suivi, je recommande vivement.' },
               ].map(a => (
-                <div key={a.n} className="mb-3 last:mb-0">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-7 h-7 rounded-full bg-blue-100 text-[#1641C8] flex items-center justify-center text-xs font-bold">{a.n}</div>
-                    <span className="text-yellow-400 text-xs">{a.note}</span>
+                <div key={a.initiales} style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
+                    <div style={{ width: 28, height: 28, borderRadius: '50%', background: '#eff6ff', color: '#1641C8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 700 }}>{a.initiales}</div>
+                    <span style={{ color: '#f59e0b', fontSize: 11 }}>{a.note}</span>
                   </div>
-                  <p className="text-slate-500 text-xs italic leading-relaxed">"{a.txt}"</p>
+                  <p style={{ color: '#64748b', fontSize: 12, fontStyle: 'italic', lineHeight: 1.6, margin: 0 }}>&ldquo;{a.txt}&rdquo;</p>
                 </div>
               ))}
             </div>
+
+            {/* Retour liste */}
+            <Link href="/specialites" style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#64748b', fontSize: 13, fontWeight: 600, textDecoration: 'none', padding: '10px 0' }}>
+              <i className="fa-solid fa-arrow-left" style={{ fontSize: 11 }} /> Retour à la liste
+            </Link>
           </div>
         </div>
       </div>
