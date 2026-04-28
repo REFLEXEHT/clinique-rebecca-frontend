@@ -21,23 +21,12 @@ const AVANTAGES = [
   'Communiquer avec votre médecin',
 ]
 
-const SERVICES_GRILLE = [
-  { titre: 'Clinique externe',  icon: 'fa-stethoscope',    href: '/specialites',             couleur: '#1641C8' },
-  { titre: 'Laboratoire',       icon: 'fa-flask-vial',     href: '/services/laboratoire',    couleur: '#0d9488' },
-  { titre: 'Dentisterie',       icon: 'fa-tooth',          href: '/services/dentisterie',    couleur: '#7c3aed' },
-  { titre: 'Pharmacie',         icon: 'fa-pills',          href: '/services/pharmacie',      couleur: '#dc2626' },
-  { titre: 'Physiothérapie',    icon: 'fa-person-walking', href: '/services/physiotherapie', couleur: '#d97706' },
-  { titre: 'Optométrie',        icon: 'fa-glasses',        href: '/services/optometrie',     couleur: '#059669' },
-  { titre: 'Maternité',         icon: 'fa-baby',           href: '/services/maternite',      couleur: '#be185d' },
-  { titre: 'Salle SOP',         icon: 'fa-scalpel',        href: '/services/sop',            couleur: '#374151' },
-  { titre: 'Gestes médicaux',   icon: 'fa-syringe',        href: '/services/gestes',         couleur: '#6366f1' },
-]
 
 const ATOUTS = [
-  { icon: 'fa-user-doctor',  couleur: '#1641C8', titre: 'Médecins spécialisés',  desc: 'Plus de 30 médecins et spécialistes disponibles 6 jours sur 7.' },
-  { icon: 'fa-flask-vial',   couleur: '#0d9488', titre: 'Laboratoire sur place', desc: 'Résultats rapides accessibles depuis votre espace patient en ligne.' },
-  { icon: 'fa-video',        couleur: '#7c3aed', titre: 'Consultation vidéo',    desc: 'Consultez votre médecin depuis chez vous en toute sécurité.' },
-  { icon: 'fa-shield-heart', couleur: '#be185d', titre: 'Suivi personnalisé',    desc: 'Dossier médical numérique et rappels automatiques de rendez-vous.' },
+  { icon: 'fa-flask-vial',      couleur: '#0d9488', titre: 'Laboratoire et pharmacie sur place', desc: 'Analyses médicales et médicaments disponibles directement à la clinique, sans déplacement supplémentaire.' },
+  { icon: 'fa-heart-pulse',     couleur: '#be185d', titre: 'Soins personnalisés et intégrés',    desc: 'Dossier médical numérique partagé entre tous vos médecins pour un suivi cohérent et des soins adaptés à votre profil.' },
+  { icon: 'fa-calendar-check',  couleur: '#1641C8', titre: 'Ouvert 7 jours sur 7',              desc: 'La clinique vous accueille tous les jours de la semaine pour les consultations, urgences et soins courants.' },
+  { icon: 'fa-shield-heart',    couleur: '#7c3aed', titre: 'Suivi personnalisé',                desc: 'Rappels automatiques de rendez-vous, résultats accessibles en ligne et communication directe avec votre médecin.' },
 ]
 
 // ─── Composant principal ──────────────────────────────────────────────────────
@@ -243,71 +232,6 @@ export default function HomeContent() {
         </div>
       </section>
 
-      {/* ══════════════════════════════════════════════════════════════════════
-          SERVICES — grille 9 services
-      ══════════════════════════════════════════════════════════════════════ */}
-      <section style={{ background: 'white', padding: '80px 8%' }}>
-        <div style={{ maxWidth: 1100, margin: '0 auto' }}>
-
-          <div style={{ textAlign: 'center', marginBottom: 48 }}>
-            <span className="section-tag">
-              <i className="fa-solid fa-grid-2" />
-              Nos 9 services
-            </span>
-            <h2 className="section-title">
-              Des soins complets <em>sous un même toit</em>
-            </h2>
-            <p className="section-sub" style={{ maxWidth: 480, margin: '0 auto' }}>
-              De la consultation médicale à la chirurgie, en passant par le laboratoire et la pharmacie.
-            </p>
-          </div>
-
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))',
-            gap: 16,
-          }}>
-            {SERVICES_GRILLE.map(s => (
-              <Link key={s.titre} href={s.href} style={{ textDecoration: 'none' }}>
-                <div
-                  style={{
-                    background: '#f8fafc', border: '1px solid #e2e8f0',
-                    borderRadius: 16, padding: '22px 18px',
-                    textAlign: 'center', transition: 'all 0.2s', cursor: 'pointer',
-                    height: '100%',
-                  }}
-                  onMouseEnter={e => {
-                    const d = e.currentTarget
-                    d.style.borderColor = s.couleur + '55'
-                    d.style.background  = s.couleur + '07'
-                    d.style.transform   = 'translateY(-3px)'
-                    d.style.boxShadow   = `0 8px 24px ${s.couleur}20`
-                  }}
-                  onMouseLeave={e => {
-                    const d = e.currentTarget
-                    d.style.borderColor = '#e2e8f0'
-                    d.style.background  = '#f8fafc'
-                    d.style.transform   = 'none'
-                    d.style.boxShadow   = 'none'
-                  }}
-                >
-                  <div style={{
-                    width: 48, height: 48, borderRadius: 13,
-                    background: s.couleur + '14',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    margin: '0 auto 13px',
-                  }}>
-                    <i className={`fa-solid ${s.icon}`} style={{ color: s.couleur, fontSize: 20 }} />
-                  </div>
-                  <div style={{ fontWeight: 700, color: '#0f172a', fontSize: 13.5, lineHeight: 1.3 }}>
-                    {s.titre}
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ══════════════════════════════════════════════════════════════════════
           POURQUOI NOUS — 4 cartes atouts
