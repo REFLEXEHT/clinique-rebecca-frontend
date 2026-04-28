@@ -53,7 +53,7 @@ export default function HomeContent() {
           display: 'flex', flexDirection: 'column', justifyContent: 'center',
           padding: '64px 6% 64px 8%',
         }}>
-          {/* Logo + nom */}
+          {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 36 }}>
             <img
               src={LOGO_SRC}
@@ -74,7 +74,7 @@ export default function HomeContent() {
             marginBottom: 16,
           }}>
             Bienvenue à la<br />
-            <span style={{ color: '#1641C8' }}>Clinique de la Rébecca</span>
+            <span style={{ color: '#1641C8' }}>Clinique de la Rebecca</span>
           </h1>
 
           <p style={{
@@ -88,7 +88,7 @@ export default function HomeContent() {
           </p>
 
           {/* Avantages avec coche */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginBottom: 40 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 16, marginBottom: 40 }}>
             {AVANTAGES.map(a => (
               <div key={a} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                 <div style={{
@@ -122,7 +122,7 @@ export default function HomeContent() {
               onMouseLeave={e => { e.currentTarget.style.background = '#1641C8'; e.currentTarget.style.transform = 'none' }}
             >
               <i className="fa-regular fa-circle-play" style={{ fontSize: 18 }} />
-              Prendre Rendez-vous
+              Prendre rendez-vous
             </button>
 
             <Link href="/specialites" style={{
@@ -172,14 +172,12 @@ export default function HomeContent() {
               const el = e.target as HTMLImageElement
               el.parentElement!.style.background = 'linear-gradient(160deg,#1641C8 0%,#0d9488 100%)'
               el.style.display = 'none'
-              // Afficher logo en remplacement
               const div = document.createElement('div')
               div.style.cssText = 'position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px'
               div.innerHTML = '<i class="fa-solid fa-hospital" style="font-size:80px;color:rgba(255,255,255,0.3)"></i>'
               el.parentElement!.appendChild(div)
             }}
           />
-          {/* Overlay léger pour lisibilité */}
           <div style={{
             position: 'absolute', inset: 0,
             background: 'linear-gradient(to right, rgba(240,244,255,0.15), transparent)',

@@ -1,136 +1,87 @@
 'use client'
-import { useState } from 'react'
+export const dynamic = 'force-dynamic'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import RdvModal from '@/components/ui/RdvModal'
+import { api } from '@/lib/api'
 
-const SERVICES = [
-  {
-    slug: 'laboratoire',
-    titre: 'Laboratoire',
-    icon: 'fa-flask-vial',
-    couleur: '#0d9488',
-    bg: 'linear-gradient(135deg,#0f1e3d,#0d9488)',
-    desc: 'Analyses biologiques complètes avec résultats rapides. Hématologie, biochimie, microbiologie, sérologie.',
-    examens: ['Numération formule sanguine', 'Glycémie / HbA1c', 'Bilan lipidique', 'Fonction rénale', 'Fonction hépatique', 'Sérologie VIH/VHB/VHC', 'Test de grossesse', 'Analyse d\'urine', 'Coproculture'],
-  },
-  {
-    slug: 'dentisterie',
-    titre: 'Dentisterie',
-    icon: 'fa-tooth',
-    couleur: '#7c3aed',
-    bg: 'linear-gradient(135deg,#0f1e3d,#7c3aed)',
-    desc: 'Soins dentaires complets par le Dr Wolf Charlie Cajuste : extractions, soins, prothèses et orthodontie.',
-    examens: ['Consultation dentaire', 'Détartrage', 'Extraction', 'Obturation (plombage)', 'Prothèse dentaire', 'Orthodontie', 'Blanchissement', 'Radiographie dentaire'],
-  },
-  {
-    slug: 'pharmacie',
-    titre: 'Pharmacie',
-    icon: 'fa-pills',
-    couleur: '#dc2626',
-    bg: 'linear-gradient(135deg,#0f1e3d,#dc2626)',
-    desc: 'Médicaments disponibles sur place, ordonnances honorées. Produits pharmaceutiques et parapharmaceutiques.',
-    examens: [],
-    pharmacie: true,
-  },
-  {
-    slug: 'physiotherapie',
-    titre: 'Physiothérapie',
-    icon: 'fa-person-walking',
-    couleur: '#d97706',
-    bg: 'linear-gradient(135deg,#0f1e3d,#d97706)',
-    desc: 'Rééducation fonctionnelle, traitement des douleurs chroniques et récupération post-opératoire.',
-    examens: ['Kinésithérapie musculaire', 'Rééducation post-opératoire', 'Traitement lombalgies', 'Rééducation AVC', 'Traitement cervicalgies', 'Électrothérapie', 'Ultrasons thérapeutiques'],
-  },
-  {
-    slug: 'optometrie',
-    titre: 'Optométrie',
-    icon: 'fa-glasses',
-    couleur: '#059669',
-    bg: 'linear-gradient(135deg,#0f1e3d,#059669)',
-    desc: 'Bilan visuel complet, prescriptions de verres correcteurs et suivi ophtalmologique de base.',
-    examens: ['Bilan visuel complet', 'Test d\'acuité visuelle', 'Prescription de lunettes', 'Dépistage glaucome', 'Fond d\'œil', 'Mesure tension oculaire'],
-  },
-  {
-    slug: 'maternite',
-    titre: 'Maternité',
-    icon: 'fa-baby',
-    couleur: '#be185d',
-    bg: 'linear-gradient(135deg,#0f1e3d,#be185d)',
-    desc: 'Suivi de grossesse, accouchement sécurisé et soins néonataux dans un environnement chaleureux.',
-    examens: ['Consultation prénatale', 'Échographie obstétricale', 'Suivi mensuel grossesse', 'Accouchement', 'Soins nouveau-né', 'Vaccination nourrisson', 'Planification familiale'],
-  },
-  {
-    slug: 'sop',
-    titre: 'Salle SOP',
-    icon: 'fa-scalpel',
-    couleur: '#374151',
-    bg: 'linear-gradient(135deg,#0f1e3d,#374151)',
-    desc: 'Bloc opératoire équipé pour interventions chirurgicales programmées et urgences.',
-    examens: ['Chirurgie digestive', 'Chirurgie gynécologique', 'Chirurgie orthopédique', 'Herniorraphie', 'Appendicectomie', 'Césarienne'],
-  },
-  {
-    slug: 'gestes',
-    titre: 'Gestes médicaux',
-    icon: 'fa-syringe',
-    couleur: '#6366f1',
-    bg: 'linear-gradient(135deg,#0f1e3d,#6366f1)',
-    desc: 'Soins courants effectués sur place : injections, perfusions, pansements et petites interventions.',
-    examens: ['Injection intramusculaire', 'Perfusion intraveineuse', 'Prise de sang', 'Pansement', 'Suture', 'Ablation points', 'ECG', 'Pose sonde urinaire'],
-  },
+interface TarifDentiste { code: string; libelle: string; montant: number; devise: string }
+
+const MEDECINS_DENTISTE = [
+  { nom:'Dr Wolf Charlie Cajuste', specialite:'Dentisterie', emoji:'🦷', telephone:'3810-7562', prix_consultation: 2500 },
 ]
 
-export default function ServicesPage() {
+export default function DentisterieService() {
   const [rdvOpen, setRdvOpen] = useState(false)
+  const [tarifs, setTarifs] = useState<TarifDentiste[]>([])
+
+  useEffect(() => {
+    api.get('/dentiste/tarifs').then(r => setTarifs(r.data || [])).catch(() => {})
+  }, [])
 
   return (
     <>
       <Navbar onRdvClick={() => setRdvOpen(true)} />
       <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
-
-      <div className="page-header">
-        <div className="breadcrumb">
-          <Link href="/">Accueil</Link> / <span>Services</span>
-        </div>
-        <h1>Nos services médicaux</h1>
-        <p>Des soins complets sous un même toit, du lundi au samedi</p>
+      <div style={{ background:'linear-gradient(135deg,#0f1e3d,#6366f1)', padding:'120px 5% 64px', textAlign:'center' }}>
+        <div style={{ fontSize:56, marginBottom:16 }}>🦷</div>
+        <h1 style={{ color:'white', fontWeight:900, fontSize:'clamp(2rem,4vw,3rem)', margin:'0 0 12px' }}>Dentisterie</h1>
+        <p style={{ color:'rgba(255,255,255,0.78)', fontSize:'1.05rem', maxWidth:540, margin:'0 auto 28px' }}>
+          Soins dentaires complets : consultation, extraction, prophylaxie, orthodontie et prothèses.
+        </p>
+        <button onClick={() => setRdvOpen(true)} style={{ background:'#6366f1', color:'white', border:'2px solid rgba(255,255,255,0.3)', borderRadius:12, padding:'12px 28px', fontWeight:700, cursor:'pointer' }}>
+          Prendre RDV
+        </button>
       </div>
 
-      <section style={{ padding: '72px 5%', background: '#f8fafc' }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px,1fr))', gap: 24 }}>
-          {SERVICES.map(s => (
-            <Link key={s.slug} href={`/services/${s.slug}`} style={{ textDecoration: 'none' }}>
-              <div
-                className="card"
-                style={{ padding: '28px 24px', transition: 'all 0.22s', cursor: 'pointer' }}
-                onMouseEnter={e => { const d = e.currentTarget; d.style.transform = 'translateY(-4px)'; d.style.boxShadow = `0 12px 40px ${s.couleur}22`; d.style.borderColor = s.couleur + '40' }}
-                onMouseLeave={e => { const d = e.currentTarget; d.style.transform = 'none'; d.style.boxShadow = 'none'; d.style.borderColor = '#e2e8f0' }}
-              >
-                <div style={{ width: 52, height: 52, borderRadius: 14, background: s.couleur + '12', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 18 }}>
-                  <i className={`fa-solid ${s.icon}`} style={{ color: s.couleur, fontSize: 22 }} />
-                </div>
-                <h3 style={{ fontWeight: 800, color: '#0f172a', fontSize: '1.1rem', marginBottom: 10 }}>{s.titre}</h3>
-                <p style={{ color: '#64748b', fontSize: 14, lineHeight: 1.7, marginBottom: 18 }}>{s.desc}</p>
-                <div style={{ color: s.couleur, fontSize: 13, fontWeight: 700, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  Voir le service <i className="fa-solid fa-arrow-right" style={{ fontSize: 10 }} />
-                </div>
+      <div style={{ maxWidth:1100, margin:'0 auto', padding:'56px 5%' }}>
+        {/* Médecin */}
+        <h2 style={{ fontWeight:900, fontSize:'1.4rem', color:'#0f172a', marginBottom:20 }}>Notre dentiste</h2>
+        <div style={{ display:'flex', gap:16, marginBottom:48, flexWrap:'wrap' }}>
+          {MEDECINS_DENTISTE.map(m => (
+            <div key={m.nom} style={{ background:'white', borderRadius:18, padding:24, border:'1px solid #e2e8f0', minWidth:260 }}>
+              <div style={{ fontSize:40, marginBottom:12 }}>{m.emoji}</div>
+              <div style={{ fontWeight:800, fontSize:15, color:'#0f172a' }}>{m.nom}</div>
+              <div style={{ color:'#6366f1', fontWeight:600, fontSize:13, marginTop:4 }}>{m.specialite}</div>
+              <div style={{ color:'#64748b', fontSize:12, marginTop:6 }}>📞 {m.telephone}</div>
+              <div style={{ marginTop:10, background:'#f5f3ff', borderRadius:8, padding:'6px 12px', fontSize:13, fontWeight:600, color:'#6366f1' }}>
+                Consultation : {m.prix_consultation.toLocaleString()} HTG
               </div>
-            </Link>
+            </div>
           ))}
         </div>
-      </section>
 
-      <section style={{ background: 'linear-gradient(135deg,#0f1e3d,#1641C8)', padding: '72px 5%', textAlign: 'center' }}>
-        <div style={{ maxWidth: 560, margin: '0 auto' }}>
-          <h2 style={{ color: 'white', fontWeight: 900, fontSize: 'clamp(1.5rem,3vw,2.2rem)', marginBottom: 14 }}>Besoin d'un service spécifique ?</h2>
-          <p style={{ color: 'rgba(255,255,255,0.72)', marginBottom: 32, lineHeight: 1.75 }}>Notre équipe est disponible 6 jours sur 7 pour vous orienter vers le bon spécialiste.</p>
-          <button onClick={() => setRdvOpen(true)} className="btn-primary" style={{ background: 'white', color: '#1641C8' }}>
-            Prendre rendez-vous
-          </button>
+        {/* Tarifs */}
+        <h2 style={{ fontWeight:900, fontSize:'1.4rem', color:'#0f172a', marginBottom:20 }}>Liste des prix</h2>
+        <div style={{ background:'white', borderRadius:18, border:'1px solid #e2e8f0', overflow:'hidden' }}>
+          <table style={{ width:'100%', borderCollapse:'collapse', fontSize:14 }}>
+            <thead>
+              <tr style={{ background:'#f8fafc', borderBottom:'1px solid #e2e8f0' }}>
+                <th style={{ padding:'12px 20px', textAlign:'left', color:'#64748b', fontWeight:600 }}>Service</th>
+                <th style={{ padding:'12px 20px', textAlign:'right', color:'#64748b', fontWeight:600 }}>Prix</th>
+                <th style={{ padding:'12px 20px', textAlign:'center', color:'#64748b', fontWeight:600 }}>Devise</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tarifs.map(t => (
+                <tr key={t.code} style={{ borderBottom:'1px solid #f8fafc' }}>
+                  <td style={{ padding:'11px 20px', fontWeight:600, color:'#0f172a' }}>{t.libelle}</td>
+                  <td style={{ padding:'11px 20px', textAlign:'right', fontWeight:700, color:'#6366f1' }}>
+                    {t.montant > 0 ? t.montant.toLocaleString() : 'Sur devis'}
+                  </td>
+                  <td style={{ padding:'11px 20px', textAlign:'center' }}>
+                    <span style={{ background: t.devise==='USD' ? '#fef3c7':'#f5f3ff', color: t.devise==='USD'?'#d97706':'#6366f1', borderRadius:50, padding:'3px 10px', fontSize:11, fontWeight:700 }}>
+                      {t.devise}
+                    </span>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
-      </section>
-
+      </div>
       <Footer />
     </>
   )
