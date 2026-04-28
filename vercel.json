@@ -4,9 +4,17 @@
   "framework": "nextjs",
   "buildCommand": "npm run build",
   "outputDirectory": ".next",
-  "installCommand": "npm install",
+  "installCommand": "npm install --force",
   "regions": ["iad1"],
   "env": {
     "NEXT_PUBLIC_API_URL": "https://clinique-rebecca-api.onrender.com"
-  }
+  },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" }
+      ]
+    }
+  ]
 }

@@ -1,296 +1,187 @@
 'use client'
 export const dynamic = 'force-dynamic'
-import { useEffect, useState, useRef } from 'react'
-import { useAuth } from '@/context/AuthContext'
-import { useRouter } from 'next/navigation'
+// app/specialistes/[id]/page.tsx — Profil public spécialiste (lecture seule)
+import { useEffect, useState } from 'react'
+import { useParams } from 'next/navigation'
 import Link from 'next/link'
-import { stocksApi, chatApi } from '@/lib/api'
-import { StockItem } from '@/types'
-import RebeccaAI from '@/components/ui/RebeccaAI'
-import { AlertTriangle, Package, LogOut, Megaphone } from 'lucide-react'
+import Navbar from '@/components/layout/Navbar'
+import Footer from '@/components/layout/Footer'
+import RdvModal from '@/components/ui/RdvModal'
+import { specialistesApi } from '@/lib/api'
+import { Specialiste } from '@/types'
 
-const STOCKS_DEMO: StockItem[] = [
-  { id:1,  nom:'Amoxicilline 500mg',    categorie:'Antibiotique',        quantite:245, seuil_min:50,  prix_unitaire:45,  unite:'comprimé' },
-  { id:2,  nom:'Paracétamol 500mg',     categorie:'Analgésique',         quantite:12,  seuil_min:100, prix_unitaire:15,  unite:'comprimé' },
-  { id:3,  nom:'Ibuprofène 400mg',      categorie:'Anti-inflammatoire',  quantite:380, seuil_min:100, prix_unitaire:25,  unite:'comprimé' },
-  { id:4,  nom:'Metformine 500mg',      categorie:'Antidiabétique',      quantite:89,  seuil_min:50,  prix_unitaire:30,  unite:'comprimé' },
-  { id:5,  nom:'Amlodipine 5mg',        categorie:'Antihypertenseur',    quantite:156, seuil_min:50,  prix_unitaire:40,  unite:'comprimé' },
-  { id:6,  nom:'Oméprazole 20mg',       categorie:'Antiulcéreux',        quantite:203, seuil_min:60,  prix_unitaire:35,  unite:'comprimé' },
-  { id:7,  nom:'Seringues 10ml',        categorie:'Matériel',            quantite:380, seuil_min:200, prix_unitaire:8,   unite:'unité' },
-  { id:8,  nom:'Masques chirurgicaux',  categorie:'Protection',          quantite:8,   seuil_min:50,  prix_unitaire:5,   unite:'unité' },
-  { id:9,  nom:'Solution IV 500ml',     categorie:'Perfusion',           quantite:92,  seuil_min:30,  prix_unitaire:180, unite:'flacon' },
-  { id:10, nom:'Cotrimoxazole 480mg',   categorie:'Antibiotique',        quantite:167, seuil_min:50,  prix_unitaire:20,  unite:'comprimé' },
-  { id:11, nom:'Atorvastatine 20mg',    categorie:'Hypolipémiant',       quantite:0,   seuil_min:40,  prix_unitaire:55,  unite:'comprimé' },
-  { id:12, nom:'Vitamine C 500mg',      categorie:'Vitamines',           quantite:320, seuil_min:80,  prix_unitaire:12,  unite:'comprimé' },
-]
-
-// Expiration fictive pour les démos
-const EXPIRATIONS: Record<string, string> = {
-  'Amoxicilline 500mg': '2026-12', 'Paracétamol 500mg': '2027-03',
-  'Metformine 500mg': '2026-09', 'Amlodipine 5mg': '2027-01',
-  'Oméprazole 20mg': '2026-11', 'Ibuprofène 400mg': '2027-06',
-  'Cotrimoxazole 480mg': '2026-08', 'Vitamine C 500mg': '2027-04',
+const SPECS_DATA: Record<number, Specialiste & { tags: string[]; bio: string; disponibilites: string; experience: string }> = {
+  1: { id:1, nom:'Dr. Michel Dubois', specialite:'Chirurgie générale', description:'Chirurgien senior', emoji:'🔬', categorie:'chirurgie', email:'m.dubois@cliniquerebecca.ht', telephone:'+509 3456-0001', actif:true, ordre:0, bio:'Chirurgien général spécialisé dans la chirurgie digestive et laparoscopique. Plus de 15 ans d\'expérience dans les interventions chirurgicales complexes, formé à l\'Hôpital Universitaire d\'État d\'Haïti et en France.', tags:['Chirurgie digestive','Laparoscopie','Urgences chirurgicales','Hernies'], disponibilites:'Lun–Ven 08h–17h · Sam 08h–12h', experience:'15 ans d\'expérience' },
+  2: { id:2, nom:'Dr. Anne-Marie Pierre', specialite:'Neurochirurgie', description:'Neurochirurgie pédiatrique', emoji:'🧠', categorie:'neurochirurgie', email:'am.pierre@cliniquerebecca.ht', telephone:'+509 3456-0002', actif:true, ordre:0, bio:'Experte en neurochirurgie pédiatrique et adulte, spécialisée dans le traitement des tumeurs cérébrales, des malformations vasculaires et de la pathologie de la colonne vertébrale.', tags:['Tumeurs cérébrales','Chirurgie de la colonne','Neurochirurgie pédiatrique'], disponibilites:'Mar–Jeu 08h–16h', experience:'12 ans d\'expérience' },
+  3: { id:3, nom:'Dr. Jean-Claude Étienne', specialite:'Neurologie', description:'Épilepsie, AVC', emoji:'🧬', categorie:'neurologie', email:'jc.etienne@cliniquerebecca.ht', telephone:'+509 3456-0003', actif:true, ordre:0, bio:'Neurologue expérimenté dans le diagnostic et le traitement de l\'épilepsie, des AVC et des pathologies démyélinisantes comme la sclérose en plaques.', tags:['Épilepsie','AVC','Sclérose en plaques'], disponibilites:'Lun–Ven 08h–17h', experience:'10 ans d\'expérience' },
+  4: { id:4, nom:'Dr. Sophie Lamour', specialite:'Orthopédie', description:'Traumatologie', emoji:'🦴', categorie:'orthopedie', email:'s.lamour@cliniquerebecca.ht', telephone:'+509 3456-0004', actif:true, ordre:0, bio:'Orthopédiste spécialisée en traumatologie et chirurgie prothétique. Prise en charge des fractures complexes, des arthroses sévères et remplacement articulaire.', tags:['Prothèse de hanche','Fractures complexes','Arthroscopie'], disponibilites:'Lun–Sam 08h–17h', experience:'13 ans d\'expérience' },
+  5: { id:5, nom:'Dr. Paul Désir', specialite:'Pédiatrie', description:'Néonatologie', emoji:'👶', categorie:'pediatrie', email:'p.desir@cliniquerebecca.ht', telephone:'+509 3456-0005', actif:true, ordre:0, bio:'Pédiatre dévoué spécialisé en néonatologie et pédiatrie générale. Suivi de croissance, vaccinations, maladies infectieuses de l\'enfant et maladies chroniques pédiatriques.', tags:['Néonatologie','Pédiatrie générale','Vaccinations','Maladies chroniques'], disponibilites:'Lun–Ven 08h–17h · Sam 08h–15h', experience:'11 ans d\'expérience' },
+  6: { id:6, nom:'Dr. Isabelle François', specialite:'Dermatologie', description:'Maladies de peau', emoji:'🌸', categorie:'dermatologie', email:'i.francois@cliniquerebecca.ht', telephone:'+509 3456-0006', actif:true, ordre:0, bio:'Dermatologue spécialisée dans les maladies inflammatoires de la peau, les infections cutanées, les pathologies pigmentaires et la dermatologie cosmétique.', tags:['Eczéma','Psoriasis','Acné','Dermatologie cosmétique'], disponibilites:'Lun–Ven 09h–17h', experience:'9 ans d\'expérience' },
+  7: { id:7, nom:'Dr. Henri Nazaire', specialite:'Urologie', description:'Prostate, système urinaire', emoji:'💊', categorie:'urologie', email:'h.nazaire@cliniquerebecca.ht', telephone:'+509 3456-0007', actif:true, ordre:0, bio:'Urologue expérimenté dans le traitement des pathologies de la prostate, des lithiases urinaires, des infections urinaires récidivantes et des troubles de la fertilité masculine.', tags:['Prostate','Lithiase urinaire','Fertilité masculine'], disponibilites:'Lun–Ven 08h–17h', experience:'14 ans d\'expérience' },
+  8: { id:8, nom:'Dr. Marie-Rose Cajuste', specialite:'ORL', description:'Oreille, nez, gorge', emoji:'👂', categorie:'orl', email:'mr.cajuste@cliniquerebecca.ht', telephone:'+509 3456-0008', actif:true, ordre:0, bio:'Spécialiste en oto-rhino-laryngologie. Prise en charge des pathologies de l\'oreille, du nez, des sinus, de la gorge et du larynx, avec ou sans chirurgie.', tags:['Sinusite','Troubles auditifs','Chirurgie ORL','Amygdales'], disponibilites:'Lun–Sam 07h–16h', experience:'8 ans d\'expérience' },
+  9: { id:9, nom:'Dr. Claudette Joseph', specialite:'Gynécologie-Obstétrique', description:'Suivi grossesse', emoji:'🌺', categorie:'gynecologie', email:'c.joseph@cliniquerebecca.ht', telephone:'+509 3456-0009', actif:true, ordre:0, bio:'Gynécologue-obstétricienne assurant le suivi de grossesse, les accouchements, et la santé reproductive de la femme tout au long de sa vie.', tags:['Suivi grossesse','Accouchement','Ménopause','Contraception'], disponibilites:'Lun–Sam 07h–17h', experience:'16 ans d\'expérience' },
+  10: { id:10, nom:'Dr. Patrick Dorival', specialite:'Chirurgie pédiatrique', description:'Chirurgie nourrissons', emoji:'🏥', categorie:'chir-ped', email:'p.dorival@cliniquerebecca.ht', telephone:'+509 3456-0010', actif:true, ordre:0, bio:'Chirurgien pédiatrique spécialisé dans les interventions chez les nourrissons et jeunes enfants, y compris les malformations congénitales.', tags:['Chirurgie néonatale','Hernies','Appendicite','Malformations'], disponibilites:'Lun–Ven 08h–16h', experience:'10 ans d\'expérience' },
+  11: { id:11, nom:'Dr. Réginald Louis', specialite:'Médecine interne', description:'Diabète, hypertension', emoji:'❤️', categorie:'medecine-interne', email:'r.louis@cliniquerebecca.ht', telephone:'+509 3456-0011', actif:true, ordre:0, bio:'Interniste expérimenté dans la prise en charge des maladies chroniques complexes. Diabète, hypertension, dyslipidémie, maladies auto-immunes et polyvasculaires.', tags:['Diabète','Hypertension','Maladies auto-immunes','Gériatrie'], disponibilites:'Lun–Sam 07h–17h', experience:'18 ans d\'expérience' },
+  12: { id:12, nom:'Dr. Nathalie Vincent', specialite:'Ophtalmologie', description:'Chirurgie oculaire', emoji:'👁️', categorie:'ophtalmologie', email:'n.vincent@cliniquerebecca.ht', telephone:'+509 3456-0012', actif:true, ordre:0, bio:'Ophtalmologue spécialisée en chirurgie de la cataracte, traitement du glaucome, pathologies rétiniennes et réfraction oculaire.', tags:['Cataracte','Glaucome','Rétine','Réfraction'], disponibilites:'Mar–Sam 08h–17h', experience:'12 ans d\'expérience' },
 }
 
-// ── Carrousel défilant ────────────────────────────────────────────────────────
-function ScrollingDisplay({ stocks }: { stocks: StockItem[] }) {
-  const [idx, setIdx]             = useState(0)
-  const [aiMessages, setAiMessages] = useState<string[]>([])
-  const [genLoading, setGenLoading] = useState(false)
+export default function SpecialistePage() {
+  const params = useParams()
+  const id = Number(params.id)
+  const [rdvOpen, setRdvOpen] = useState(false)
+  const [spec, setSpec] = useState(SPECS_DATA[id] || null)
 
-
-  const disponibles  = stocks.filter(s => s.quantite > 0)
-  const critiques    = stocks.filter(s => s.quantite > 0 && s.quantite < s.seuil_min)
-  const ruptures     = stocks.filter(s => s.quantite === 0)
-
-  // Auto-avancer le carrousel
   useEffect(() => {
-    const timer = setInterval(() => setIdx(i => (i + 1) % disponibles.length), 3000)
-    return () => clearInterval(timer)
-  }, [disponibles.length])
+    if (id) {
+      specialistesApi.getById(id)
+        .then(r => setSpec(prev => ({ ...SPECS_DATA[id], ...r.data, tags: SPECS_DATA[id]?.tags || [], bio: SPECS_DATA[id]?.bio || '' })))
+        .catch(() => setSpec(SPECS_DATA[id] || null))
+    }
+  }, [id])
 
-  // Générer les messages publicitaires via AI
-  const generateMessages = async () => {
-    setGenLoading(true)
-    try {
-      const prompt = `Génère 5 messages publicitaires courts (max 15 mots chacun) pour une pharmacie clinicale haïtienne.
-Produits disponibles : ${disponibles.slice(0,6).map(s => s.nom).join(', ')}.
-Produits en alerte stock : ${critiques.map(s => s.nom).join(', ')}.
-Format : un message par ligne, sans numérotation, style informatif et positif.`
-      const { data } = await chatApi.send(prompt, [])
-      const msgs = data.response.split('\n').filter((l: string) => l.trim().length > 5).slice(0, 5)
-      setAiMessages(msgs)
-    } catch { setAiMessages(['Nos produits essentiels sont disponibles — Consultez notre pharmacie']) }
-    finally { setGenLoading(false) }
-  }
-
-  const current = disponibles[idx]
-
-  return (
-    <div style={{ background: 'linear-gradient(135deg,#0f172a,#dc2626)', borderRadius: 20, padding: '24px 28px', color: 'white', marginBottom: 24 }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 12 }}>
-        <div>
-          <div style={{ fontSize: 10, fontWeight: 700, letterSpacing: 3, color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', marginBottom: 4 }}>Fenêtre d'affichage pharmacie</div>
-          <h2 style={{ fontWeight: 900, fontSize: '1.1rem', margin: 0 }}>Produits disponibles à la pharmacie</h2>
-        </div>
-        <button onClick={generateMessages} disabled={genLoading} style={{
-          display: 'flex', alignItems: 'center', gap: 8, padding: '9px 16px',
-          borderRadius: 50, border: '1.5px solid rgba(255,255,255,0.3)',
-          background: 'rgba(255,255,255,0.1)', color: 'white',
-          cursor: genLoading ? 'wait' : 'pointer', fontWeight: 700, fontSize: 12,
-        }}>
-          <i className="fa-solid fa-wand-magic-sparkles" />
-          {genLoading ? 'Génération…' : 'Générer messages AI'}
-        </button>
+  if (!spec) return (
+    <>
+      <Navbar onRdvClick={() => setRdvOpen(true)} />
+      <div className="min-h-screen flex items-center justify-center text-slate-400 pt-[70px]">
+        Spécialiste introuvable
       </div>
-
-      {/* Carte produit défilante */}
-      {current && (
-        <div key={idx} style={{ animation: 'fadeSlideIn 0.4s ease both' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginBottom: 16 }}>
-            <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 14, padding: '16px 18px' }}>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>Produit</div>
-              <div style={{ fontWeight: 800, fontSize: 15 }}>{current.nom}</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>{current.categorie}</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 14, padding: '16px 18px' }}>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>Disponibilité</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                <div style={{ width: 8, height: 8, borderRadius: '50%', background: '#4ade80' }} />
-                <span style={{ fontWeight: 800, fontSize: 15, color: '#4ade80' }}>En stock</span>
-              </div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>{current.quantite} {current.unite}(s)</div>
-            </div>
-            <div style={{ background: 'rgba(255,255,255,0.1)', borderRadius: 14, padding: '16px 18px' }}>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.55)', marginBottom: 6 }}>Expiration</div>
-              <div style={{ fontWeight: 800, fontSize: 15 }}>{EXPIRATIONS[current.nom] || '—'}</div>
-              <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>Date d'expiration</div>
-            </div>
-          </div>
-
-          {/* Indicateurs de navigation */}
-          <div style={{ display: 'flex', gap: 5, justifyContent: 'center' }}>
-            {disponibles.slice(0, 10).map((_, i) => (
-              <button key={i} onClick={() => setIdx(i)} style={{
-                width: i === idx ? 20 : 6, height: 6, borderRadius: 3, border: 'none',
-                background: i === idx ? 'white' : 'rgba(255,255,255,0.3)',
-                cursor: 'pointer', padding: 0, transition: 'all 0.3s',
-              }} />
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Messages AI générés */}
-      {aiMessages.length > 0 && (
-        <div style={{ marginTop: 20, borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: 16 }}>
-          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.5)', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <i className="fa-solid fa-wand-magic-sparkles" style={{ fontSize: 9 }} />
-            Messages générés par IA — Copiez pour votre écran d'affichage
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-            {aiMessages.map((msg, i) => (
-              <div key={i} style={{ background: 'rgba(255,255,255,0.08)', borderRadius: 10, padding: '8px 14px', fontSize: 13, display: 'flex', alignItems: 'center', gap: 10 }}>
-                <i className="fa-solid fa-circle-dot" style={{ fontSize: 8, color: '#fbbf24' }} />
-                {msg}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Alertes rapides */}
-      {(critiques.length > 0 || ruptures.length > 0) && (
-        <div style={{ marginTop: 16, display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          {ruptures.length > 0 && (
-            <div style={{ background: 'rgba(239,68,68,0.2)', border: '1px solid rgba(239,68,68,0.4)', borderRadius: 10, padding: '7px 14px', fontSize: 12, fontWeight: 600, color: '#fca5a5' }}>
-              <i className="fa-solid fa-circle-xmark" style={{ marginRight: 6 }} />
-              {ruptures.length} rupture(s) : {ruptures.map(s => s.nom).join(', ')}
-            </div>
-          )}
-          {critiques.length > 0 && (
-            <div style={{ background: 'rgba(251,191,36,0.2)', border: '1px solid rgba(251,191,36,0.4)', borderRadius: 10, padding: '7px 14px', fontSize: 12, fontWeight: 600, color: '#fde68a' }}>
-              <i className="fa-solid fa-triangle-exclamation" style={{ marginRight: 6 }} />
-              {critiques.length} stock(s) critique(s) : {critiques.map(s => s.nom).join(', ')}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+    </>
   )
-}
-
-// ── Page principale ───────────────────────────────────────────────────────────
-export default function PharmaciePage() {
-  const { user, isAuthenticated, loading, logout } = useAuth()
-  const router   = useRouter()
-  const [stocks, setStocks]   = useState<StockItem[]>(STOCKS_DEMO)
-  const [search, setSearch]   = useState('')
-  const [catFilter, setCatFilter] = useState('')
-  const [showAI, setShowAI]   = useState(false)
-
-  useEffect(() => {
-    if (!loading && (!isAuthenticated || user?.role !== 'pharmacie')) router.push('/login')
-  }, [isAuthenticated, user, loading])
-
-  useEffect(() => {
-    stocksApi.list().then(r => setStocks(r.data.length ? r.data : STOCKS_DEMO)).catch(() => setStocks(STOCKS_DEMO))
-  }, [isAuthenticated])
-
-  const categories = [...new Set(stocks.map(s => s.categorie))]
-  const filtered   = stocks.filter(s =>
-    s.nom.toLowerCase().includes(search.toLowerCase()) &&
-    (!catFilter || s.categorie === catFilter)
-  )
-
-  const getStatus = (s: StockItem) => {
-    if (s.quantite === 0)                         return { label: 'Rupture',   cls: 'badge-red' }
-    if (s.quantite < s.seuil_min)                 return { label: 'Critique',  cls: 'badge-red' }
-    if (s.quantite < s.seuil_min * 1.5)           return { label: 'Faible',    cls: 'badge-yellow' }
-    return                                               { label: 'Disponible', cls: 'badge-green' }
-  }
-
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-red-600" /></div>
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <>
+      <Navbar onRdvClick={() => setRdvOpen(true)} />
+      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
+
       {/* Header */}
-      <div style={{ background: '#0f172a', height: 64, display: 'flex', alignItems: 'center', padding: '0 24px', gap: 16 }}>
-        <Link href="/" style={{ color: 'rgba(255,255,255,0.5)', fontSize: 13, textDecoration: 'none' }}>
-          <i className="fa-solid fa-plus mr-2 text-red-500" />Clinique de la Rebecca
-        </Link>
-        <div style={{ fontWeight: 800, color: 'white', marginLeft: 8 }}>Espace Pharmacie</div>
-        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <button onClick={() => setShowAI(v => !v)} style={{
-            display: 'flex', alignItems: 'center', gap: 7, padding: '7px 14px',
-            borderRadius: 50, border: 'none', cursor: 'pointer', fontWeight: 700, fontSize: 12,
-            background: showAI ? '#dc2626' : 'rgba(255,255,255,0.1)', color: 'white',
-          }}>
-            <i className="fa-solid fa-wand-magic-sparkles" />
-            Rebecca AI
-          </button>
-          <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13 }}>{user?.nom}</span>
-          <button onClick={() => { logout(); router.push('/') }} style={{ display: 'flex', alignItems: 'center', gap: 6, background: 'rgba(255,255,255,0.08)', border: 'none', borderRadius: 8, padding: '6px 12px', color: 'rgba(255,255,255,0.7)', cursor: 'pointer', fontSize: 12 }}>
-            <LogOut size={13} /> Sortir
-          </button>
+      <div className="page-header">
+        <div className="breadcrumb">
+          <Link href="/">Accueil</Link> / <Link href="/specialites">Spécialités</Link> / <span>{spec.nom}</span>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1200, margin: '0 auto', padding: '28px 20px' }}>
-
-        {/* AI Panel */}
-        {showAI && (
-          <div style={{ marginBottom: 24, borderRadius: 20, overflow: 'hidden', border: '1px solid #fecaca', boxShadow: '0 4px 24px rgba(220,38,38,0.1)' }}>
-            <RebeccaAI
-              mode="pharmacie"
-              context={{
-                total_produits: stocks.length,
-                disponibles: stocks.filter(s => s.quantite > 0).length,
-                ruptures: stocks.filter(s => s.quantite === 0).map(s => s.nom),
-                critiques: stocks.filter(s => s.quantite > 0 && s.quantite < s.seuil_min).map(s => ({ nom: s.nom, quantite: s.quantite, seuil: s.seuil_min })),
-                expirations_proches: Object.entries(EXPIRATIONS).filter(([, exp]) => exp <= '2026-09').map(([nom, exp]) => ({ nom, expiration: exp })),
-                top_produits: stocks.filter(s => s.quantite > 100).slice(0, 5).map(s => s.nom),
-              }}
-              initialPrompt="Analyse mon stock et génère 3 messages publicitaires pour l'écran d'affichage de la pharmacie."
-            />
+      <div className="py-14 px-[5%] max-w-[900px] mx-auto">
+        {/* Card profil */}
+        <div className="card p-8 mb-8 shadow-lg">
+          <div className="flex gap-8 items-start">
+            <div className="w-[100px] h-[100px] rounded-3xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center text-5xl flex-shrink-0 shadow-md">
+              {spec.emoji}
+            </div>
+            <div className="flex-1">
+              <h1 className="font-extrabold text-[26px] text-slate-800 mb-1">{spec.nom}</h1>
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <span className="badge-blue text-sm px-3 py-1">{spec.specialite}</span>
+                {(spec as any).experience && <span className="badge-gray text-xs">{(spec as any).experience}</span>}
+                <span className="text-yellow-400 text-sm">★★★★★</span>
+              </div>
+              <p className="text-slate-500 text-[15px] leading-relaxed mb-5">{spec.bio || spec.description}</p>
+              <div className="flex flex-wrap gap-2 mb-5">
+                {spec.tags?.map(tag => (
+                  <span key={tag} className="px-3 py-1 bg-blue-50 text-[#1641C8] text-xs font-bold rounded-full border border-blue-100">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-4">
+                <button onClick={() => setRdvOpen(true)} className="btn-primary">
+                  <i className="fa-regular fa-calendar-check"/> Prendre rendez-vous
+                </button>
+                <Link href="/consultation" className="btn-secondary">
+                  <i className="fa-solid fa-video"/> Consultation vidéo
+                </Link>
+              </div>
+            </div>
           </div>
-        )}
-
-        {/* Carrousel défilant */}
-        <ScrollingDisplay stocks={stocks} />
-
-        {/* Filtres */}
-        <div style={{ display: 'flex', gap: 10, marginBottom: 20, flexWrap: 'wrap' }}>
-          <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Rechercher un produit…"
-            style={{ flex: 1, minWidth: 200, padding: '10px 14px', borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 14, outline: 'none', background: 'white' }} />
-          <select value={catFilter} onChange={e => setCatFilter(e.target.value)}
-            style={{ padding: '10px 14px', borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 14, background: 'white', cursor: 'pointer' }}>
-            <option value="">Toutes catégories</option>
-            {categories.map(c => <option key={c} value={c}>{c}</option>)}
-          </select>
         </div>
 
-        {/* Table stocks */}
-        <div className="card" style={{ overflow: 'hidden' }}>
-          <table className="tbl">
-            <thead>
-              <tr>
-                <th>Produit</th>
-                <th>Catégorie</th>
-                <th>Stock</th>
-                <th>Seuil min</th>
-                <th>Prix unit.</th>
-                <th>Expiration</th>
-                <th>Statut</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map(s => {
-                const st = getStatus(s)
-                return (
-                  <tr key={s.id}>
-                    <td style={{ fontWeight: 700, color: '#0f172a' }}>{s.nom}</td>
-                    <td><span className="badge-gray badge">{s.categorie}</span></td>
-                    <td style={{ fontWeight: 700, color: s.quantite < s.seuil_min ? '#dc2626' : '#16a34a' }}>
-                      {s.quantite} {s.unite}(s)
-                    </td>
-                    <td style={{ color: '#94a3b8' }}>{s.seuil_min}</td>
-                    <td style={{ fontWeight: 600 }}>{s.prix_unitaire} HTG</td>
-                    <td data-no-translate style={{ color: EXPIRATIONS[s.nom] && EXPIRATIONS[s.nom] <= '2026-09' ? '#dc2626' : '#64748b', fontSize: 13 }}>
-                      {EXPIRATIONS[s.nom] || '—'}
-                      {EXPIRATIONS[s.nom] && EXPIRATIONS[s.nom] <= '2026-09' && (
-                        <span style={{ marginLeft: 6, fontSize: 10 }}>⚠️</span>
-                      )}
-                    </td>
-                    <td><span className={`badge ${st.cls}`}>{st.label}</span></td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
+        <div className="grid grid-cols-[1fr_300px] gap-6">
+          <div className="space-y-5">
+            {/* Domaines d'expertise */}
+            <div className="card p-6">
+              <h3 className="font-extrabold text-[16px] mb-4 flex items-center gap-2">
+                <i className="fa-solid fa-microscope text-[#1641C8]"/> Domaines d'expertise
+              </h3>
+              <div className="grid grid-cols-2 gap-2">
+                {spec.tags?.map(tag => (
+                  <div key={tag} className="flex items-center gap-2.5 p-3 bg-slate-50 rounded-xl border border-slate-100 text-sm font-semibold text-slate-700">
+                    <i className="fa-solid fa-check text-green-500 text-xs"/> {tag}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Informations pratiques */}
+            <div className="card p-6">
+              <h3 className="font-extrabold text-[16px] mb-4 flex items-center gap-2">
+                <i className="fa-solid fa-circle-info text-[#1641C8]"/> Informations pratiques
+              </h3>
+              <div className="space-y-3">
+                {[
+                  { icon:'fa-clock', label:'Disponibilités', value:(spec as any).disponibilites || 'Lun–Ven 08h–17h' },
+                  { icon:'fa-location-dot', label:'Lieu', value:'Clinique de la Rebecca, Haïti' },
+                  { icon:'fa-language', label:'Langues', value:'Français · Créole haïtien' },
+                  { icon:'fa-money-bill', label:'Consultation', value:'À partir de 1 500 HTG' },
+                ].map(i => (
+                  <div key={i.label} className="flex items-start gap-3">
+                    <div className="w-8 h-8 bg-blue-50 rounded-lg flex items-center justify-center text-[#1641C8] flex-shrink-0 mt-0.5">
+                      <i className={`fa-solid ${i.icon} text-xs`}/>
+                    </div>
+                    <div>
+                      <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">{i.label}</div>
+                      <div className="font-semibold text-slate-700 text-sm">{i.value}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {/* Sidebar : contact + RDV */}
+          <div className="space-y-4">
+            <div className="card p-5 border-2 border-[#1641C8]/10">
+              <h4 className="font-extrabold text-[14px] mb-4">Prendre rendez-vous</h4>
+              <button onClick={() => setRdvOpen(true)} className="btn-primary w-full justify-center mb-3">
+                <i className="fa-regular fa-calendar-check"/> En personne
+              </button>
+              <Link href="/consultation" className="btn-secondary w-full justify-center text-sm no-underline inline-flex">
+                <i className="fa-solid fa-video"/> Consultation vidéo
+              </Link>
+              <div className="mt-4 pt-4 border-t border-slate-100 space-y-2">
+                {spec.telephone && (
+                  <a href={`https://wa.me/${spec.telephone.replace(/[^0-9]/g,'')}`} target="_blank" rel="noreferrer"
+                    className="flex items-center gap-2 text-sm text-green-600 font-medium no-underline hover:text-green-700">
+                    <i className="fa-brands fa-whatsapp text-green-500"/> {spec.telephone}
+                  </a>
+                )}
+                {spec.email && (
+                  <div className="flex items-center gap-2 text-sm text-slate-400">
+                    <i className="fa-solid fa-envelope"/> {spec.email}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Témoignages */}
+            <div className="card p-5">
+              <h4 className="font-extrabold text-[14px] mb-3">Avis patients</h4>
+              {[
+                { n:'M.T.', note:'★★★★★', txt:'Médecin très professionnel et à l\'écoute.' },
+                { n:'P.J.', note:'★★★★★', txt:'Excellent suivi, je recommande vivement.' },
+              ].map(a => (
+                <div key={a.n} className="mb-3 last:mb-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="w-7 h-7 rounded-full bg-blue-100 text-[#1641C8] flex items-center justify-center text-xs font-bold">{a.n}</div>
+                    <span className="text-yellow-400 text-xs">{a.note}</span>
+                  </div>
+                  <p className="text-slate-500 text-xs italic leading-relaxed">"{a.txt}"</p>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
-    </div>
+
+      <Footer />
+    </>
   )
 }
