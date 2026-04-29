@@ -117,9 +117,9 @@ export default function AdminSpecialistes() {
             <div style={{ fontWeight: 800, color: '#0f172a', marginBottom: 6 }}>
               Mise à jour en cascade effectuée — {propagation.changed} enregistrement{propagation.changed > 1 ? 's' : ''} synchronisé{propagation.changed > 1 ? 's' : ''}
             </div>
-            {propagation.detail && Object.entries(propagation.detail).filter(([, v]) => v > 0).map(([k, v]) => (
+            {propagation.detail && Object.entries(propagation.detail).filter(([, v]) => (v as number) > 0).map(([k, v]) => (
               <div key={k} style={{ fontSize: 12, color: '#16a34a', fontWeight: 600 }}>
-                · {k.replace(/_/g, ' ')} : {v} ligne{v > 1 ? 's' : ''}
+                · {k.replace(/_/g, ' ')} : {v as number} ligne{(v as number) > 1 ? 's' : ''}
               </div>
             ))}
             <div style={{ fontSize: 12, color: '#64748b', marginTop: 6, fontStyle: 'italic' }}>

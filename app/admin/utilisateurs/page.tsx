@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, CSSProperties } from 'react'
 import toast from 'react-hot-toast'
 import { usersApi } from '@/lib/api'
 import { Edit2, Save, X, CheckCircle, AlertCircle, Shield, RefreshCw, Trash2 } from 'lucide-react'
@@ -96,7 +96,7 @@ export default function AdminUtilisateurs() {
 
   const filtres = users.filter((u) => filtre === 'tous' || u.role === filtre)
 
-  const inp: React.CSSProperties = {
+  const inp: CSSProperties = {
     width: '100%',
     padding: '8px 12px',
     borderRadius: 8,
@@ -106,7 +106,7 @@ export default function AdminUtilisateurs() {
     boxSizing: 'border-box',
   }
 
-  const lbl: React.CSSProperties = {
+  const lbl: CSSProperties = {
     display: 'block',
     fontSize: 11,
     fontWeight: 700,
