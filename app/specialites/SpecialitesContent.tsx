@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import RdvModal from '@/components/ui/RdvModal'
@@ -39,7 +39,6 @@ const MEDECINS_FALLBACK = [
   { id: 30, nom: 'Dr Jean Luc Mathurin',      specialite: 'Radiologie',            telephone: '4007-6328', prix_consultation: 0,    disponible: true  },
 ]
 
-// Couleurs par spécialité pour les avatars
 const SPEC_COLORS: Record<string, string> = {
   'Urologie': '#0891b2',
   'Gynécologie': '#be185d',
@@ -60,12 +59,23 @@ const SPEC_COLORS: Record<string, string> = {
   'Radiologie': '#475569',
 }
 
+// Initiales depuis le nom du médecin
+function getInitials(nom: string): string {
+  return nom
+    .replace(/^(Dr|Mme|Mr)\s+/i, '')
+    .split(' ')
+    .map(n => n[0] || '')
+    .slice(0, 2)
+    .join('')
+    .toUpperCase()
+}
+
 export default function SpecialitesContent() {
   const [medecins, setMedecins] = useState<any[]>(MEDECINS_FALLBACK)
   const [search, setSearch]     = useState('')
+  const [filtre, setFiltre]     = useState('Tous')
   const [rdvOpen, setRdvOpen]   = useState(false)
   const [rdvSpec, setRdvSpec]   = useState('')
-  const router = useRouter()
 
   useEffect(() => {
     specialistesApi.list()
@@ -73,118 +83,248 @@ export default function SpecialitesContent() {
       .catch(() => {})
   }, [])
 
+  // Liste unique des spécialités
+  const specialites = ['Tous', ...Array.from(new Set(medecins.map(m => m.specialite))).sort()]
+
   const filtres = medecins.filter(m => {
-    if (!search) return true
-    const q = search.toLowerCase()
-    return m.nom.toLowerCase().includes(q) || m.specialite.toLowerCase().includes(q)
+    const matchSearch = !search || m.nom.toLowerCase().includes(search.toLowerCase()) || m.specialite.toLowerCase().includes(search.toLowerCase())
+    const matchFiltre = filtre === 'Tous' || m.specialite === filtre
+    return matchSearch && matchFiltre
   })
 
-  const handleDoctorClick = (m: any) => {
-    if (m.id) router.push(`/specialistes/${m.id}`)
-    else { setRdvSpec(m.specialite); setRdvOpen(true) }
+  const disponibles = filtres.filter(m => m.disponible !== false)
+  const occupes     = filtres.filter(m => m.disponible === false)
+  const ordonnes    = [...disponibles, ...occupes]
+
+  const handleRdv = (m: any) => {
+    setRdvSpec(m.specialite)
+    setRdvOpen(true)
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ minHeight:'100vh', background:'#f0f4ff' }}>
       <Navbar variant="public" onRdvClick={() => setRdvOpen(true)} />
       <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} defaultSpec={rdvSpec} />
 
-      {/* ── En-tête harmonisé ── */}
-      <div className="page-header" style={{ paddingTop: 110, paddingBottom: 52 }}>
-        <div style={{ position: 'absolute', top: -60, right: -60, width: 260, height: 260, borderRadius: '50%', background: 'rgba(255,255,255,0.04)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: -40, left: -40, width: 180, height: 180, borderRadius: '50%', background: 'rgba(13,148,136,0.15)', pointerEvents: 'none' }} />
+      {/* ── HERO ─────────────────────────────────────────────────────────── */}
+      <div style={{
+        background:'linear-gradient(150deg, #0a1628 0%, #1641C8 55%, #0d9488 100%)',
+        paddingTop:120, paddingBottom:56,
+        position:'relative', overflow:'hidden', textAlign:'center',
+      }}>
+        <div style={{ position:'absolute', top:-100, right:-80, width:380, height:380, borderRadius:'50%', background:'rgba(255,255,255,0.04)', pointerEvents:'none' }} />
+        <div style={{ position:'absolute', bottom:-50, left:-60, width:260, height:260, borderRadius:'50%', background:'rgba(13,148,136,0.12)', pointerEvents:'none' }} />
 
-        <div style={{ position: 'relative', maxWidth: 700, margin: '0 auto', padding: '0 5%' }}>
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 7, background: 'rgba(255,255,255,0.12)', color: 'rgba(255,255,255,0.9)', borderRadius: 50, padding: '5px 16px', fontSize: 11, fontWeight: 700, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16, border: '1px solid rgba(255,255,255,0.2)' }}>
+        <div style={{ position:'relative', maxWidth:680, margin:'0 auto', padding:'0 5%' }}>
+          <span style={{
+            display:'inline-flex', alignItems:'center', gap:8,
+            background:'rgba(255,255,255,0.10)', color:'rgba(255,255,255,0.88)',
+            borderRadius:50, padding:'6px 18px', fontSize:11, fontWeight:700,
+            letterSpacing:2, textTransform:'uppercase', marginBottom:22,
+            border:'1px solid rgba(255,255,255,0.18)',
+          }}>
             <i className="fa-solid fa-user-doctor" /> Notre équipe médicale
           </span>
-          <h1 style={{ color: 'white', fontWeight: 900, fontSize: 'clamp(1.8rem, 3.5vw, 2.6rem)', marginBottom: 12, lineHeight: 1.15 }}>
-            Médecins & Spécialistes
+
+          <h1 style={{
+            color:'white', fontWeight:900,
+            fontSize:'clamp(1.9rem, 4vw, 3rem)',
+            lineHeight:1.1, marginBottom:16, letterSpacing:'-0.02em',
+          }}>
+            Des médecins qui<br />
+            <em style={{ fontStyle:'italic', color:'#5eead4', fontFamily:'Georgia, serif' }}>vous connaissent</em>
           </h1>
-          <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: 15, lineHeight: 1.7, marginBottom: 24 }}>
-            Cliquez sur un médecin pour consulter son profil détaillé et prendre rendez-vous
+
+          <p style={{ color:'rgba(255,255,255,0.68)', fontSize:15.5, lineHeight:1.75, marginBottom:36, maxWidth:500, margin:'0 auto 36px' }}>
+            Chaque spécialiste de la clinique a été choisi pour sa compétence, mais aussi pour son écoute. Cliquez sur un profil pour en savoir plus et prendre rendez-vous.
           </p>
 
-          {/* Barre de recherche dans le header */}
-          <div style={{ maxWidth: 420, margin: '0 auto', position: 'relative' }}>
-            <i className="fa-solid fa-magnifying-glass" style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.5)', fontSize: 14 }} />
+          {/* Barre de recherche */}
+          <div style={{ maxWidth:460, margin:'0 auto', position:'relative' }}>
+            <i className="fa-solid fa-magnifying-glass" style={{
+              position:'absolute', left:18, top:'50%', transform:'translateY(-50%)',
+              color:'rgba(255,255,255,0.45)', fontSize:15,
+            }} />
             <input
               value={search}
               onChange={e => setSearch(e.target.value)}
-              placeholder="Chercher par nom ou spécialité…"
-              style={{ width: '100%', padding: '12px 16px 12px 44px', borderRadius: 50, border: '1.5px solid rgba(255,255,255,0.2)', fontSize: 14, outline: 'none', background: 'rgba(255,255,255,0.12)', color: 'white', boxSizing: 'border-box', backdropFilter: 'blur(8px)' }}
+              placeholder="Rechercher par nom ou spécialité…"
+              style={{
+                width:'100%', padding:'14px 18px 14px 48px',
+                borderRadius:50, border:'1.5px solid rgba(255,255,255,0.22)',
+                fontSize:14.5, outline:'none',
+                background:'rgba(255,255,255,0.10)',
+                color:'white', boxSizing:'border-box',
+                backdropFilter:'blur(10px)',
+              }}
             />
           </div>
         </div>
       </div>
 
-      {/* ── Grille médecins ── */}
-      <div style={{ maxWidth: 980, margin: '0 auto', padding: '36px 5% 72px' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 14 }}>
-          {filtres.map((m) => {
-            const color = SPEC_COLORS[m.specialite] || '#1641C8'
-            return (
-              <div
-                key={m.id || m.nom}
-                onClick={() => handleDoctorClick(m)}
-                style={{
-                  background: 'white', borderRadius: 16, border: '1.5px solid #e2e8f0',
-                  padding: '16px 18px', display: 'flex', alignItems: 'center', gap: 14,
-                  cursor: 'pointer', transition: 'all 0.2s',
-                }}
-                onMouseEnter={e => {
-                  const d = e.currentTarget
-                  d.style.transform = 'translateY(-3px)'
-                  d.style.boxShadow = `0 10px 28px ${color}20`
-                  d.style.borderColor = color + '50'
-                }}
-                onMouseLeave={e => {
-                  const d = e.currentTarget
-                  d.style.transform = 'none'
-                  d.style.boxShadow = 'none'
-                  d.style.borderColor = '#e2e8f0'
-                }}
-              >
-                {/* Avatar */}
-                <div style={{
-                  width: 50, height: 50, borderRadius: '50%',
-                  background: `linear-gradient(135deg, ${color}, ${color}aa)`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  flexShrink: 0, color: 'white', overflow: 'hidden',
-                  boxShadow: `0 4px 12px ${color}35`,
-                }}>
-                  {m.photo_url ? (
-                    <img src={m.photo_url} alt={m.nom} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => { e.currentTarget.style.display = 'none' }} />
-                  ) : (
-                    <i className="fa-solid fa-circle-user" style={{ fontSize: 24 }} />
-                  )}
-                </div>
-
-                {/* Infos */}
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <div style={{ fontWeight: 800, color: '#0f172a', fontSize: 13, lineHeight: 1.3, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                    {m.nom}
-                  </div>
-                  <div style={{ color, fontSize: 11.5, fontWeight: 700, marginTop: 3 }}>{m.specialite}</div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 5 }}>
-                    <div style={{ width: 7, height: 7, borderRadius: '50%', background: m.disponible !== false ? '#22c55e' : '#f59e0b', flexShrink: 0, boxShadow: m.disponible !== false ? '0 0 0 2px #dcfce7' : '0 0 0 2px #fef9c3' }} />
-                    <span style={{ fontSize: 11, color: '#94a3b8' }}>{m.disponible !== false ? 'Disponible' : 'Occupé'}</span>
-                  </div>
-                </div>
-
-                <i className="fa-solid fa-chevron-right" style={{ color: '#cbd5e1', fontSize: 11, flexShrink: 0 }} />
-              </div>
-            )
-          })}
+      {/* ── FILTRES PAR SPÉCIALITÉ ────────────────────────────────────────── */}
+      <div style={{ background:'white', borderBottom:'1px solid #e2e8f0', padding:'0 5%', overflowX:'auto' }}>
+        <div style={{ maxWidth:1060, margin:'0 auto', display:'flex', gap:4, padding:'14px 0', flexWrap:'nowrap' }}>
+          {specialites.map(s => (
+            <button
+              key={s}
+              onClick={() => setFiltre(s)}
+              style={{
+                padding:'7px 16px', borderRadius:50, border:'none', cursor:'pointer',
+                fontSize:13, fontWeight:700, whiteSpace:'nowrap', transition:'all 0.18s',
+                background: filtre === s ? '#1641C8' : '#f1f5f9',
+                color: filtre === s ? 'white' : '#475569',
+                flexShrink:0,
+              }}
+            >
+              {s}
+            </button>
+          ))}
         </div>
+      </div>
 
-        {filtres.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '80px 0', color: '#94a3b8' }}>
-            <i className="fa-solid fa-user-doctor" style={{ fontSize: 48, opacity: 0.15, display: 'block', marginBottom: 16 }} />
-            <p style={{ fontWeight: 700, fontSize: 16 }}>Aucun résultat pour « {search} »</p>
-            <p style={{ fontSize: 14, marginTop: 4 }}>Essayez un autre nom ou une spécialité différente</p>
+      {/* ── GRILLE MÉDECINS ───────────────────────────────────────────────── */}
+      <div style={{ maxWidth:1060, margin:'0 auto', padding:'40px 5% 80px' }}>
+
+        {ordonnes.length === 0 ? (
+          <div style={{ textAlign:'center', padding:'80px 0', color:'#94a3b8' }}>
+            <i className="fa-solid fa-user-doctor" style={{ fontSize:48, opacity:0.15, display:'block', marginBottom:16 }} />
+            <p style={{ fontWeight:700, fontSize:17 }}>Aucun résultat pour « {search} »</p>
+            <p style={{ fontSize:14, marginTop:6 }}>Essayez un autre nom ou changez de spécialité</p>
+          </div>
+        ) : (
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:16 }}>
+            {ordonnes.map(m => {
+              const color = SPEC_COLORS[m.specialite] || '#1641C8'
+              const initials = getInitials(m.nom)
+              return (
+                <div
+                  key={m.id || m.nom}
+                  style={{
+                    background:'white', borderRadius:18,
+                    border:'1.5px solid #e2e8f0',
+                    padding:'22px 20px',
+                    display:'flex', flexDirection:'column', gap:0,
+                    cursor:'pointer', transition:'all 0.22s',
+                    opacity: m.disponible === false ? 0.72 : 1,
+                  }}
+                  onMouseEnter={e => {
+                    if (m.disponible === false) return
+                    const d = e.currentTarget
+                    d.style.transform = 'translateY(-5px)'
+                    d.style.boxShadow = `0 16px 40px ${color}22`
+                    d.style.borderColor = color + '55'
+                  }}
+                  onMouseLeave={e => {
+                    const d = e.currentTarget
+                    d.style.transform = 'none'
+                    d.style.boxShadow = 'none'
+                    d.style.borderColor = '#e2e8f0'
+                  }}
+                >
+                  {/* Top: avatar + nom + spécialité */}
+                  <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:16 }}>
+                    {/* Avatar avec initiales */}
+                    <div style={{
+                      width:54, height:54, borderRadius:16, flexShrink:0,
+                      background:`linear-gradient(135deg, ${color}, ${color}bb)`,
+                      display:'flex', alignItems:'center', justifyContent:'center',
+                      color:'white', fontWeight:900, fontSize:18, letterSpacing:'-0.5px',
+                      boxShadow:`0 4px 14px ${color}35`,
+                    }}>
+                      {m.photo_url ? (
+                        <img
+                          src={m.photo_url}
+                          alt={m.nom}
+                          style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:16 }}
+                          onError={e => { e.currentTarget.style.display = 'none' }}
+                        />
+                      ) : initials}
+                    </div>
+
+                    <div style={{ minWidth:0, flex:1 }}>
+                      <div style={{
+                        fontWeight:800, color:'#0f172a', fontSize:14,
+                        lineHeight:1.3, marginBottom:4,
+                        whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis',
+                      }}>
+                        {m.nom}
+                      </div>
+                      <div style={{
+                        display:'inline-flex', alignItems:'center', gap:5,
+                        background: color + '12', borderRadius:50,
+                        padding:'3px 10px',
+                      }}>
+                        <span style={{ fontSize:11.5, fontWeight:700, color }}>{m.specialite}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Disponibilité + prix */}
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:7 }}>
+                      <div style={{
+                        width:9, height:9, borderRadius:'50%',
+                        background: m.disponible !== false ? '#22c55e' : '#f59e0b',
+                        boxShadow: m.disponible !== false ? '0 0 0 3px #dcfce7' : '0 0 0 3px #fef9c3',
+                      }} />
+                      <span style={{ fontSize:12.5, color: m.disponible !== false ? '#16a34a' : '#d97706', fontWeight:600 }}>
+                        {m.disponible !== false ? 'Disponible' : 'Actuellement occupé'}
+                      </span>
+                    </div>
+                    {m.prix_consultation > 0 && (
+                      <span style={{ fontSize:12, fontWeight:700, color:'#64748b' }}>
+                        {m.prix_consultation.toLocaleString('fr')} HTG
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Actions */}
+                  <div style={{ display:'flex', gap:8 }}>
+                    <Link
+                      href={`/specialistes/${m.id}`}
+                      style={{
+                        flex:1, display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+                        background:'#f1f5f9', color:'#475569', borderRadius:10,
+                        padding:'9px 0', fontSize:12.5, fontWeight:700, textDecoration:'none',
+                        transition:'all 0.15s',
+                      }}
+                      onMouseEnter={e => { (e.currentTarget as HTMLElement).style.background = '#e2e8f0' }}
+                      onMouseLeave={e => { (e.currentTarget as HTMLElement).style.background = '#f1f5f9' }}
+                    >
+                      <i className="fa-solid fa-eye" style={{ fontSize:11 }} /> Profil
+                    </Link>
+                    <button
+                      onClick={() => handleRdv(m)}
+                      disabled={m.disponible === false}
+                      style={{
+                        flex:1.4, display:'flex', alignItems:'center', justifyContent:'center', gap:6,
+                        background: m.disponible !== false ? `linear-gradient(135deg, ${color}, ${color}cc)` : '#e2e8f0',
+                        color: m.disponible !== false ? 'white' : '#94a3b8',
+                        border:'none', borderRadius:10, padding:'9px 0',
+                        fontSize:12.5, fontWeight:700, cursor: m.disponible !== false ? 'pointer' : 'not-allowed',
+                        boxShadow: m.disponible !== false ? `0 4px 14px ${color}35` : 'none',
+                      }}
+                    >
+                      <i className="fa-regular fa-calendar-check" style={{ fontSize:11 }} />
+                      {m.disponible !== false ? 'Prendre RDV' : 'Indisponible'}
+                    </button>
+                  </div>
+                </div>
+              )
+            })}
           </div>
         )}
+
+        {/* Légende bas */}
+        <div style={{ textAlign:'center', marginTop:40, padding:'20px', background:'white', borderRadius:16, border:'1px solid #e2e8f0' }}>
+          <p style={{ color:'#64748b', fontSize:13, margin:0 }}>
+            <i className="fa-solid fa-phone" style={{ color:'#1641C8', marginRight:8 }} />
+            Vous ne trouvez pas le spécialiste qu'il vous faut ? Appelez-nous au{' '}
+            <a href="tel:+50938880000" style={{ color:'#1641C8', fontWeight:700, textDecoration:'none' }}>+509 3888-0000</a>
+            , nous vous orienterons.
+          </p>
+        </div>
       </div>
 
       <Footer />

@@ -132,7 +132,7 @@ export default function LaboPage() {
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== 'labo')) router.push('/login')
-  }, [isAuthenticated, user, loading])
+  }, [isAuthenticated, user, loading, router])
 
   useEffect(() => {
     if (isAuthenticated && user?.role === 'labo') {

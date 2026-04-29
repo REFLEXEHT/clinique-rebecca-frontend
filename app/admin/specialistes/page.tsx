@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { specialistesApi } from '@/lib/api'
@@ -36,8 +36,8 @@ export default function AdminSpecialistes() {
     defaultValues: { categorie: 'tous' }
   })
 
-  const load = () => specialistesApi.list().then(r => setSpecs(r.data)).catch(() => {})
-  useEffect(() => { load() }, [])
+  const load = useCallback(() => { specialistesApi.list().then(r => setSpecs(r.data)).catch(() => {}) }, [])
+  useEffect(() => { load() }, [load])
 
   const onAdd = async (data: FormData) => {
     setLoading(true)

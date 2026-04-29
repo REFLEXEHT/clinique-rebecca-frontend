@@ -1,6 +1,6 @@
 'use client'
 // app/admin/patients/page.tsx
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { patientsApi } from '@/lib/api'
 import { Patient } from '@/types'
 

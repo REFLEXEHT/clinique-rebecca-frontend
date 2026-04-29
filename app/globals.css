@@ -58,6 +58,12 @@
     bg-transparent text-slate-600 border border-slate-200 font-semibold text-sm
     cursor-pointer transition-all hover:bg-slate-100;
   }
+  .btn-blue {
+    @apply inline-flex items-center gap-2 px-6 py-3 rounded-xl
+    bg-[#1641C8] text-white font-bold text-sm border-none cursor-pointer
+    transition-all duration-200 hover:bg-[#0f2fa3] hover:-translate-y-0.5
+    disabled:opacity-60 disabled:cursor-not-allowed disabled:transform-none;
+  }
 
   /* ─── Form elements ───────────────────────────────────────────────── */
   .input {
@@ -163,6 +169,50 @@
   /* ─── KPI card ────────────────────────────────────────────────────── */
   .kpi-card {
     @apply card p-5;
+  }
+
+
+  /* ─── Page background harmonisé ──────────────────────────────── */
+  .page-bg {
+    @apply bg-[#f0f4ff];
+  }
+
+  /* ─── Hero partagé (Services / Spécialités / Connexion) ─────── */
+  .hero-shared {
+    background: linear-gradient(150deg, #0a1628 0%, #1641C8 55%, #0d9488 100%);
+    position: relative; overflow: hidden;
+    padding-top: 120px; padding-bottom: 56px;
+    text-align: center;
+  }
+  .hero-shared .blob-tr {
+    position: absolute; top: -100px; right: -80px;
+    width: 380px; height: 380px; border-radius: 50%;
+    background: rgba(255,255,255,0.04); pointer-events: none;
+  }
+  .hero-shared .blob-bl {
+    position: absolute; bottom: -50px; left: -60px;
+    width: 260px; height: 260px; border-radius: 50%;
+    background: rgba(13,148,136,0.12); pointer-events: none;
+  }
+  .hero-eyebrow {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,0.10); color: rgba(255,255,255,0.88);
+    border-radius: 50px; padding: 6px 18px;
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; margin-bottom: 22px;
+    border: 1px solid rgba(255,255,255,0.18);
+  }
+  .hero-h1 {
+    color: white; font-weight: 900; line-height: 1.1;
+    font-size: clamp(1.9rem, 4vw, 3rem);
+    letter-spacing: -0.02em; margin-bottom: 18px;
+  }
+  .hero-h1 em {
+    font-style: italic; color: #5eead4; font-family: Georgia, serif;
+  }
+  .hero-sub {
+    color: rgba(255,255,255,0.68); font-size: 15.5px; line-height: 1.75;
+    max-width: 500px; margin: 0 auto 36px;
   }
 
   /* ─── Notifications box ───────────────────────────────────────────── */

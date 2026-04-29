@@ -61,7 +61,7 @@ export default function MedecinDashboard() {
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== 'medecin')) router.push('/login')
-  }, [isAuthenticated, user, loading])
+  }, [isAuthenticated, user, loading, router])
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'medecin') return

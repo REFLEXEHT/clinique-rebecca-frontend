@@ -1,5 +1,5 @@
 'use client'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import toast from 'react-hot-toast'
 import { usersApi } from '@/lib/api'
 import { Edit2, Save, X, CheckCircle, AlertCircle, Shield, RefreshCw, Trash2 } from 'lucide-react'
@@ -34,10 +34,10 @@ export default function AdminUtilisateurs() {
   const [propagation, setPropagation] = useState<{ user_nom: string; props: any[] } | null>(null)
   const [filtre, setFiltre]         = useState('tous')
 
-  const load = () => {
+  const load = useCallback(() => {
     usersApi.list().then((r: any) => setUsers(r.data)).catch(() => {})
   }
-  useEffect(() => { load() }, [])
+  useEffect(() => { load() }, [load])
 
   const startEdit = (u: any) => {
     setEditId(u.id)

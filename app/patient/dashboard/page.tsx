@@ -27,7 +27,7 @@ export default function PatientDashboard() {
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== 'patient')) router.push('/login')
-  }, [isAuthenticated, user, loading])
+  }, [isAuthenticated, user, loading, router])
 
   useEffect(() => {
     if (!isAuthenticated) return

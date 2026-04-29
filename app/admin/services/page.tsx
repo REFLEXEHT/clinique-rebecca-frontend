@@ -1,6 +1,6 @@
 'use client'
 // app/admin/services/page.tsx
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { servicesApi } from '@/lib/api'
@@ -24,8 +24,8 @@ export default function AdminServices() {
     defaultValues: { icone:'fa-stethoscope', couleur:'#1641C8', ordre:0 }
   })
 
-  const load = () => servicesApi.list().then(r=>setServices(r.data)).catch(()=>{})
-  useEffect(()=>{ load() },[])
+  const load = useCallback(() => { servicesApi.list().then(r=>setServices(r.data)).catch(()=>{}) }, [])
+  useEffect(()=>{ load() },[load])
 
   const onAdd = async (data: FormData) => {
     setLoading(true)

@@ -1,6 +1,6 @@
 'use client'
 // app/admin/depenses/page.tsx
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { comptaApi } from '@/lib/api'
@@ -19,7 +19,7 @@ export default function AdminDepenses() {
     defaultValues: { mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16) }
   })
 
-  const load = () => {
+  const load = useCallback(() => {
     const now = new Date()
     comptaApi.list({ type:'depense', mois: now.getMonth()+1, annee: now.getFullYear() }).then(r=>setMouvements(r.data)).catch(()=>setMouvements([]))
   }

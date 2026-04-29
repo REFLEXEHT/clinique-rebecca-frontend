@@ -171,7 +171,7 @@ export default function PharmaciePage() {
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== 'pharmacie')) router.push('/login')
-  }, [isAuthenticated, user, loading])
+  }, [isAuthenticated, user, loading, router])
 
   useEffect(() => {
     stocksApi.list().then(r => setStocks(r.data.length ? r.data : STOCKS_DEMO)).catch(() => setStocks(STOCKS_DEMO))

@@ -37,6 +37,16 @@ export function formatDate(iso: string): string {
   })
 }
 
+/** Sanitize text to prevent XSS in printed receipts */
+function sanitizeForHtml(text: string): string {
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;')
+}
+
 /** Imprime un reçu HTML dans une nouvelle fenêtre */
 export function imprimerRecu(data: {
   numero: string
@@ -82,21 +92,21 @@ export function imprimerRecu(data: {
     <p>cliniquerebecca.ht</p>
   </div>
   <div class="copie">${copieLabel}</div>
-  <div class="code">${data.patient_code}</div>
+  <div class="code">${sanitizeForHtml(data.patient_code)}</div>
   <div class="separator"></div>
-  <div class="field"><span>Reçu N°:</span><strong>${data.numero}</strong></div>
+  <div class="field"><span>Reçu N°:</span><strong>${sanitizeForHtml(data.numero)}</strong></div>
   <div class="field"><span>Date:</span><span>${data.date}</span></div>
-  <div class="field"><span>Patient:</span><strong>${data.patient_nom}</strong></div>
-  <div class="field"><span>Téléphone:</span><span>${data.patient_tel}</span></div>
-  <div class="field"><span>Service:</span><span>${data.service}</span></div>
+  <div class="field"><span>Patient:</span><strong>${sanitizeForHtml(data.patient_nom)}</strong></div>
+  <div class="field"><span>Téléphone:</span><span>${sanitizeForHtml(data.patient_tel)}</span></div>
+  <div class="field"><span>Service:</span><span>${sanitizeForHtml(data.service)}</span></div>
   <div class="separator"></div>
   <div class="items">
-    ${data.items.map(i => `<div class="item"><span>${i.label}</span><span>${i.prix.toLocaleString('fr')} HTG</span></div>`).join('')}
+    ${data.items.map(i => `<div class="item"><span>${sanitizeForHtml(i.label)}</span><span>${i.prix.toLocaleString('fr')} HTG</span></div>`).join('')}
   </div>
   <div class="total"><span>TOTAL</span><span>${data.total.toLocaleString('fr')} HTG</span></div>
   <div class="separator"></div>
-  <div class="field"><span>Paiement:</span><span>${data.mode_paiement}</span></div>
-  <div class="field"><span>Caissier:</span><span>${data.caissier}</span></div>
+  <div class="field"><span>Paiement:</span><span>${sanitizeForHtml(data.mode_paiement)}</span></div>
+  <div class="field"><span>Caissier:</span><span>${sanitizeForHtml(data.caissier)}</span></div>
   <div class="footer">
     <p>Merci de votre confiance</p>
     <p>Conservez ce reçu comme justificatif</p>

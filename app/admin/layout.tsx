@@ -41,7 +41,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     if (!loading && (!isAuthenticated || user?.role !== 'admin')) {
       router.push('/login')
     }
-  }, [isAuthenticated, user, loading])
+  }, [isAuthenticated, user, loading, router])
 
   const handleLogout = () => {
     logout()

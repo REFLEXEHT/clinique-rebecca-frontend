@@ -240,7 +240,7 @@ export default function CaissierPage() {
   useEffect(() => {
     if (!loading && (!isAuthenticated || (user?.role !== 'caissier' && user?.role !== 'admin')))
       router.push('/login')
-  }, [isAuthenticated, user, loading])
+  }, [isAuthenticated, user, loading, router])
 
   useEffect(() => {
     stocksApi.list().then(r => setStocks(r.data?.length ? r.data : STOCKS_DEMO)).catch(() => setStocks(STOCKS_DEMO))
