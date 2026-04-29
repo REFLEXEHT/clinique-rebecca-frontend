@@ -4,41 +4,37 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { authApi } from '@/lib/api'
-import { useAuth } from '@/context/AuthContext'
+import { useAuthStore } from '@/lib/store'
 
 interface FormData { email: string; password: string }
 
 export default function AdminLogin() {
   const router = useRouter()
-  const { login, isAuthenticated, user, loading } = useAuth()
-  const [submitting, setSubmitting] = useState(false)
+  const { login, isAuthenticated, init } = useAuthStore()
+  const [loading, setLoading] = useState(false)
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     defaultValues: { email: 'admin@cliniquerebecca.ht', password: '' },
   })
 
   useEffect(() => {
-    if (!loading && isAuthenticated && user?.role === 'admin') {
-      router.push('/admin/dashboard')
-    }
-  }, [isAuthenticated, user, loading, router])
+    init()
+  }, [])
+
+  useEffect(() => {
+    if (isAuthenticated) router.push('/admin/dashboard')
+  }, [isAuthenticated])
 
   const onSubmit = async (data: FormData) => {
-    setSubmitting(true)
+    setLoading(true)
     try {
       const res = await authApi.login(data.email, data.password)
-      const { access_token, user: u } = res.data
-      if (u.role !== 'admin') {
-        toast.error('Ce compte n\'est pas un compte administrateur.')
-        setSubmitting(false)
-        return
-      }
-      login(access_token, u)
-      toast.success(`Bienvenue, ${u.nom} !`)
+      login(res.data.access_token, res.data.user)
+      toast.success(`Bienvenue, ${res.data.user.nom} !`)
       router.push('/admin/dashboard')
     } catch (err: any) {
       toast.error(err.response?.data?.detail || 'Identifiants incorrects')
     } finally {
-      setSubmitting(false)
+      setLoading(false)
     }
   }
 
@@ -58,13 +54,12 @@ export default function AdminLogin() {
 
         <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
           <div>
-            <label className="label">Identifiant administrateur</label>
+            <label className="label">Identifiant</label>
             <input
               {...register('email', { required: true })}
               type="email"
               className="input"
               placeholder="admin@cliniquerebecca.ht"
-              autoComplete="username"
             />
             {errors.email && <p className="text-red-500 text-xs mt-1">Email requis</p>}
           </div>
@@ -76,25 +71,29 @@ export default function AdminLogin() {
               type="password"
               className="input"
               placeholder="••••••••"
-              autoComplete="current-password"
             />
             {errors.password && <p className="text-red-500 text-xs mt-1">Mot de passe requis</p>}
           </div>
 
           <button
             type="submit"
-            disabled={submitting}
-            style={{
-              width: '100%', background: submitting ? '#94a3b8' : '#1641C8',
-              color: 'white', border: 'none', borderRadius: 10,
-              padding: '13px 0', fontWeight: 700, fontSize: 15, cursor: submitting ? 'not-allowed' : 'pointer',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-            }}
+            disabled={loading}
+            className="btn-blue w-full justify-center py-3 mt-2"
           >
-            {submitting
-              ? <><svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg> Connexion...</>
-              : <><i className="fa-solid fa-sign-in-alt" /> Se connecter</>
-            }
+            {loading ? (
+              <span className="flex items-center gap-2">
+                <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                </svg>
+                Connexion...
+              </span>
+            ) : (
+              <>
+                <i className="fa-solid fa-sign-in-alt" />
+                Se connecter
+              </>
+            )}
           </button>
 
           <div className="text-center pt-2">

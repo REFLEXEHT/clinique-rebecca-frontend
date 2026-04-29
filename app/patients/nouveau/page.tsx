@@ -1,5 +1,4 @@
 'use client'
-export const dynamic = 'force-dynamic'
 // Page création patient — accessible à tous les rôles connectés
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'

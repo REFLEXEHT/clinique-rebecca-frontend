@@ -1,25 +1,15 @@
 import axios from 'axios'
 
-/**
- * En production Vercel, toutes les requêtes API passent par le proxy
- * Next.js (/api/*) configuré dans next.config.js.
- * Cela évite les problèmes CORS et expose jamais l'URL du backend.
- *
- * En développement local, on contacte le backend directement.
- */
-const isServer = typeof window === 'undefined'
-const isDev = process.env.NODE_ENV === 'development'
-
-const BASE = isServer
-  ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000')
-  : isDev
-    ? (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000')
-    : '' // Vercel: proxy via /api/*
+// En production sur Vercel, on passe toujours par le proxy Next.js /api/*
+// Cela évite les erreurs CORS car les requêtes partent du même domaine
+const BASE = typeof window !== 'undefined' && window.location.hostname !== 'localhost'
+  ? '' // Utilise le proxy /api/* configuré dans next.config.js
+  : (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000')
 
 export const api = axios.create({
   baseURL: `${BASE}/api`,
   headers: { 'Content-Type': 'application/json' },
-  timeout: 25000,
+  timeout: 20000,
   withCredentials: false,
 })
 
@@ -37,11 +27,7 @@ api.interceptors.response.use(
     if (err.response?.status === 401 && typeof window !== 'undefined') {
       localStorage.removeItem('rb_token')
       localStorage.removeItem('rb_user')
-      // Évite la redirection si déjà sur /login ou /register
-      const path = window.location.pathname
-      if (path !== '/login' && path !== '/register' && !path.startsWith('/admin/login')) {
-        window.location.href = '/login'
-      }
+      window.location.href = '/login'
     }
     return Promise.reject(err)
   }
@@ -134,13 +120,4 @@ export const statsApi = {
   rdvParJour: (jours: number) => api.get('/admin/stats/rdv-par-jour', { params: { jours } }),
   recettesParJour: (jours: number) => api.get('/admin/stats/recettes-par-jour', { params: { jours } }),
   specialites: () => api.get('/admin/stats/specialites'),
-}
-
-export const translateApi = {
-  /**
-   * Traduit un tableau de textes via Claude (backend).
-   * Retourne les textes dans la langue cible avec précision médicale.
-   */
-  translate: (texts: string[], targetLang: string) =>
-    api.post('/translate', { texts, target_lang: targetLang }),
 }

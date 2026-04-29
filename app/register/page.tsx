@@ -1,5 +1,4 @@
 'use client'
-export const dynamic = 'force-dynamic'
 import { useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -82,14 +81,9 @@ export default function RegisterPage() {
         <h2 style={{ fontWeight:900, color:'#0f172a', fontSize:'1.5rem', marginBottom:10 }}>Compte soumis !</h2>
         <p style={{ color:'#64748b', lineHeight:1.7, marginBottom:8 }}>Votre compte <strong style={{ textTransform:'capitalize' }}>{selectedRole}</strong> est en attente de validation par l'administrateur.</p>
         <p style={{ color:'#94a3b8', fontSize:13, marginBottom:28 }}>Vous recevrez une notification dès l'activation.</p>
-        <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-          <Link href="/login" style={{ display:'block', background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', textDecoration:'none', borderRadius:12, padding:'13px 0', fontWeight:700, textAlign:'center' }}>
-            <i className="fa-solid fa-right-to-bracket" style={{ marginRight:8 }} />Se connecter
-          </Link>
-          <Link href="/" style={{ display:'block', background:'white', color:'#64748b', textDecoration:'none', borderRadius:12, padding:'13px 0', fontWeight:600, textAlign:'center', border:'1px solid #e2e8f0', fontSize:14 }}>
-            <i className="fa-solid fa-house" style={{ marginRight:8 }} />Retour à l&#39;accueil
-          </Link>
-        </div>
+        <Link href="/login" style={{ display:'block', background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', textDecoration:'none', borderRadius:12, padding:'12px 0', fontWeight:700, textAlign:'center' }}>
+          <i className="fa-solid fa-right-to-bracket" style={{ marginRight:8 }} />Se connecter
+        </Link>
       </div>
     </div>
   )

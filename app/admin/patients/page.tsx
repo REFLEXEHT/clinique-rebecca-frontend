@@ -1,6 +1,6 @@
 'use client'
 // app/admin/patients/page.tsx
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { patientsApi } from '@/lib/api'
 import { Patient } from '@/types'
 
@@ -22,9 +22,9 @@ export default function AdminPatients() {
   const fmtDate = (d: string | undefined) => d ? new Date(d).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric' }) : '—'
 
   const demoPatients = [
-    { id:1, numero:'#RB-001', nom:'Théodore', prenom:'Marie', telephone:'+509 3456-7890', email:'marie@gmail.com', adresse:null, created_at: "2026-04-26T12:00:00.000Z" },
-    { id:2, numero:'#RB-002', nom:'Jean-Baptiste', prenom:'Paul', telephone:'+509 3789-0123', email:null, adresse:null, created_at: "2026-04-26T12:00:00.000Z" },
-    { id:3, numero:'#RB-003', nom:'Pierre', prenom:'Lucie', telephone:'+509 3123-4567', email:'lucie@gmail.com', adresse:null, created_at: "2026-04-26T12:00:00.000Z" },
+    { id:1, numero:'#RB-001', nom:'Théodore', prenom:'Marie', telephone:'+509 3456-7890', email:'marie@gmail.com', adresse:null, created_at: new Date().toISOString() },
+    { id:2, numero:'#RB-002', nom:'Jean-Baptiste', prenom:'Paul', telephone:'+509 3789-0123', email:null, adresse:null, created_at: new Date().toISOString() },
+    { id:3, numero:'#RB-003', nom:'Pierre', prenom:'Lucie', telephone:'+509 3123-4567', email:'lucie@gmail.com', adresse:null, created_at: new Date().toISOString() },
   ]
 
   const displayPatients = patients.length > 0 ? patients : demoPatients

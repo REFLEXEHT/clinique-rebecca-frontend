@@ -1,6 +1,6 @@
 'use client'
 // app/admin/depenses/page.tsx
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { comptaApi } from '@/lib/api'
@@ -19,11 +19,11 @@ export default function AdminDepenses() {
     defaultValues: { mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16) }
   })
 
-  const load = useCallback(() => {
+  const load = () => {
     const now = new Date()
     comptaApi.list({ type:'depense', mois: now.getMonth()+1, annee: now.getFullYear() }).then(r=>setMouvements(r.data)).catch(()=>setMouvements([]))
-  }, [])
-  useEffect(()=>{ load() },[load])
+  }
+  useEffect(()=>{ load() },[])
 
   const total = mouvements.reduce((s,m)=>s+m.montant,0)
 
@@ -46,7 +46,7 @@ export default function AdminDepenses() {
   return (
     <div className="p-7">
       <div className="flex items-center justify-between mb-6">
-        <div><h1 className="text-xl font-extrabold">Dépenses</h1><p className="text-slate-500 text-[13px] mt-0.5">Charges du mois — <span suppressHydrationWarning>{new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</span></p></div>
+        <div><h1 className="text-xl font-extrabold">Dépenses</h1><p className="text-slate-500 text-[13px] mt-0.5">Charges du mois — {new Date().toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</p></div>
         <button onClick={()=>setShowForm(!showForm)} className="btn-primary"><Plus size={15}/> Ajouter une dépense</button>
       </div>
       <div className="grid grid-cols-3 gap-4 mb-6">

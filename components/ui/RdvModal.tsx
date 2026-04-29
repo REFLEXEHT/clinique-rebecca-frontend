@@ -438,32 +438,12 @@ export default function RdvModal({ open, onClose, defaultSpec }: Props) {
                     {MODES_PAIEMENT.map(m => <option key={m} value={m}>{m}</option>)}
                   </select>
                   {showPayDetail && (
-                    <div style={{ marginTop: 10, background: '#e0f2fe', borderRadius: 10, padding: '10px 14px', fontSize: 13, color: '#0369a1' }}>
-                      {modePaiement === 'Mobile Money (Moncash)' && (
-                        <>
-                          <i className="fa-solid fa-mobile-screen" style={{ marginRight: 6 }} />
-                          <strong>Moncash :</strong> envoyez le montant au numéro de la clinique <strong>+509 3888-0000</strong> avec comme note votre nom. Notre équipe validera le paiement avant de confirmer le RDV.
-                        </>
-                      )}
-                      {modePaiement === 'Natcash' && (
-                        <>
-                          <i className="fa-solid fa-mobile-screen" style={{ marginRight: 6 }} />
-                          <strong>Natcash :</strong> envoyez le montant au numéro de la clinique <strong>+509 3888-0001</strong> avec votre nom en référence. Notre équipe validera le paiement avant de confirmer le RDV.
-                        </>
-                      )}
-                      {modePaiement === 'Carte de crédit' && (
-                        <>
-                          <i className="fa-solid fa-credit-card" style={{ marginRight: 6 }} />
-                          <strong>Carte de crédit :</strong> le paiement par carte s&apos;effectue directement à la clinique au moment du rendez-vous. Aucune donnée de carte n&apos;est collectée en ligne.
-                        </>
-                      )}
-                      {modePaiement === 'Virement bancaire' && (
-                        <>
-                          <i className="fa-solid fa-building-columns" style={{ marginRight: 6 }} />
-                          <strong>Virement :</strong> notre équipe vous communiquera les coordonnées bancaires par email/SMS dès confirmation du RDV.
-                        </>
-                      )}
-                    </div>
+                    <>
+                      <input {...register('reference_paiement', { required: showPayDetail })}
+                        placeholder="Numéro de référence / transaction *"
+                        style={{ width:'100%', padding:'10px 13px', borderRadius:10, border:`1px solid ${errors.reference_paiement?'#ef4444':'#bae6fd'}`, fontSize:14, boxSizing:'border-box' }} />
+                      {errors.reference_paiement && <p style={{ color:'#ef4444', fontSize:12, marginTop:4 }}>Référence requise pour paiement mobile</p>}
+                    </>
                   )}
                 </div>
 

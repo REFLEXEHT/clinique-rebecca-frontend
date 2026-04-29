@@ -1,5 +1,4 @@
 'use client'
-export const dynamic = 'force-dynamic'
 // app/patient/dashboard/page.tsx — Espace patient : RDV, résultats labo, consultation vidéo
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
@@ -7,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { rdvApi, laboApi } from '@/lib/api'
 import { RendezVous, ResultatLabo } from '@/types'
-import RebeccaAI from '@/components/ui/RebeccaAI'
 import { Video, FlaskConical, Calendar, LogOut } from 'lucide-react'
 
 const STATUS_RDV: Record<string, {label:string; cls:string}> = {
@@ -23,11 +21,10 @@ export default function PatientDashboard() {
   const [rdvs, setRdvs] = useState<RendezVous[]>([])
   const [resultats, setResultats] = useState<ResultatLabo[]>([])
   const [activeTab, setActiveTab] = useState<'rdv'|'labo'|'video'>('rdv')
-  const [showAI, setShowAI] = useState(false)
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== 'patient')) router.push('/login')
-  }, [isAuthenticated, user, loading, router])
+  }, [isAuthenticated, user, loading])
 
   useEffect(() => {
     if (!isAuthenticated) return
@@ -61,40 +58,11 @@ export default function PatientDashboard() {
       </div>
 
       <div className="max-w-[900px] mx-auto py-10 px-5">
-        {/* Bonjour + bouton AI */}
-        <div className="mb-7 flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-extrabold text-slate-800">Bonjour, {user?.nom?.split(' ')[0]} 👋</h1>
-            <p className="text-slate-400 text-sm mt-1">Votre espace santé personnel</p>
-          </div>
-          <button onClick={() => setShowAI(v => !v)} style={{
-            display:'flex', alignItems:'center', gap:8, padding:'10px 18px',
-            borderRadius:50, border:'none', cursor:'pointer', fontWeight:700, fontSize:13,
-            background: showAI ? '#1641C8' : '#eff6ff', color: showAI ? 'white' : '#1641C8',
-            transition:'all 0.2s', flexShrink:0
-          }}>
-            <i className="fa-solid fa-wand-magic-sparkles" />
-            {showAI ? 'Fermer Rebecca AI' : 'Rebecca AI — Mes examens & RDV'}
-          </button>
+        {/* Bonjour */}
+        <div className="mb-7">
+          <h1 className="text-2xl font-extrabold text-slate-800">Bonjour, {user?.nom?.split(' ')[0]} 👋</h1>
+          <p className="text-slate-400 text-sm mt-1">Votre espace santé personnel</p>
         </div>
-
-        {/* Panneau AI patient */}
-        {showAI && (
-          <div style={{ marginBottom:28, borderRadius:20, overflow:'hidden', border:'1px solid #e2e8f0', boxShadow:'0 4px 24px rgba(22,65,200,0.08)' }}>
-            <RebeccaAI
-              mode="patient"
-              context={{
-                patient_nom: user?.nom,
-                patient_email: user?.email,
-                prochains_rdv: rdvs.filter(r => new Date(r.date_rdv) > new Date()).slice(0,3).map(r => ({ specialite: r.specialite, date: r.date_rdv, statut: r.statut })),
-                examens_prescrits: resultats.slice(0,5).map(r => ({ examen: r.type_examen, date_demande: r.date_examen, statut: r.status })),
-                nb_rdv_total: rdvs.length,
-                nb_resultats: resultats.length,
-              }}
-              initialPrompt="Explique-moi pourquoi mes examens ont été prescrits et comment je dois me préparer pour mon prochain rendez-vous."
-            />
-          </div>
-        )}
 
         {/* Prochain RDV */}
         {prochainRdv && (

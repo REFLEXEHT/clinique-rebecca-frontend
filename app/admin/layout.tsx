@@ -1,6 +1,6 @@
 'use client'
 // app/admin/layout.tsx — Layout admin avec sidebar
-import { useEffect, type ReactNode } from 'react'
+import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/context/AuthContext'
@@ -32,7 +32,7 @@ const NAV_GROUPS = [
   ]},
 ]
 
-export default function AdminLayout({ children }: { children: ReactNode }) {
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, user, logout, loading } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
@@ -41,7 +41,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
     if (!loading && (!isAuthenticated || user?.role !== 'admin')) {
       router.push('/login')
     }
-  }, [isAuthenticated, user, loading, router])
+  }, [isAuthenticated, user, loading])
 
   const handleLogout = () => {
     logout()
