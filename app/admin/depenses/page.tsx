@@ -22,8 +22,8 @@ export default function AdminDepenses() {
   const load = useCallback(() => {
     const now = new Date()
     comptaApi.list({ type:'depense', mois: now.getMonth()+1, annee: now.getFullYear() }).then(r=>setMouvements(r.data)).catch(()=>setMouvements([]))
-  }
-  useEffect(()=>{ load() },[])
+  }, [])
+  useEffect(()=>{ load() },[load])
 
   const total = mouvements.reduce((s,m)=>s+m.montant,0)
 

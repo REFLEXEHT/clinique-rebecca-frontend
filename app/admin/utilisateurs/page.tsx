@@ -36,7 +36,7 @@ export default function AdminUtilisateurs() {
 
   const load = useCallback(() => {
     usersApi.list().then((r: any) => setUsers(r.data)).catch(() => {})
-  }
+  }, [])
   useEffect(() => { load() }, [load])
 
   const startEdit = (u: any) => {
