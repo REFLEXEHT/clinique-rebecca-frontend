@@ -92,7 +92,7 @@ export default function HomePage() {
 
         {/* Droite — photo */}
         <div style={{ position:'relative', overflow:'hidden' }}>
-          <img src="/services/sop.jpg" alt="Clinique de la Rebecca"
+          <img src="/services/accueil.png" alt="Clinique de la Rebecca"
             style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} />
           <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg,rgba(22,65,200,0.06),rgba(13,148,136,0.06))' }} />
           <div style={{ position:'absolute', bottom:40, left:32, background:'white', borderRadius:16, padding:'14px 18px', boxShadow:'0 8px 32px rgba(0,0,0,0.12)', display:'flex', alignItems:'center', gap:12 }}>
