@@ -1,226 +1,359 @@
 'use client'
-// app/admin/dashboard/page.tsx
-import { useEffect, useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useAuth } from '@/context/AuthContext'
+import { useRouter } from 'next/navigation'
+import { api } from '@/lib/api'
 import Link from 'next/link'
-import { statsApi, rdvApi } from '@/lib/api'
-import { DashboardStats, RendezVous } from '@/types'
-import { Line, Doughnut } from 'react-chartjs-2'
-import {
-  Chart as ChartJS, CategoryScale, LinearScale, PointElement,
-  LineElement, ArcElement, Tooltip, Legend, Filler,
-} from 'chart.js'
+import { LogOut, Users, FileText, AlertTriangle, TrendingUp, Shield, Clock } from 'lucide-react'
 
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, ArcElement, Tooltip, Legend, Filler)
-
-const STATUS_MAP = {
-  confirme: { label: 'Confirmé', cls: 'badge-green' },
-  en_attente: { label: 'En attente', cls: 'badge-yellow' },
-  annule: { label: 'Annulé', cls: 'badge-red' },
-  termine: { label: 'Terminé', cls: 'badge-gray' },
-}
-
-function KpiCard({ icon, color, bg, value, label, trend, up }: any) {
-  return (
-    <div className="kpi-card">
-      <div className="w-10 h-10 rounded-xl flex items-center justify-center text-lg mb-3"
-        style={{ background: bg, color }}>
-        <i className={`fa-solid ${icon}`} />
-      </div>
-      <div className="text-2xl font-black leading-none mb-1" style={{ color }}>{value}</div>
-      <div className="text-xs text-slate-500 font-semibold mb-1.5">{label}</div>
-      {trend && (
-        <div className={`text-[11px] font-bold flex items-center gap-1 ${up ? 'text-green-600' : 'text-red-500'}`}>
-          <i className={`fa-solid ${up ? 'fa-arrow-trend-up' : 'fa-arrow-down'} text-xs`} />
-          {trend}
-        </div>
-      )}
-    </div>
-  )
-}
+type Onglet = 'overview' | 'utilisateurs' | 'audit' | 'analytics'
 
 export default function AdminDashboard() {
-  const [stats, setStats] = useState<DashboardStats | null>(null)
-  const [rdvChart, setRdvChart] = useState<any[]>([])
-  const [rdvList, setRdvList] = useState<RendezVous[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const today = new Date().toLocaleDateString('fr-FR', {
-    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-  })
+  const { user, isAuthenticated, loading, logout } = useAuth()
+  const router = useRouter()
+  const [onglet,    setOnglet]    = useState<Onglet>('overview')
+  const [analytics, setAnalytics] = useState<any>(null)
+  const [users,     setUsers]     = useState<any[]>([])
+  const [attente,   setAttente]   = useState<any[]>([])
+  const [auditLogs, setAuditLogs] = useState<any[]>([])
+  const [aiReport,  setAiReport]  = useState('')
+  const [loadAI,    setLoadAI]    = useState(false)
 
   useEffect(() => {
-    Promise.allSettled([
-      statsApi.dashboard(),
-      statsApi.rdvParJour(7),
-      rdvApi.adminList(),
-    ]).then(([s, chart, list]) => {
-      if (s.status === 'fulfilled') setStats(s.value.data)
-      if (chart.status === 'fulfilled') setRdvChart(chart.value.data)
-      if (list.status === 'fulfilled') setRdvList(list.value.data.slice(0, 6))
-    }).finally(() => setLoading(false))
-  }, [])
+    if (!loading && (!isAuthenticated || user?.role !== 'admin')) {
+      router.push('/login')
+    }
+  }, [isAuthenticated, user, loading, router])
 
-  const lineData = {
-    labels: rdvChart.map((d: any) => d.date),
-    datasets: [{
-      label: 'Consultations',
-      data: rdvChart.map((d: any) => d.count),
-      borderColor: '#1641C8', backgroundColor: 'rgba(22,65,200,0.07)',
-      borderWidth: 2.5, tension: 0.4, fill: true, pointRadius: 3,
-      pointBackgroundColor: '#1641C8',
-    }],
+  useEffect(() => {
+    if (!isAuthenticated || user?.role !== 'admin') return
+    api.get('/admin/dashboard-analytics').then(r => setAnalytics(r.data)).catch(() => {})
+    api.get('/admin/users').then(r => {
+      const all = r.data || []
+      setUsers(all)
+      setAttente(all.filter((u: any) => !u.is_active && u.role !== 'patient'))
+    }).catch(() => {})
+    api.get('/admin/audit-logs?limit=50').then(r => setAuditLogs(r.data?.logs || [])).catch(() => {})
+  }, [isAuthenticated, user])
+
+  const genererRapportIA = async () => {
+    if (!analytics) return
+    setLoadAI(true)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514', max_tokens: 800,
+          messages: [{
+            role: 'user',
+            content: `Tu es un assistant analytique pour une clinique médicale à Haïti. Génère un rapport de direction concis basé sur ces données: ${JSON.stringify(analytics)}. 
+Inclure: 
+1. Résumé exécutif (2 phrases)
+2. Points d'attention critiques (si alertes accès suspects, comptes en attente)
+3. Performance des services les plus demandés
+4. Recommandations concrètes (3 max)
+Format: texte structuré, 300 mots max, ton professionnel.`
+          }]
+        })
+      })
+      const data = await res.json()
+      setAiReport(data.content?.[0]?.text || '')
+    } catch { setAiReport('Erreur génération rapport') }
+    finally { setLoadAI(false) }
   }
 
-  const doughnutData = {
-    labels: ['Clinique ext.', 'Labo', 'Dentiste', 'Physio', 'Pharma'],
-    datasets: [{
-      data: [42, 18, 14, 12, 14],
-      backgroundColor: ['#1641C8', '#22c55e', '#d97706', '#be185d', '#6366f1'],
-      borderWidth: 0,
-    }],
+  const activerCompte = async (userId: number) => {
+    try {
+      await api.post(`/admin/users/${userId}/activer`, {})
+      setAttente(prev => prev.filter(u => u.id !== userId))
+      setUsers(prev => prev.map(u => u.id === userId ? {...u, is_active: true} : u))
+      alert('Compte activé — email de confirmation envoyé')
+    } catch { alert('Erreur') }
   }
 
-  const chartOpts = {
-    responsive: true, maintainAspectRatio: false,
-    plugins: { legend: { display: false } },
-    scales: {
-      y: { grid: { color: 'rgba(0,0,0,0.04)' }, ticks: { font: { size: 11 } } },
-      x: { grid: { display: false }, ticks: { font: { size: 11 } } },
-    },
+  const rejeterCompte = async (userId: number) => {
+    const motif = prompt('Motif du rejet :')
+    if (!motif) return
+    try {
+      await api.post(`/admin/users/${userId}/rejeter`, { motif })
+      setAttente(prev => prev.filter(u => u.id !== userId))
+      alert('Compte rejeté — email envoyé')
+    } catch { alert('Erreur') }
   }
+
+  const suspendre = async (u: any) => {
+    try {
+      await api.put(`/admin/users/${u.id}/${u.is_active ? 'suspendre' : 'reactiver'}`, {})
+      setUsers(prev => prev.map(x => x.id === u.id ? {...x, is_active: !u.is_active} : x))
+    } catch { alert('Erreur') }
+  }
+
+  if (loading) return <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><div style={{width:40,height:40,borderRadius:'50%',border:'3px solid #1641C8',borderTopColor:'transparent',animation:'spin 1s linear infinite'}} /></div>
+
+  const NAV = [
+    {k:'overview',     icon:<TrendingUp size={14}/>,  label:'Vue d\'ensemble'},
+    {k:'analytics',    icon:<TrendingUp size={14}/>,   label:'Analytique IA'},
+    {k:'utilisateurs', icon:<Users size={14}/>,        label:`Utilisateurs ${attente.length > 0 ? `(🔴 ${attente.length} en attente)` : ''}`},
+    {k:'audit',        icon:<Shield size={14}/>,       label:'Journal Audit'},
+  ] as const
+
+  const ROLE_COLOR: Record<string,string> = {admin:'#6366f1',medecin:'#0d9488',caissier:'#d97706',labo:'#16a34a',infirmier:'#0369a1',pharmacie:'#7c3aed',patient:'#1641C8'}
 
   return (
-    <div className="p-7">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+    <div style={{minHeight:'100vh',background:'#f8fafc'}}>
+      {/* Navbar */}
+      <div style={{background:'linear-gradient(135deg,#0f1e3d,#1641C8)',height:58,display:'flex',alignItems:'center',padding:'0 24px',gap:14}}>
+        <div style={{width:36,height:36,borderRadius:10,background:'rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>🛡️</div>
         <div>
-          <h1 className="text-xl font-extrabold">Tableau de bord</h1>
-          <p className="text-slate-500 text-[13px] mt-0.5 capitalize">{today}</p>
+          <div style={{color:'white',fontWeight:800,fontSize:14}}>{user?.nom}</div>
+          <div style={{color:'rgba(255,255,255,0.6)',fontSize:11}}>Administrateur</div>
+        </div>
+        <div style={{marginLeft:'auto',display:'flex',gap:8,flexWrap:'wrap'}}>
+          {[
+            {href:'/admin/utilisateurs', label:'👥 Utilisateurs'},
+            {href:'/admin/specialistes', label:'👨‍⚕️ Médecins'},
+            {href:'/admin/tarifs',       label:'💰 Tarifs'},
+            {href:'/admin/labo',         label:'🔬 Labo'},
+            {href:'/admin/audit',        label:'📋 Audit'},
+            {href:'/admin/demandes-acces',label:'🔐 Accès'},
+          ].map(l => (
+            <Link key={l.href} href={l.href} style={{background:'rgba(255,255,255,0.1)',color:'white',textDecoration:'none',borderRadius:8,padding:'6px 12px',fontSize:12,fontWeight:600}}>
+              {l.label}
+            </Link>
+          ))}
+          <button onClick={()=>{logout();router.push('/')}} style={{background:'none',border:'none',color:'rgba(255,255,255,0.5)',cursor:'pointer',fontSize:12,display:'flex',alignItems:'center',gap:4}}>
+            <LogOut size={13}/> Déconnexion
+          </button>
         </div>
       </div>
 
-      {/* KPIs */}
-      {loading ? (
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-28 bg-slate-100 rounded-2xl animate-pulse" />)}
-        </div>
-      ) : stats ? (
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <KpiCard icon="fa-calendar-check" color="#1641C8" bg="rgba(22,65,200,0.09)"
-            value={stats.rdv_today} label="RDV aujourd'hui" trend="+3 vs hier" up />
-          <KpiCard icon="fa-users" color="#22c55e" bg="rgba(34,197,94,0.09)"
-            value={stats.patients_month} label="Patients ce mois" trend="+18%" up />
-          <KpiCard icon="fa-cash-register" color="#d97706" bg="rgba(245,158,11,0.09)"
-            value={`${(stats.recettes_day / 1000).toFixed(0)}k`} label="Recettes du jour (HTG)" trend="+12%" up />
-          <KpiCard icon="fa-clock" color="#dc2626" bg="rgba(220,38,38,0.09)"
-            value={stats.rdv_en_attente} label="RDV en attente" />
-        </div>
-      ) : (
-        <div className="grid grid-cols-4 gap-4 mb-6">
-          <KpiCard icon="fa-calendar-check" color="#1641C8" bg="rgba(22,65,200,0.09)"
-            value="—" label="RDV aujourd'hui" />
-          <KpiCard icon="fa-users" color="#22c55e" bg="rgba(34,197,94,0.09)"
-            value="—" label="Patients ce mois" />
-          <KpiCard icon="fa-cash-register" color="#d97706" bg="rgba(245,158,11,0.09)"
-            value="—" label="Recettes du jour" />
-          <KpiCard icon="fa-clock" color="#dc2626" bg="rgba(220,38,38,0.09)"
-            value="—" label="RDV en attente" />
-        </div>
-      )}
+      {/* Onglets */}
+      <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',display:'flex',gap:4,overflowX:'auto'}}>
+        {NAV.map(n => (
+          <button key={n.k} onClick={()=>setOnglet(n.k as Onglet)} style={{
+            padding:'13px 16px',border:'none',background:'transparent',cursor:'pointer',
+            fontWeight:600,fontSize:13,display:'flex',alignItems:'center',gap:6,whiteSpace:'nowrap',
+            color:onglet===n.k?'#1641C8':'#64748b',
+            borderBottom:onglet===n.k?'2px solid #1641C8':'2px solid transparent',
+          }}>{n.icon}{n.label}</button>
+        ))}
+      </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-2 gap-5 mb-6">
-        <div className="card p-5">
-          <h4 className="font-bold text-[13.5px] mb-4 flex items-center gap-2">
-            <i className="fa-solid fa-chart-line text-[#1641C8] text-sm" />
-            Consultations — 7 derniers jours
-          </h4>
-          <div className="h-48">
-            {rdvChart.length > 0 ? (
-              <Line data={lineData} options={chartOpts as any} />
-            ) : (
-              <div className="h-full flex items-center justify-center text-slate-300 text-sm">
-                Connectez l'API pour voir les données
+      <div style={{maxWidth:1100,margin:'0 auto',padding:'24px 20px'}}>
+
+        {/* ── VUE D'ENSEMBLE ─────────────────────────────────────── */}
+        {onglet==='overview' && (
+          <div>
+            {/* Alertes critiques */}
+            {attente.length > 0 && (
+              <div style={{background:'#fef2f2',border:'1px solid #fca5a5',borderRadius:14,padding:'14px 18px',marginBottom:20,display:'flex',alignItems:'center',gap:12}}>
+                <AlertTriangle size={20} color="#dc2626"/>
+                <div>
+                  <div style={{fontWeight:700,color:'#dc2626'}}>{attente.length} compte{attente.length>1?'s':''} en attente de validation</div>
+                  <div style={{fontSize:13,color:'#94a3b8'}}>Cliquez sur "Utilisateurs" pour traiter les demandes</div>
+                </div>
+              </div>
+            )}
+            {analytics?.alertes_acces_suspects?.length > 0 && (
+              <div style={{background:'#fffbeb',border:'1px solid #fcd34d',borderRadius:14,padding:'14px 18px',marginBottom:20}}>
+                <div style={{fontWeight:700,color:'#d97706'}}>⚠️ Accès suspects détectés</div>
+                {analytics.alertes_acces_suspects.map((a: any, i: number) => (
+                  <div key={i} style={{fontSize:13,color:'#92400e'}}>Utilisateur #{a.actor_id} : {a.nb_acces} dossiers consultés aujourd'hui</div>
+                ))}
+              </div>
+            )}
+
+            {/* KPIs */}
+            <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginBottom:24}}>
+              {[
+                {icon:'💰',label:'Revenus du mois',val:`${analytics?.revenus_mois?.toLocaleString('fr-FR') || 0} HTG`,bg:'#f0fdf4',c:'#16a34a'},
+                {icon:'👤',label:'Nouveaux patients',val:analytics?.nouveaux_patients || 0,bg:'#eff6ff',c:'#1641C8'},
+                {icon:'⏳',label:'Comptes en attente',val:analytics?.comptes_en_attente || 0,bg:'#fef2f2',c:'#dc2626'},
+                {icon:'👥',label:'Total utilisateurs',val:users.length,bg:'#f5f3ff',c:'#7c3aed'},
+              ].map(s => (
+                <div key={s.label} style={{background:s.bg,borderRadius:16,padding:20,border:'1px solid #e2e8f0'}}>
+                  <div style={{fontSize:28,marginBottom:8}}>{s.icon}</div>
+                  <div style={{fontWeight:900,fontSize:'1.4rem',color:s.c}}>{s.val}</div>
+                  <div style={{color:'#64748b',fontSize:12,marginTop:4}}>{s.label}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Services les plus demandés */}
+            {analytics?.dossiers_par_specialite?.length > 0 && (
+              <div style={{background:'white',borderRadius:16,padding:22,border:'1px solid #e2e8f0'}}>
+                <h3 style={{fontWeight:700,fontSize:15,marginBottom:16,color:'#0f172a'}}>📊 Dossiers par spécialité (30 jours)</h3>
+                {analytics.dossiers_par_specialite.sort((a: any,b: any)=>b.count-a.count).map((d: any, i: number) => (
+                  <div key={i} style={{display:'flex',alignItems:'center',gap:12,marginBottom:10}}>
+                    <div style={{width:160,fontSize:13,color:'#374151'}}>{d.specialite}</div>
+                    <div style={{flex:1,background:'#f1f5f9',borderRadius:4,height:14,overflow:'hidden'}}>
+                      <div style={{height:'100%',background:'#1641C8',borderRadius:4,width:`${Math.min(100, (d.count/Math.max(...analytics.dossiers_par_specialite.map((x: any)=>x.count)))*100)}%`}} />
+                    </div>
+                    <div style={{fontWeight:700,fontSize:13,color:'#1641C8',width:30}}>{d.count}</div>
+                  </div>
+                ))}
               </div>
             )}
           </div>
-        </div>
-        <div className="card p-5">
-          <h4 className="font-bold text-[13.5px] mb-4 flex items-center gap-2">
-            <i className="fa-solid fa-chart-pie text-[#1641C8] text-sm" />
-            Répartition par service
-          </h4>
-          <div className="h-48">
-            <Doughnut data={doughnutData} options={{
-              responsive: true, maintainAspectRatio: false,
-              plugins: { legend: { position: 'bottom', labels: { padding: 12, font: { size: 11 } } } },
-              cutout: '62%',
-            }} />
-          </div>
-        </div>
-      </div>
+        )}
 
-      {/* Recent RDV */}
-      <div className="card overflow-hidden">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
-          <h4 className="font-bold text-[13.5px] flex items-center gap-2">
-            <i className="fa-regular fa-calendar-check text-[#1641C8] text-sm" />
-            Rendez-vous récents
-          </h4>
-          <Link href="/admin/rendez-vous"
-            className="text-[12.5px] text-[#1641C8] font-bold hover:underline no-underline">
-            Voir tout →
-          </Link>
-        </div>
-        <table className="tbl w-full">
-          <thead><tr>
-            <th>Date/Heure</th><th>Patient</th><th>Spécialité</th><th>Type</th><th>Statut</th>
-          </tr></thead>
-          <tbody>
-            {rdvList.length > 0 ? rdvList.map(rdv => {
-              const s = STATUS_MAP[rdv.statut] || STATUS_MAP.en_attente
-              return (
-                <tr key={rdv.id}>
-                  <td>
-                    <div className="font-bold text-[13px]">
-                      {new Date(rdv.date_rdv).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' })}
-                    </div>
-                    <div className="text-slate-400 text-xs">
-                      {new Date(rdv.date_rdv).toLocaleTimeString('fr', { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  </td>
-                  <td>
-                    <div className="font-bold text-[13px]">{rdv.patient_nom}</div>
-                    <div className="text-slate-400 text-xs">{rdv.patient_telephone}</div>
-                  </td>
-                  <td className="text-[13px]">{rdv.specialite}</td>
-                  <td>
-                    <span className={`badge ${rdv.type_rdv === 'video' ? 'badge-blue' : 'badge-gray'}`}>
-                      <i className={`fa-solid ${rdv.type_rdv === 'video' ? 'fa-video' : 'fa-user'} text-xs`} />
-                      {rdv.type_rdv === 'video' ? 'Vidéo' : 'Présentiel'}
-                    </span>
-                  </td>
-                  <td><span className={`badge ${s.cls}`}>{s.label}</span></td>
-                </tr>
-              )
-            }) : (
-              // Données de démonstration si API non connectée
-              [
-                { h: '08:00', p: 'Marie Théodore', t: '+509 3456-7890', s: 'Gynécologie', type: 'Présentiel', st: 'Confirmé', sc: 'badge-green' },
-                { h: '09:00', p: 'Lucie Pierre', t: '+509 3123-4567', s: 'Pédiatrie', type: 'Vidéo', st: 'En attente', sc: 'badge-yellow' },
-                { h: '10:00', p: 'Jean-Marc Dorval', t: '+509 3654-3210', s: 'Neurologie', type: 'Vidéo', st: 'Confirmé', sc: 'badge-green' },
-              ].map((r, i) => (
-                <tr key={i}>
-                  <td><div className="font-bold text-[13px]">Aujourd'hui</div><div className="text-slate-400 text-xs">{r.h}</div></td>
-                  <td><div className="font-bold text-[13px]">{r.p}</div><div className="text-slate-400 text-xs">{r.t}</div></td>
-                  <td className="text-[13px]">{r.s}</td>
-                  <td><span className={`badge ${r.type === 'Vidéo' ? 'badge-blue' : 'badge-gray'}`}>{r.type}</span></td>
-                  <td><span className={`badge ${r.sc}`}>{r.st}</span></td>
-                </tr>
-              ))
+        {/* ── ANALYTIQUE IA ──────────────────────────────────────── */}
+        {onglet==='analytics' && (
+          <div>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+              <h2 style={{fontWeight:900,fontSize:'1.3rem',color:'#0f172a',margin:0}}>🤖 Rapport IA de direction</h2>
+              <button onClick={genererRapportIA} disabled={loadAI||!analytics} style={{background:'linear-gradient(135deg,#1641C8,#0d9488)',color:'white',border:'none',borderRadius:10,padding:'10px 20px',fontWeight:700,cursor:'pointer',fontSize:14}}>
+                {loadAI ? '⏳ Génération...' : '🤖 Générer rapport IA'}
+              </button>
+            </div>
+
+            {aiReport ? (
+              <div style={{background:'white',borderRadius:16,padding:28,border:'1px solid #e2e8f0',marginBottom:20}}>
+                <div style={{fontWeight:700,color:'#1641C8',marginBottom:12}}>📋 Rapport automatique IA</div>
+                <div style={{fontSize:14,color:'#374151',lineHeight:1.8,whiteSpace:'pre-wrap'}}>{aiReport}</div>
+              </div>
+            ) : (
+              <div style={{background:'#f8fafc',borderRadius:16,padding:40,textAlign:'center',border:'1px dashed #e2e8f0',marginBottom:20}}>
+                <TrendingUp size={40} color="#94a3b8" style={{marginBottom:12}}/>
+                <p style={{color:'#64748b'}}>Cliquez sur "Générer rapport IA" pour obtenir une analyse automatique</p>
+              </div>
             )}
-          </tbody>
-        </table>
+
+            {/* Taux occupation */}
+            {analytics?.taux_occupation_semaine?.length > 0 && (
+              <div style={{background:'white',borderRadius:16,padding:22,border:'1px solid #e2e8f0'}}>
+                <h3 style={{fontWeight:700,fontSize:15,marginBottom:16}}>📈 Occupation par service (7 jours)</h3>
+                <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(150px,1fr))',gap:12}}>
+                  {analytics.taux_occupation_semaine.map((s: any, i: number) => (
+                    <div key={i} style={{background:'#f8fafc',borderRadius:12,padding:16,textAlign:'center',border:'1px solid #e2e8f0'}}>
+                      <div style={{fontWeight:900,fontSize:'1.5rem',color:'#1641C8'}}>{s.count}</div>
+                      <div style={{fontSize:12,color:'#64748b',marginTop:4}}>{s.service}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── UTILISATEURS ───────────────────────────────────────── */}
+        {onglet==='utilisateurs' && (
+          <div>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+              <h2 style={{fontWeight:900,fontSize:'1.3rem',color:'#0f172a',margin:0}}>Gestion des utilisateurs</h2>
+              <Link href="/admin/utilisateurs" style={{background:'#1641C8',color:'white',textDecoration:'none',borderRadius:10,padding:'10px 18px',fontWeight:700,fontSize:13}}>
+                + Créer compte personnel
+              </Link>
+            </div>
+
+            {/* Comptes en attente */}
+            {attente.length > 0 && (
+              <div style={{marginBottom:24}}>
+                <h3 style={{fontWeight:700,color:'#dc2626',marginBottom:12,fontSize:15}}>🔴 En attente de validation ({attente.length})</h3>
+                {attente.map(u => (
+                  <div key={u.id} style={{background:'white',borderRadius:14,padding:18,border:'2px solid #fca5a5',marginBottom:10,display:'flex',alignItems:'center',gap:14}}>
+                    <div style={{flex:1}}>
+                      <div style={{fontWeight:700,color:'#0f172a'}}>{u.nom}</div>
+                      <div style={{fontSize:13,color:'#64748b',fontFamily:'monospace'}}>{u.email}</div>
+                      <span style={{background:`${ROLE_COLOR[u.role]||'#64748b'}20`,color:ROLE_COLOR[u.role]||'#64748b',borderRadius:50,padding:'2px 10px',fontSize:11,fontWeight:700}}>
+                        {u.role}
+                      </span>
+                    </div>
+                    <div style={{display:'flex',gap:8}}>
+                      <button onClick={()=>activerCompte(u.id)} style={{background:'#16a34a',color:'white',border:'none',borderRadius:8,padding:'8px 14px',fontWeight:700,cursor:'pointer',fontSize:13}}>
+                        ✓ Activer
+                      </button>
+                      <button onClick={()=>rejeterCompte(u.id)} style={{background:'#dc2626',color:'white',border:'none',borderRadius:8,padding:'8px 14px',fontWeight:700,cursor:'pointer',fontSize:13}}>
+                        ✗ Rejeter
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Tous les utilisateurs */}
+            <div style={{background:'white',borderRadius:16,border:'1px solid #e2e8f0',overflow:'hidden'}}>
+              <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
+                <thead>
+                  <tr style={{background:'#f8fafc',borderBottom:'1px solid #e2e8f0'}}>
+                    {['Nom','Email','Rôle','Statut','Action'].map(h => (
+                      <th key={h} style={{padding:'12px 16px',textAlign:'left',color:'#64748b',fontWeight:600,fontSize:12}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(u => (
+                    <tr key={u.id} style={{borderBottom:'1px solid #f8fafc'}}>
+                      <td style={{padding:'11px 16px',fontWeight:700,color:'#0f172a'}}>{u.nom}</td>
+                      <td style={{padding:'11px 16px',fontFamily:'monospace',fontSize:12,color:'#64748b'}}>{u.email}</td>
+                      <td style={{padding:'11px 16px'}}>
+                        <span style={{background:`${ROLE_COLOR[u.role]||'#64748b'}15`,color:ROLE_COLOR[u.role]||'#64748b',borderRadius:50,padding:'3px 10px',fontSize:11,fontWeight:700}}>
+                          {u.role}
+                        </span>
+                      </td>
+                      <td style={{padding:'11px 16px'}}>
+                        <span style={{background:u.is_active?'#f0fdf4':'#fef2f2',color:u.is_active?'#16a34a':'#dc2626',borderRadius:50,padding:'3px 10px',fontSize:11,fontWeight:700}}>
+                          {u.is_active?'Actif':'Inactif'}
+                        </span>
+                      </td>
+                      <td style={{padding:'11px 16px'}}>
+                        {u.role!=='admin' && (
+                          <button onClick={()=>suspendre(u)} style={{background:u.is_active?'#fef2f2':'#f0fdf4',color:u.is_active?'#dc2626':'#16a34a',border:'none',borderRadius:8,padding:'6px 12px',fontWeight:700,cursor:'pointer',fontSize:12}}>
+                            {u.is_active?'Suspendre':'Réactiver'}
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* ── JOURNAL AUDIT ──────────────────────────────────────── */}
+        {onglet==='audit' && (
+          <div>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+              <h2 style={{fontWeight:900,fontSize:'1.3rem',color:'#0f172a',margin:0}}>Journal d'Audit</h2>
+              <Link href="/admin/audit" style={{color:'#1641C8',fontWeight:700,fontSize:13,textDecoration:'none'}}>
+                Voir journal complet →
+              </Link>
+            </div>
+            <div style={{background:'white',borderRadius:16,border:'1px solid #e2e8f0',overflow:'hidden'}}>
+              <table style={{width:'100%',borderCollapse:'collapse',fontSize:12}}>
+                <thead>
+                  <tr style={{background:'#f8fafc',borderBottom:'1px solid #e2e8f0'}}>
+                    {['Événement','Acteur','Cible','Résultat','Date/Heure','IP'].map(h=>(
+                      <th key={h} style={{padding:'10px 14px',textAlign:'left',color:'#64748b',fontWeight:600}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLogs.slice(0,30).map((log: any, i: number) => (
+                    <tr key={i} style={{borderBottom:'1px solid #f8fafc'}}>
+                      <td style={{padding:'9px 14px',fontWeight:600,color:log.result==='echec'?'#dc2626':'#374151'}}>{log.event_type}</td>
+                      <td style={{padding:'9px 14px',color:'#64748b'}}>#{log.actor_id} ({log.actor_role})</td>
+                      <td style={{padding:'9px 14px',color:'#64748b',fontFamily:'monospace'}}>{log.target_id}</td>
+                      <td style={{padding:'9px 14px'}}>
+                        <span style={{background:log.result==='succes'?'#f0fdf4':'#fef2f2',color:log.result==='succes'?'#16a34a':'#dc2626',borderRadius:50,padding:'2px 8px',fontSize:11,fontWeight:700}}>
+                          {log.result}
+                        </span>
+                      </td>
+                      <td style={{padding:'9px 14px',color:'#94a3b8',whiteSpace:'nowrap'}}>{new Date(log.timestamp).toLocaleString('fr-FR')}</td>
+                      <td style={{padding:'9px 14px',color:'#94a3b8',fontFamily:'monospace'}}>{log.ip_address}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {auditLogs.length === 0 && (
+                <div style={{padding:32,textAlign:'center',color:'#94a3b8'}}>Aucun log disponible</div>
+              )}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
