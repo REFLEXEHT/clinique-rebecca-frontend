@@ -706,6 +706,42 @@ function DemandeAccesSection() {
     expire:     { label: 'Expiré',            bg: '#f1f5f9', color: '#64748b' },
   }
 
+  const genererSyntheseDossier = async (dossier: any) => {
+    setLoadSynth(dossier.id)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514', max_tokens: 500,
+          messages: [{ role: 'user', content: `Synthèse clinique concise pour médecin: ${JSON.stringify(dossier)}. Format: situation clinique (2 phrases), points clés, résultats significatifs. 200 mots max.` }]
+        })
+      })
+      const data = await res.json()
+      setSynthese(prev => ({...prev, [dossier.id]: data.content?.[0]?.text || ''}))
+    } catch { setSynthese(prev => ({...prev, [dossier.id]: 'Erreur génération'})) }
+    finally { setLoadSynth(null) }
+  }
+
+  const verifierInteractionsMed = async (medicaments: string) => {
+    if (!medicaments) return
+    setLoadInter(true)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514', max_tokens: 300,
+          messages: [{ role: 'user', content: `Interactions médicamenteuses pour: "${medicaments}". Liste ⚠️ modérée / 🔴 sévère. 100 mots max.` }]
+        })
+      })
+      const data = await res.json()
+      setInteractions(data.content?.[0]?.text || 'Aucune interaction majeure.')
+    } catch { setInteractions('Erreur vérification') }
+    finally { setLoadInter(false) }
+  }
+
+
   return (
     <div style={{ maxWidth: 700 }}>
       <h2 style={{ fontWeight: 900, fontSize: '1.3rem', color: '#0f172a', marginBottom: 6 }}>Accès à un dossier patient</h2>
