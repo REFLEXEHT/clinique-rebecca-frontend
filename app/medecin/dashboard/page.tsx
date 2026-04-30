@@ -742,6 +742,52 @@ function DemandeAccesSection() {
   }
 
 
+  const [recoModal, setRecoModal] = useState<any>(null)
+  const [recoForm, setRecoForm] = useState({specialiste:'', motif:'', notes:''})
+  const [recoIA, setRecoIA] = useState('')
+  const [loadReco, setLoadReco] = useState(false)
+
+  const genererResumeRecommandation = async () => {
+    if (!recoForm.motif || !recoModal) return
+    setLoadReco(true)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514', max_tokens: 400,
+          messages: [{
+            role: 'user',
+            content: `Tu es un médecin qui rédige un résumé de recommandation pour un(e) ${recoForm.specialiste}. 
+Motif: ${recoForm.motif}
+Notes: ${recoForm.notes || 'Aucune note supplémentaire'}
+
+Génère un résumé professionnel de recommandation médicale (3-4 phrases) que le ${recoForm.specialiste} pourra consulter pour comprendre pourquoi ce patient lui est recommandé, SANS révéler le dossier médical complet. Inclure: raison de la recommandation, objectifs attendus, et précautions éventuelles.`
+          }]
+        })
+      })
+      const data = await res.json()
+      setRecoIA(data.content?.[0]?.text || '')
+    } catch { setRecoIA('Erreur génération') }
+    finally { setLoadReco(false) }
+  }
+
+  const soumettreRecommandation = async () => {
+    if (!recoModal || !recoForm.specialiste) return
+    try {
+      await api.post(`/medecin/recommander/${recoModal.dossier_id}`, {
+        specialiste_cible: recoForm.specialiste,
+        motif: recoForm.motif,
+        notes: recoIA || recoForm.notes,
+      })
+      toast.success(`Recommandation vers ${recoForm.specialiste} envoyée ✓`)
+      setRecoModal(null)
+      setRecoForm({specialiste:'', motif:'', notes:''})
+      setRecoIA('')
+    } catch { toast.error('Erreur') }
+  }
+
+
   return (
     <div style={{ maxWidth: 700 }}>
       <h2 style={{ fontWeight: 900, fontSize: '1.3rem', color: '#0f172a', marginBottom: 6 }}>Accès à un dossier patient</h2>

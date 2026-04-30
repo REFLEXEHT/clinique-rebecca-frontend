@@ -29,7 +29,12 @@ const SERVICES_TARIFS = [
 export default function CaissierPage() {
   const { user, isAuthenticated, loading, logout } = useAuth()
   const router = useRouter()
-  const [onglet,     setOnglet]     = useState<'paiement'|'nouveau'|'rapport'>('paiement')
+  const [onglet,     setOnglet]     = useState<'paiement'|'nouveau'|'decaissements'|'documents'|'rapport'>('paiement')
+  const [decaissements, setDecaissements] = useState<any[]>([])
+  const [formDec, setFormDec] = useState({description:'', montant:0, categorie:'fournitures'})
+  const [docSearch, setDocSearch] = useState('')
+  const [docPatient, setDocPatient] = useState<any>(null)
+  const [docApercu, setDocApercu] = useState<any>(null)
   const [searchId,   setSearchId]   = useState('')
   const [patient,    setPatient]    = useState<any>(null)
   const [paiements,  setPaiements]  = useState<any[]>([])
@@ -141,9 +146,11 @@ export default function CaissierPage() {
       {/* Onglets */}
       <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',display:'flex',gap:4}}>
         {[
-          {k:'paiement', label:'💰 Paiement'},
-          {k:'nouveau',  label:'👤 Nouveau patient'},
-          {k:'rapport',  label:'📊 Rapport journalier IA'},
+          {k:'paiement',       label:'💰 Paiement'},
+          {k:'nouveau',        label:'👤 Nouveau patient'},
+          {k:'decaissements',  label:'📤 Décaissements'},
+          {k:'documents',      label:'🖨️ Documents'},
+          {k:'rapport',        label:'📊 Rapport IA'},
         ].map(t => (
           <button key={t.k} onClick={()=>setOnglet(t.k as any)} style={{
             padding:'13px 16px',border:'none',background:'transparent',cursor:'pointer',
