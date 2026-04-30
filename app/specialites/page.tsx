@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, Suspense } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useAuth } from '@/context/AuthContext'
+import { useSearchParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
@@ -46,6 +47,27 @@ const SPECIALITES_LIST = [
   'Urologie','Anesthésiologie / Réanimation','Dentisterie','Physiothérapie',
   'Optométrie','Psychologie','Radiologie',
 ]
+
+
+function BtnRdv({ lang }: { lang: string }) {
+  const { isAuthenticated } = useAuth()
+  const router = useRouter()
+  const labels: Record<string,string> = { en:'Book', es:'Reservar', zh:'预约', ht:'Rezève', fr:'Prendre RDV' }
+  
+  const handleClick = () => {
+    if (isAuthenticated) {
+      router.push('/consultation')
+    } else {
+      router.push('/register?redirect=/consultation')
+    }
+  }
+  
+  return (
+    <button onClick={handleClick} style={{ background:'#eff6ff', color:'#1641C8', border:'none', borderRadius:8, padding:'5px 12px', fontWeight:700, fontSize:12, cursor:'pointer' }}>
+      {labels[lang] || 'Prendre RDV'}
+    </button>
+  )
+}
 
 function SpecialitesContent() {
   const { lang } = useLang()
@@ -142,9 +164,7 @@ function SpecialitesContent() {
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontWeight:800, fontSize:14, color:'#0f172a', marginBottom:3 }}>{m.nom}</div>
                 <div style={{ color:'#0d9488', fontSize:12, fontWeight:600, marginBottom:8 }}>{m.specialite}</div>
-                <Link href="/consultation" style={{ background:'#eff6ff', color:'#1641C8', textDecoration:'none', borderRadius:8, padding:'5px 12px', fontWeight:700, fontSize:12, display:'inline-block' }}>
-                  {lang === 'en' ? 'Book' : lang === 'es' ? 'Reservar' : lang === 'zh' ? '预约' : lang === 'ht' ? 'Rezève' : 'Prendre RDV'}
-                </Link>
+                <BtnRdv lang={lang} />
               </div>
             </div>
           ))}
