@@ -358,7 +358,6 @@ export const TRANSLATIONS: Record<Lang, Record<string, string>> = {
     'cons.sous':         '预约我们的专科医生咨询',
   },
 }
-}
 
 export function t(lang: Lang, key: string): string {
   return TRANSLATIONS[lang]?.[key] ?? TRANSLATIONS['fr'][key] ?? key
