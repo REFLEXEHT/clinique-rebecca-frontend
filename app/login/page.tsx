@@ -15,12 +15,13 @@ const ROLES = [
   { value:'admin',     label:'Administrateur', icon:'fa-shield-halved', color:'#6366f1' },
   { value:'caissier',  label:'Caissier',       icon:'fa-cash-register', color:'#d97706' },
   { value:'labo',      label:'Laboratoire',    icon:'fa-flask',         color:'#16a34a' },
+  { value:'infirmier',  label:'Infirmier(ère)',  icon:'fa-user-nurse',    color:'#0d9488' },
   { value:'pharmacie', label:'Pharmacie',      icon:'fa-pills',         color:'#dc2626' },
 ]
 
 const DASHBOARDS: Record<string,string> = {
   admin:'/admin/dashboard', medecin:'/medecin/dashboard',
-  patient:'/patient/dashboard', caissier:'/caissier', labo:'/labo', pharmacie:'/pharmacie'
+  patient:'/patient/dashboard', caissier:'/caissier', labo:'/labo', pharmacie:'/pharmacie', infirmier:'/infirmier'
 }
 
 export default function LoginPage() {

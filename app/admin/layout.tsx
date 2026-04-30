@@ -22,6 +22,9 @@ const NAV_GROUPS = [
     { href: '/admin/horaires', icon: 'fa-clock', label: 'Horaires' },
     { href: '/admin/tarifs', icon: 'fa-tag', label: 'Tarifs' },
     { href: '/admin/labo', icon: 'fa-flask-vial', label: 'Laboratoire' },
+    { href: '/admin/audit', icon: 'fa-shield-halved', label: 'Journal Audit' },
+    { href: '/admin/demandes-acces', icon: 'fa-key', label: 'Accès Dossiers' },
+    { href: '/admin/utilisateurs', icon: 'fa-users-gear', label: 'Comptes & Accès' },
     { href: '/admin/stocks', icon: 'fa-boxes-stacked', label: 'Stocks pharmacie' },
   ]},
   { label: 'Rapports', items: [
