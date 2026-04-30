@@ -1,335 +1,176 @@
 'use client'
-import toast from 'react-hot-toast'
-import { useEffect, useState } from 'react'
-import { useAuth } from '@/context/AuthContext'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { api } from '@/lib/api'
-import { LogOut, Search, Activity, Clock, AlertTriangle, CheckCircle, Printer } from 'lucide-react'
+import Navbar from '@/components/layout/Navbar'
+import Footer from '@/components/layout/Footer'
+import RdvModal from '@/components/ui/RdvModal'
+import AiChatWidget from '@/components/ui/AiChatWidget'
+import { horairesApi } from '@/lib/api'
+import { Horaire } from '@/types'
 
-interface Dossier {
-  id: number; patient_numero: string; type_visite: string
-  specialite: string; statut: string; date_visite: string
-}
+const SERVICES = [
+  { icon:'fa-stethoscope', color:'#1641C8', bg:'#eff6ff', title:'Clinique Externe', sub:'12 spécialités médicales', desc:'Consultations, suivis, diagnostics — 12 spécialistes dédiés à votre santé.', link:'/specialites' },
+  { icon:'fa-flask-vial',  color:'#0d9488', bg:'#f0fdfa', title:'Laboratoire',      sub:'Résultats par WhatsApp',    desc:'Analyses biologiques complètes avec résultats envoyés directement sur votre téléphone.', link:'/services/laboratoire' },
+  { icon:'fa-pills',       color:'#d97706', bg:'#fffbeb', title:'Pharmacie',        sub:'Médicaments génériques et de marque', desc:'Notre pharmacie interne vous offre accès immédiat à vos médicaments après consultation.', link:'/services/pharmacie' },
+  { icon:'fa-tooth',       color:'#6366f1', bg:'#f5f3ff', title:'Dentisterie',      sub:'Soins complets',            desc:'Consultation, extraction, prophylaxie, orthodontie et prothèses dentaires.', link:'/services/dentisterie' },
+  { icon:'fa-person-walking',color:'#16a34a',bg:'#f0fdf4',title:'Physiothérapie',  sub:'Rééducation & douleurs',    desc:'Rééducation fonctionnelle, traitement des douleurs et récupération physique.', link:'/services/physiotherapie' },
+  { icon:'fa-glasses',     color:'#0891b2', bg:'#f0f9ff', title:'Optométrie',       sub:'Examen de la vue',          desc:'Examen de la vue complet, prescription de lunettes et lentilles sur mesure.', link:'/services/optometrie' },
+]
 
-export default function InfirmierDashboard() {
-  const { user, isAuthenticated, loading, logout } = useAuth()
-  const router = useRouter()
-  const [dossiers,   setDossiers]   = useState<Dossier[]>([])
-  const [selected,   setSelected]   = useState<Dossier | null>(null)
-  const [sv,         setSv]         = useState<Record<string, string>>({})
-  const [alertes,    setAlertes]    = useState<string[]>([])
-  const [submitting, setSubmitting] = useState(false)
-  // Search by patient ID
-  const [searchId,   setSearchId]   = useState('')
-  const [onglet,     setOnglet]     = useState<'attente'|'recherche'>('attente')
+const TEMOIGNAGES = [
+  { nom:'Marie-Ange C.', texte:"L'équipe est d'une gentillesse remarquable. Je me suis sentie accompagnée à chaque étape.", initiale:'M' },
+  { nom:'Jean-Pierre D.', texte:"Résultats labo reçus par WhatsApp en moins de 2h. Très professionnel et efficace.", initiale:'J' },
+  { nom:'Claudette M.', texte:"La consultation vidéo m'a évité un long déplacement. Médecin à l'écoute, merci.", initiale:'C' },
+]
+
+export default function HomePage() {
+  const [rdvOpen, setRdvOpen] = useState(false)
+  const [horaires, setHoraires] = useState<Horaire[]>([])
 
   useEffect(() => {
-    if (!loading && (!isAuthenticated || !['infirmier','admin'].includes(user?.role || ''))) {
-      router.push('/login')
-    }
-  }, [isAuthenticated, user, loading, router])
+    horairesApi.list().then(r => setHoraires(r.data || [])).catch(() => {})
+  }, [])
 
-  useEffect(() => {
-    if (!isAuthenticated) return
-    api.get('/infirmier/dossiers-en-attente')
-      .then(r => setDossiers(r.data || []))
-      .catch(() => {})
-  }, [isAuthenticated])
-
-  const detectAlertes = (vals: Record<string, string>) => {
-    const msgs: string[] = []
-    const sys = parseFloat(vals.tension_systolique || '0')
-    if (sys && (sys > 180 || sys < 80)) msgs.push(`⚠️ Tension critique: ${sys} mmHg`)
-    const glyc = parseFloat(vals.glycemie || '0')
-    if (glyc && glyc > 600) msgs.push(`⚠️ Glycémie critique: ${glyc} mg/dL`)
-    const spo2 = parseFloat(vals.saturation_o2 || '0')
-    if (spo2 && spo2 < 90) msgs.push(`⚠️ SpO2 critique: ${spo2}%`)
-    const temp = parseFloat(vals.temperature || '0')
-    if (temp && (temp > 40 || temp < 35)) msgs.push(`⚠️ Température critique: ${temp}°C`)
-    const fc = parseFloat(vals.frequence_cardiaque || '0')
-    if (fc && (fc > 150 || fc < 40)) msgs.push(`⚠️ FC critique: ${fc} bpm`)
-    setAlertes(msgs)
-  }
-
-  const onSvChange = (k: string, v: string) => {
-    const n = { ...sv, [k]: v }; setSv(n); detectAlertes(n)
-  }
-
-  const submitSv = async () => {
-    if (!selected) return
-    setSubmitting(true)
-    try {
-      const payload: any = { dossier_id: selected.id }
-      Object.entries(sv).forEach(([k, v]) => { if (v) payload[k] = parseFloat(v) || v })
-      const r = await api.post('/infirmier/signes-vitaux', payload)
-      if (r.data.alerte) {
-        toast.error(`🚨 Alertes critiques !\n${r.data.alertes.join('\n')}`, { duration: 8000 })
-      } else {
-        toast.success('Signes vitaux enregistrés — patient en file d\'attente ✓')
-      }
-      setDossiers(prev => prev.filter(d => d.id !== selected.id))
-      setSelected(null); setSv({}); setAlertes([])
-    } catch (e: any) {
-      toast.error(e?.response?.data?.detail || 'Erreur')
-    } finally { setSubmitting(false) }
-  }
-
-  if (loading) return <div style={{ minHeight:'100vh', display:'flex', alignItems:'center', justifyContent:'center' }}><div style={{ width:40, height:40, borderRadius:'50%', border:'3px solid #0d9488', borderTopColor:'transparent', animation:'spin 1s linear infinite' }} /></div>
-
-  const FIELDS = [
-    { key:'tension_systolique',     label:'Tension sys.', ph:'120', unit:'mmHg' },
-    { key:'tension_diastolique',    label:'Tension dia.', ph:'80',  unit:'mmHg' },
-    { key:'frequence_cardiaque',    label:'FC',           ph:'72',  unit:'bpm'  },
-    { key:'temperature',            label:'Température',  ph:'37',  unit:'°C'   },
-    { key:'saturation_o2',          label:'SpO2',         ph:'98',  unit:'%'    },
-    { key:'frequence_respiratoire', label:'FR',           ph:'16',  unit:'/min' },
-    { key:'poids',                  label:'Poids',        ph:'70',  unit:'kg'   },
-    { key:'taille',                 label:'Taille',       ph:'170', unit:'cm'   },
-    { key:'glycemie',               label:'Glycémie',     ph:'90',  unit:'mg/dL'},
+  const jours = horaires.length > 0 ? horaires : [
+    { jour:'Lundi', ouvert:true, heure_ouverture:'07:00', heure_fermeture:'17:00' },
+    { jour:'Mardi', ouvert:true, heure_ouverture:'07:00', heure_fermeture:'17:00' },
+    { jour:'Mercredi', ouvert:true, heure_ouverture:'07:00', heure_fermeture:'17:00' },
+    { jour:'Jeudi', ouvert:true, heure_ouverture:'07:00', heure_fermeture:'17:00' },
+    { jour:'Vendredi', ouvert:true, heure_ouverture:'07:00', heure_fermeture:'17:00' },
+    { jour:'Samedi', ouvert:true, heure_ouverture:'07:00', heure_fermeture:'12:00' },
+    { jour:'Dimanche', ouvert:false, heure_ouverture:'', heure_fermeture:'' },
   ]
 
   return (
-    <div style={{ minHeight:'100vh', background:'#f8fafc', display:'flex', flexDirection:'column' }}>
-      {/* Navbar */}
-      <div style={{ background:'linear-gradient(135deg,#0f1e3d,#0d9488)', height:58, display:'flex', alignItems:'center', padding:'0 24px', gap:16, flexShrink:0 }}>
-        <div style={{ width:38, height:38, borderRadius:10, background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🏥</div>
-        <div>
-          <div style={{ color:'white', fontWeight:800, fontSize:14 }}>{user?.nom || 'Infirmier'}</div>
-          <div style={{ color:'rgba(255,255,255,0.6)', fontSize:11 }}>Infirmier(ère)</div>
-        </div>
-        <div style={{ marginLeft:'auto', display:'flex', gap:10 }}>
-          <Link href="/infirmier/documents" style={{ background:'rgba(255,255,255,0.1)', color:'white', textDecoration:'none', borderRadius:8, padding:'7px 14px', fontSize:12, display:'flex', alignItems:'center', gap:6, fontWeight:600 }}>
-            <Printer size={13} /> Imprimer docs
-          </Link>
-          <button onClick={() => { logout(); router.push('/') }} style={{ background:'none', border:'none', color:'rgba(255,255,255,0.5)', cursor:'pointer', display:'flex', alignItems:'center', gap:4, fontSize:12 }}>
-            <LogOut size={13} /> Déconnexion
-          </button>
+    <>
+      <Navbar onRdvClick={() => setRdvOpen(true)} />
+      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
+
+      {/* ── HERO ──────────────────────────────────────────────────────────── */}
+      <div style={{ background:'linear-gradient(135deg,#0f1e3d 0%,#1641C8 60%,#0d9488 100%)', paddingTop:120, paddingBottom:80, padding:'120px 5% 80px', position:'relative', overflow:'hidden' }}>
+        <div style={{ position:'absolute', inset:0, opacity:0.04, backgroundImage:'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize:'32px 32px' }} />
+        <div style={{ maxWidth:760, margin:'0 auto', textAlign:'center', position:'relative', zIndex:1 }}>
+          <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(13,148,136,0.2)', border:'1px solid rgba(13,148,136,0.4)', borderRadius:50, padding:'6px 18px', marginBottom:24 }}>
+            <i className="fa-solid fa-hospital" style={{ color:'#5eead4', fontSize:13 }} />
+            <span style={{ color:'#5eead4', fontSize:13, fontWeight:600 }}>9 services · Tout sous un même toit</span>
+          </div>
+          <h1 style={{ fontSize:'clamp(2.2rem,5vw,3.4rem)', fontWeight:900, color:'white', lineHeight:1.15, margin:'0 0 20px' }}>
+            Des soins complets<br />
+            <em style={{ fontStyle:'italic', color:'#5eead4', fontFamily:'Georgia,serif' }}>pour toute la famille</em>
+          </h1>
+          <p style={{ color:'rgba(255,255,255,0.78)', fontSize:'1.08rem', lineHeight:1.75, maxWidth:520, margin:'0 auto 36px' }}>
+            Médecine, chirurgie, laboratoire, pharmacie, dentisterie et plus encore — tout ce dont vous avez besoin, en un seul endroit.
+          </p>
+          <div style={{ display:'flex', gap:14, justifyContent:'center', flexWrap:'wrap' }}>
+            <button onClick={() => setRdvOpen(true)} style={{ background:'#0d9488', color:'white', border:'none', borderRadius:12, padding:'14px 30px', fontWeight:700, fontSize:'1rem', cursor:'pointer', boxShadow:'0 4px 20px rgba(13,148,136,0.4)', display:'flex', alignItems:'center', gap:8 }}>
+              <i className="fa-solid fa-calendar-check" />Prendre rendez-vous
+            </button>
+            <Link href="/consultation" style={{ background:'rgba(255,255,255,0.12)', color:'white', textDecoration:'none', borderRadius:12, padding:'14px 30px', fontWeight:600, border:'1px solid rgba(255,255,255,0.25)', backdropFilter:'blur(8px)', display:'flex', alignItems:'center', gap:8 }}>
+              <i className="fa-solid fa-video" />Consultation vidéo
+            </Link>
+          </div>
         </div>
       </div>
 
-      <div style={{ flex:1, padding:24, maxWidth:1000, margin:'0 auto', width:'100%', boxSizing:'border-box' as const }}>
-        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-start', marginBottom:20 }}>
-          <div>
-            <h1 style={{ fontWeight:900, fontSize:'1.3rem', color:'#0f172a', margin:0 }}>Dashboard Infirmier</h1>
-            <p style={{ color:'#64748b', fontSize:13, margin:'4px 0 0' }}>{dossiers.length} dossier{dossiers.length > 1 ? 's' : ''} en attente</p>
+      {/* ── SERVICES ──────────────────────────────────────────────────────── */}
+      <section style={{ background:'#f8fafc', padding:'72px 5%' }}>
+        <div style={{ maxWidth:1200, margin:'0 auto' }}>
+          <div style={{ textAlign:'center', marginBottom:48 }}>
+            <h2 style={{ fontWeight:900, fontSize:'clamp(1.6rem,3vw,2.2rem)', color:'#0f172a', margin:'0 0 12px' }}>Nos services</h2>
+            <p style={{ color:'#64748b', fontSize:'1rem', margin:0 }}>Une prise en charge complète sous un même toit</p>
           </div>
-          {/* Onglets */}
-          <div style={{ display:'flex', background:'#f1f5f9', borderRadius:10, padding:3, gap:2 }}>
-            {[{k:'attente' as const, label:'File d\'attente', icon:'⏳'},{k:'recherche' as const, label:'Recherche patient', icon:'🔍'}].map(t => (
-              <button key={t.k} onClick={() => setOnglet(t.k)} style={{
-                padding:'8px 14px', borderRadius:8, border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
-                background: onglet === t.k ? 'white' : 'transparent',
-                color: onglet === t.k ? '#0f172a' : '#64748b',
-                boxShadow: onglet === t.k ? '0 1px 4px rgba(0,0,0,0.1)' : 'none'
-              }}>{t.icon} {t.label}</button>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:22 }}>
+            {SERVICES.map(s => (
+              <Link key={s.link} href={s.link} style={{ textDecoration:'none' }}>
+                <div style={{ background:'white', borderRadius:20, border:'1px solid #e2e8f0', overflow:'hidden', transition:'all 0.25s', cursor:'pointer', height:'100%' }}
+                  onMouseEnter={e => { const d=e.currentTarget as HTMLDivElement; d.style.transform='translateY(-4px)'; d.style.boxShadow=`0 16px 40px ${s.color}18`; d.style.borderColor=s.color }}
+                  onMouseLeave={e => { const d=e.currentTarget as HTMLDivElement; d.style.transform='none'; d.style.boxShadow='none'; d.style.borderColor='#e2e8f0' }}>
+                  <div style={{ height:5, background:`linear-gradient(90deg,${s.color},${s.color}88)` }} />
+                  <div style={{ padding:26 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:14 }}>
+                      <div style={{ width:50, height:50, borderRadius:14, background:s.bg, display:'flex', alignItems:'center', justifyContent:'center' }}>
+                        <i className={`fa-solid ${s.icon}`} style={{ color:s.color, fontSize:20 }} />
+                      </div>
+                      <div>
+                        <div style={{ fontWeight:800, fontSize:16, color:'#0f172a' }}>{s.title}</div>
+                        <div style={{ fontSize:12, color:s.color, fontWeight:600, marginTop:2 }}>{s.sub}</div>
+                      </div>
+                    </div>
+                    <p style={{ color:'#64748b', fontSize:13, lineHeight:1.7, margin:'0 0 14px' }}>{s.desc}</p>
+                    <div style={{ color:s.color, fontWeight:700, fontSize:13, display:'flex', alignItems:'center', gap:4 }}>
+                      En savoir plus <i className="fa-solid fa-arrow-right" style={{ fontSize:11 }} />
+                    </div>
+                  </div>
+                </div>
+              </Link>
             ))}
           </div>
         </div>
+      </section>
 
-        {/* ── ONGLET RECHERCHE PAR ID ────────────────────────────────── */}
-        {onglet === 'recherche' && (
-          <SearchByIdPanel />
-        )}
-
-        {/* ── ONGLET FILE D'ATTENTE + SIGNES VITAUX ─────────────────── */}
-        {onglet === 'attente' && (
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
-            {/* Liste dossiers en attente */}
-            <div style={{ background:'white', borderRadius:18, padding:20, border:'1px solid #e2e8f0' }}>
-              <h3 style={{ fontWeight:700, color:'#0f172a', marginBottom:16, fontSize:14, display:'flex', alignItems:'center', gap:8 }}>
-                <Clock size={14} color="#0d9488" /> Patients en attente de signes vitaux
-              </h3>
-              {dossiers.length === 0 ? (
-                <div style={{ textAlign:'center', padding:32, color:'#94a3b8' }}>
-                  <CheckCircle size={32} style={{ marginBottom:8 }} />
-                  <p style={{ margin:0, fontSize:13 }}>Aucun patient en attente</p>
-                </div>
-              ) : dossiers.map(d => (
-                <div key={d.id} onClick={() => setSelected(d)} style={{
-                  padding:'12px 14px', borderRadius:12,
-                  border:`2px solid ${selected?.id === d.id ? '#0d9488' : '#e2e8f0'}`,
-                  marginBottom:8, cursor:'pointer',
-                  background: selected?.id === d.id ? '#f0fdfa' : 'white',
-                  display:'flex', alignItems:'center', gap:12, transition:'all 0.15s'
-                }}>
-                  <div style={{ width:40, height:40, borderRadius:10, background:'#f0fdfa', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                    <Activity size={18} color="#0d9488" />
-                  </div>
-                  <div style={{ flex:1, minWidth:0 }}>
-                    <div style={{ fontWeight:700, color:'#0f172a', fontFamily:'monospace', fontSize:14 }}>{d.patient_numero}</div>
-                    <div style={{ color:'#64748b', fontSize:12, marginTop:1 }}>{d.specialite || d.type_visite}</div>
-                  </div>
-                  <span style={{ background:'#fef3c7', color:'#d97706', borderRadius:50, padding:'3px 10px', fontSize:11, fontWeight:600, flexShrink:0 }}>En attente</span>
-                </div>
-              ))}
-              <div style={{ marginTop:10, background:'#fffbeb', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#92400e' }}>
-                ⚠️ Accès via ID patient uniquement — jamais par nom
-              </div>
-            </div>
-
-            {/* Formulaire signes vitaux */}
-            <div style={{ background:'white', borderRadius:18, padding:20, border:`2px solid ${selected ? '#0d9488' : '#e2e8f0'}` }}>
-              <h3 style={{ fontWeight:700, color:'#0f172a', marginBottom:14, fontSize:14, display:'flex', alignItems:'center', gap:8 }}>
-                <Activity size={14} color="#0d9488" /> Saisie des signes vitaux
-              </h3>
-              {!selected ? (
-                <div style={{ textAlign:'center', padding:32, color:'#94a3b8' }}>
-                  <Activity size={32} style={{ marginBottom:10 }} />
-                  <p style={{ margin:0, fontSize:13 }}>Sélectionnez un patient dans la liste</p>
-                </div>
-              ) : (
-                <>
-                  {/* Patient ID badge */}
-                  <div style={{ background:'#f0fdfa', borderRadius:10, padding:'10px 14px', marginBottom:16, display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                    <span style={{ fontWeight:800, color:'#0d9488', fontFamily:'monospace', fontSize:15 }}>{selected.patient_numero}</span>
-                    <span style={{ color:'#64748b', fontSize:13 }}>{selected.specialite}</span>
-                  </div>
-
-                  {/* Alertes */}
-                  {alertes.length > 0 && (
-                    <div style={{ background:'#fef2f2', border:'1px solid #fca5a5', borderRadius:10, padding:12, marginBottom:14 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:6, fontWeight:700, color:'#dc2626', marginBottom:6, fontSize:13 }}>
-                        <AlertTriangle size={13} /> Valeurs critiques détectées
-                      </div>
-                      {alertes.map((a, i) => <div key={i} style={{ fontSize:12, color:'#dc2626' }}>{a}</div>)}
-                    </div>
-                  )}
-
-                  {/* Grille mesures */}
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:12 }}>
-                    {FIELDS.map(f => (
-                      <div key={f.key}>
-                        <label style={{ display:'block', fontWeight:600, fontSize:11, color:'#374151', marginBottom:3 }}>
-                          {f.label} <span style={{ color:'#94a3b8' }}>({f.unit})</span>
-                        </label>
-                        <input type="number" step="0.1" placeholder={f.ph}
-                          value={sv[f.key] || ''}
-                          onChange={e => onSvChange(f.key, e.target.value)}
-                          style={{ width:'100%', padding:'8px 10px', borderRadius:8, border:`1px solid ${alertes.some(a => a.includes(f.label)) ? '#ef4444' : '#d1d5db'}`, fontSize:13, boxSizing:'border-box' as const }} />
-                      </div>
-                    ))}
-                  </div>
-                  <div style={{ marginBottom:12 }}>
-                    <label style={{ display:'block', fontWeight:600, fontSize:11, color:'#374151', marginBottom:3 }}>Notes</label>
-                    <textarea rows={2} value={sv.notes || ''} onChange={e => setSv(p => ({...p, notes:e.target.value}))}
-                      placeholder="Observations..." style={{ width:'100%', padding:'8px 10px', borderRadius:8, border:'1px solid #d1d5db', fontSize:13, resize:'vertical' as const, boxSizing:'border-box' as const }} />
-                  </div>
-                  <button onClick={submitSv} disabled={submitting} style={{
-                    width:'100%', color:'white', border:'none', borderRadius:12, padding:12, fontWeight:700, cursor:'pointer', fontSize:14,
-                    background: alertes.length > 0 ? 'linear-gradient(135deg,#dc2626,#b91c1c)' : 'linear-gradient(135deg,#0d9488,#0f766e)'
-                  }}>
-                    {submitting ? 'Enregistrement...' : alertes.length > 0 ? '🚨 Enregistrer (URGENT)' : '✓ Enregistrer + File d\'attente'}
-                  </button>
-                </>
-              )}
-            </div>
+      {/* ── TÉMOIGNAGES ───────────────────────────────────────────────────── */}
+      <section style={{ background:'white', padding:'72px 5%' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto' }}>
+          <div style={{ textAlign:'center', marginBottom:48 }}>
+            <h2 style={{ fontWeight:900, fontSize:'clamp(1.5rem,3vw,2rem)', color:'#0f172a', margin:'0 0 10px' }}>Ce que disent nos patients</h2>
+            <p style={{ color:'#64748b', fontSize:'0.95rem', margin:0 }}>La confiance de nos patients est notre meilleure récompense</p>
           </div>
-        )}
-      </div>
-    </div>
-  )
-}
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(300px,1fr))', gap:20 }}>
+            {TEMOIGNAGES.map((t, i) => (
+              <div key={i} style={{ background:'#f8fafc', borderRadius:18, padding:28, border:'1px solid #e2e8f0' }}>
+                <div style={{ fontSize:32, color:'#1641C8', marginBottom:12 }}>"</div>
+                <p style={{ color:'#475569', fontSize:14, lineHeight:1.75, margin:'0 0 20px', fontStyle:'italic' }}>{t.texte}</p>
+                <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                  <div style={{ width:38, height:38, borderRadius:'50%', background:'linear-gradient(135deg,#1641C8,#0d9488)', display:'flex', alignItems:'center', justifyContent:'center', color:'white', fontWeight:800, fontSize:15 }}>{t.initiale}</div>
+                  <div style={{ fontWeight:700, color:'#0f172a', fontSize:14 }}>{t.nom}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-// ── Composant recherche par ID patient ─────────────────────────────────────
-function SearchByIdPanel() {
-  const [patientId,  setPatientId]  = useState('')
-  const [result,     setResult]     = useState<any>(null)
-  const [error,      setError]      = useState('')
-  const [loading,    setLoading]    = useState(false)
-  const [modal,      setModal]      = useState<string | null>(null)
-  const [printData,  setPrintData]  = useState<any>(null)
+      {/* ── HORAIRES ──────────────────────────────────────────────────────── */}
+      <section style={{ background:'linear-gradient(135deg,#f0f9ff,#f0fdfa)', padding:'72px 5%' }}>
+        <div style={{ maxWidth:900, margin:'0 auto', display:'grid', gridTemplateColumns:'1fr 1fr', gap:48, alignItems:'center' }}>
+          <div>
+            <h2 style={{ fontWeight:900, fontSize:'clamp(1.5rem,3vw,2rem)', color:'#0f172a', margin:'0 0 16px' }}>Nos horaires d'ouverture</h2>
+            <p style={{ color:'#64748b', lineHeight:1.7, marginBottom:24 }}>Nous sommes disponibles du lundi au samedi pour répondre à tous vos besoins de santé.</p>
+            <button onClick={() => setRdvOpen(true)} style={{ background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', border:'none', borderRadius:12, padding:'12px 24px', fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:8 }}>
+              <i className="fa-solid fa-calendar-plus" />Réserver maintenant
+            </button>
+          </div>
+          <div style={{ background:'white', borderRadius:20, padding:24, border:'1px solid #e2e8f0', boxShadow:'0 4px 20px rgba(0,0,0,0.06)' }}>
+            {jours.map((h:any, i:number) => (
+              <div key={i} style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'10px 0', borderBottom:i < jours.length-1 ? '1px solid #f1f5f9' : 'none' }}>
+                <span style={{ fontWeight:600, color:'#374151', fontSize:14 }}>{h.jour}</span>
+                <span style={{ fontSize:13, color: h.ouvert ? '#0d9488' : '#dc2626', fontWeight:600 }}>
+                  {h.ouvert ? `${h.heure_ouverture} – ${h.heure_fermeture}` : 'Fermé'}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-  const chercher = async () => {
-    const id = patientId.trim().toUpperCase()
-    if (!id) return
-    setLoading(true); setError(''); setResult(null)
-    try {
-      const r = await api.get(`/infirmier/documents-disponibles/${id}`)
-      setResult(r.data)
-    } catch (e: any) {
-      setError(e?.response?.data?.detail || 'Patient introuvable')
-    } finally { setLoading(false) }
-  }
-
-  const ouvrirImpression = async (type: string) => {
-    if (!result) return
-    if (type === 'resultats_labo') {
-      try {
-        const r = await api.get(`/infirmier/imprimer-resultats-labo/${result.patient_numero}`)
-        setPrintData(r.data); setModal(type)
-      } catch { toast.error('Erreur chargement résultats') }
-    } else {
-      setPrintData({ patient_numero: result.patient_numero, patient_nom: result.patient_nom })
-      setModal(type)
-    }
-  }
-
-  const COLORS: Record<string,string> = {
-    certificat:'#374151', exeat:'#0369a1', ecg:'#dc2626',
-    sortie_contre_avis:'#b91c1c', resultats_labo:'#16a34a'
-  }
-
-  return (
-    <div style={{ maxWidth:680 }}>
-      <div style={{ background:'#fffbeb', border:'1px solid #fcd34d', borderRadius:12, padding:'10px 16px', marginBottom:20, fontSize:13, color:'#92400e' }}>
-        🔒 Impression uniquement — Recherchez par ID patient. Vous n'avez pas accès au dossier médical.
-      </div>
-
-      <div style={{ background:'white', borderRadius:18, padding:24, border:'1px solid #e2e8f0', marginBottom:16 }}>
-        <h3 style={{ fontWeight:700, fontSize:14, color:'#0f172a', marginBottom:14 }}>🔍 Rechercher un patient par ID</h3>
-        <div style={{ display:'flex', gap:10 }}>
-          <input value={patientId} onChange={e => setPatientId(e.target.value.toUpperCase())}
-            onKeyDown={e => e.key === 'Enter' && chercher()}
-            placeholder="Ex: #RB-0042"
-            style={{ flex:1, padding:'12px 16px', borderRadius:10, border:`2px solid ${error ? '#ef4444' : '#e2e8f0'}`, fontSize:15, fontFamily:'monospace', fontWeight:700, outline:'none' }} />
-          <button onClick={chercher} disabled={loading} style={{ background:'linear-gradient(135deg,#0d9488,#0f766e)', color:'white', border:'none', borderRadius:10, padding:'12px 22px', fontWeight:700, cursor:'pointer', fontSize:14, display:'flex', alignItems:'center', gap:8 }}>
-            <Search size={16} /> {loading ? 'Recherche...' : 'Chercher'}
+      {/* ── CTA FINAL ─────────────────────────────────────────────────────── */}
+      <section style={{ background:'linear-gradient(135deg,#0f1e3d,#1641C8)', padding:'72px 5%', textAlign:'center' }}>
+        <h2 style={{ fontWeight:900, fontSize:'clamp(1.6rem,3vw,2.2rem)', color:'white', margin:'0 0 16px' }}>Votre santé, notre priorité</h2>
+        <p style={{ color:'rgba(255,255,255,0.75)', fontSize:'1rem', margin:'0 0 32px', lineHeight:1.7 }}>
+          Prenez rendez-vous dès aujourd'hui et bénéficiez d'une prise en charge rapide et professionnelle.
+        </p>
+        <div style={{ display:'flex', gap:14, justifyContent:'center', flexWrap:'wrap' }}>
+          <button onClick={() => setRdvOpen(true)} style={{ background:'#0d9488', color:'white', border:'none', borderRadius:12, padding:'14px 30px', fontWeight:700, cursor:'pointer', fontSize:'1rem' }}>
+            <i className="fa-solid fa-calendar-check" style={{ marginRight:8 }} />Prendre RDV
           </button>
+          <Link href="/specialites" style={{ background:'rgba(255,255,255,0.1)', color:'white', textDecoration:'none', borderRadius:12, padding:'14px 30px', fontWeight:600, border:'1px solid rgba(255,255,255,0.2)' }}>
+            Voir nos spécialistes
+          </Link>
         </div>
-        {error && <div style={{ marginTop:10, color:'#dc2626', fontSize:13, display:'flex', alignItems:'center', gap:6 }}>⚠️ {error}</div>}
-      </div>
+      </section>
 
-      {result && (
-        <div style={{ background:'white', borderRadius:18, padding:24, border:'1px solid #e2e8f0' }}>
-          <div style={{ background:'#f0fdfa', borderRadius:12, padding:'12px 16px', marginBottom:18, border:'1px solid #99f6e4' }}>
-            <div style={{ fontWeight:800, color:'#0f172a', fontSize:15 }}>{result.patient_nom}</div>
-            <div style={{ fontFamily:'monospace', color:'#0d9488', fontWeight:700 }}>{result.patient_numero}</div>
-          </div>
-          {result.documents?.filter((d: any) => d.disponible).map((doc: any) => (
-            <div key={doc.type} style={{ display:'flex', alignItems:'center', gap:14, padding:'12px 16px', borderRadius:12, border:'1px solid #e2e8f0', marginBottom:8, background:'#fafafa' }}>
-              <span style={{ fontSize:24 }}>{doc.icone}</span>
-              <div style={{ flex:1 }}>
-                <div style={{ fontWeight:700, color:'#0f172a', fontSize:14 }}>{doc.label}</div>
-                {doc.derniere_date && <div style={{ color:'#64748b', fontSize:12 }}>Disponible depuis le {new Date(doc.derniere_date).toLocaleDateString('fr-FR')}</div>}
-              </div>
-              <button onClick={() => ouvrirImpression(doc.type)} style={{ background:COLORS[doc.type] || '#64748b', color:'white', border:'none', borderRadius:10, padding:'8px 16px', fontWeight:700, cursor:'pointer', fontSize:12, display:'flex', alignItems:'center', gap:6 }}>
-                <Printer size={13} /> Imprimer
-              </button>
-            </div>
-          ))}
-          {result.documents?.filter((d: any) => d.disponible).length === 0 && (
-            <p style={{ color:'#94a3b8', textAlign:'center', padding:20 }}>Aucun document disponible pour ce patient.</p>
-          )}
-        </div>
-      )}
-
-      {/* Modal impression simple */}
-      {modal && printData && (
-        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.6)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center' }}>
-          <div style={{ background:'white', borderRadius:18, padding:28, maxWidth:500, width:'90%', textAlign:'center' }}>
-            <p style={{ fontWeight:700, marginBottom:16 }}>Document prêt : {modal} — {printData.patient_nom} ({printData.patient_numero})</p>
-            <div style={{ display:'flex', gap:10, justifyContent:'center' }}>
-              <button onClick={() => window.print()} style={{ background:COLORS[modal]||'#374151', color:'white', border:'none', borderRadius:10, padding:'10px 22px', fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-                <Printer size={14} /> Imprimer
-              </button>
-              <button onClick={() => { setModal(null); setPrintData(null) }} style={{ background:'#f1f5f9', border:'none', borderRadius:10, padding:'10px 18px', fontWeight:600, cursor:'pointer', color:'#374151' }}>
-                Fermer
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      <Footer />
+      <AiChatWidget />
+    </>
   )
 }
