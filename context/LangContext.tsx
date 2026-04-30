@@ -17,7 +17,7 @@ export function LangProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const saved = localStorage.getItem('clinique_lang') as Lang
-    if (saved && ['fr','ht','en'].includes(saved)) setLangState(saved)
+    if (saved && ['fr','ht','en','es','zh'].includes(saved)) setLangState(saved)
   }, [])
 
   const setLang = (l: Lang) => {

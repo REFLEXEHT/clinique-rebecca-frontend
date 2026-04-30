@@ -4,6 +4,7 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/context/AuthContext'
 import { LangProvider } from '@/context/LangContext'
+import BackBar from '@/components/ui/BackBar'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: import('react').Rea
       <body className={inter.className} suppressHydrationWarning>
         <LangProvider>
         <AuthProvider>
+          <BackBar />
           {children}
           <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
         </AuthProvider>

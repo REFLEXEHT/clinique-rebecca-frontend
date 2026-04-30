@@ -66,6 +66,7 @@ export default function SpecialitesPage() {
     return categorie?.specs?.includes(m.specialite)
   })
 
+  const router = useRouter()
   return (
     <div style={{ minHeight:'100vh', background:'#f8fafc' }}>
       <Navbar variant="public" />

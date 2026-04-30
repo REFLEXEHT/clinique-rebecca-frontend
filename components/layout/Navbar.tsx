@@ -46,6 +46,8 @@ const LANGS = [
   { code: 'fr', label: 'FR', full: 'Français',         flag: '🇫🇷' },
   { code: 'ht', label: 'HT', full: 'Kreyòl Ayisyen',   flag: '🇭🇹' },
   { code: 'en', label: 'EN', full: 'English',           flag: '🇬🇧' },
+  { code: 'es', label: 'ES', full: 'Español',           flag: '🇪🇸' },
+  { code: 'zh', label: '中文', full: '中文 (Chinese)',   flag: '🇨🇳' },
 ]
 
 function LangSelector() {
