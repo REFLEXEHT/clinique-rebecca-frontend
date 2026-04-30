@@ -160,17 +160,7 @@ export default function HomePage() {
             ))}
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
-            {[
-              {n:'30+',   lk:'home.stat1', bg:'#eff6ff', c:'#1641C8'},
-              {n:'165',   lk:'home.feat5Title', bg:'#f0fdfa', c:'#0d9488'},
-              {n:'1 200+',lk:'home.rating', bg:'#fff7ed', c:'#f59e0b'},
-              {n:'6j/7',  lk:'home.stat4', bg:'#fdf2f8', c:'#ec4899'},
-            ].map(s => (
-              <div key={s.lk} style={{ background:s.bg, borderRadius:16, padding:24, textAlign:'center' }}>
-                <div style={{ fontWeight:900, fontSize:'1.8rem', color:s.c, marginBottom:6 }}>{s.n}</div>
-                <div style={{ color:'#64748b', fontSize:13, lineHeight:1.4 }}>{t(s.lk)}</div>
-              </div>
-            ))}
+
           </div>
         </div>
       </section>
