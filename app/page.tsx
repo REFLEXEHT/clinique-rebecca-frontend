@@ -217,7 +217,7 @@ function PourquoiSection() {
     },
     {
       icon: '🏥',
-      fr: { titre: 'Équipements modernes', msg: 'Nos salles de soins sont équipées d'appareils de dernière génération, dans un environnement propre, lumineux et professionnel.' },
+      fr: { titre: 'Équipements modernes', msg: 'Nos salles de soins sont équipées d\'appareils de dernière génération, dans un environnement propre, lumineux et professionnel.' },
       ht: { titre: 'Ekipman modèn', msg: 'Sal swen nou yo ekipe ak aparèy dènyè jenerasyon, nan yon anviwònman pwòp, liminyè ak pwofesyonèl.' },
       en: { titre: 'Modern equipment', msg: 'Our treatment rooms are equipped with state-of-the-art devices, in a clean, bright and professional environment.' },
       es: { titre: 'Equipos modernos', msg: 'Nuestras salas de tratamiento están equipadas con aparatos de última generación, en un entorno limpio, luminoso y profesional.' },
@@ -225,7 +225,7 @@ function PourquoiSection() {
     },
     {
       icon: '🤝',
-      fr: { titre: 'Engagés pour la communauté', msg: 'La clinique s'investit dans la prévention, l'éducation sanitaire et le soutien aux populations locales pour une meilleure santé publique.' },
+      fr: { titre: 'Engagés pour la communauté', msg: 'La clinique s\'investit dans la prévention, l\'éducation sanitaire et le soutien aux populations locales pour une meilleure santé publique.' },
       ht: { titre: 'Angaje pou kominote a', msg: 'Klinik la envesti nan prevansyon, edikasyon sanitè ak sipò pou popilasyon lokal yo pou yon pi bon sante piblik.' },
       en: { titre: 'Committed to the community', msg: 'The clinic invests in prevention, health education and support for local populations, actively contributing to better public health.' },
       es: { titre: 'Comprometidos con la comunidad', msg: 'La clínica se involucra en la prevención, educación sanitaria y apoyo a las poblaciones locales para una mejor salud pública.' },
@@ -288,7 +288,7 @@ function PourquoiSection() {
               { n:'30+',    icon:'fa-user-doctor',   label:{ fr:'Médecins spécialistes', en:'Specialist doctors', ht:'Doktè espesyalis', es:'Médicos especialistas', zh:'专科医生' } },
               { n:'165',    icon:'fa-flask-vial',    label:{ fr:'Analyses disponibles',  en:'Tests available',     ht:'Analiz disponib',    es:'Análisis disponibles',  zh:'可用检验' } },
               { n:'1 200+', icon:'fa-star',          label:{ fr:'Patients satisfaits',   en:'Satisfied patients',  ht:'Pasyan satisfè',     es:'Pacientes satisfechos', zh:'满意患者' } },
-              { n:'6j/7',   icon:'fa-clock',         label:{ fr:'Jours d'ouverture',    en:'Days open',           ht:'Jou ouvri',          es:'Días abiertos',         zh:'开放天数' } },
+              { n:'6j/7',   icon:'fa-clock',         label:{ fr:'Jours d\'ouverture',    en:'Days open',           ht:'Jou ouvri',          es:'Días abiertos',         zh:'开放天数' } },
             ].map((s,i) => (
               <div key={i} style={{ background:'#f8fafc', borderRadius:18, padding:24, border:'1px solid #e2e8f0', textAlign:'center' }}>
                 <div style={{ width:44, height:44, borderRadius:12, background:'#eff6ff', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
