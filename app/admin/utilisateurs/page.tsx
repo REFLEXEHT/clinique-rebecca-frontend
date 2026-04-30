@@ -1,165 +1,191 @@
 'use client'
 import { useEffect, useState } from 'react'
-import toast from 'react-hot-toast'
 import { api } from '@/lib/api'
-import { UserCheck, UserX, Trash2, RefreshCw } from 'lucide-react'
+import toast from 'react-hot-toast'
+import { UserPlus, Users, Eye, EyeOff } from 'lucide-react'
 
-const ROLE_COLORS: Record<string, string> = {
-  admin: 'badge-purple', medecin: 'badge-green', patient: 'badge-blue',
-  caissier: 'badge-yellow', labo: 'badge-blue', pharmacie: 'badge-orange',
-}
-const ROLES = ['patient','medecin','caissier','labo','pharmacie','admin']
+const ROLES_PERSONNEL = [
+  { value:'medecin',   label:'Médecin',        emoji:'🩺' },
+  { value:'caissier',  label:'Caissier(ère)',   emoji:'💳' },
+  { value:'labo',      label:'Laboratoire',     emoji:'🔬' },
+  { value:'infirmier', label:'Infirmier(ère)',   emoji:'🏥' },
+  { value:'pharmacie', label:'Pharmacie',       emoji:'💊' },
+  { value:'admin',     label:'Administrateur',  emoji:'🛡️' },
+]
+
+interface User { id: number; nom: string; email: string; role: string; is_active: boolean; created_at: string }
 
 export default function AdminUtilisateurs() {
-  const [users, setUsers] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [filter, setFilter] = useState<'tous'|'actif'|'inactif'>('tous')
+  const [users,     setUsers]    = useState<User[]>([])
+  const [showForm,  setShowForm] = useState(false)
+  const [showPwd,   setShowPwd]  = useState(false)
+  const [loading,   setLoading]  = useState(false)
+  const [form,      setForm]     = useState({ nom:'', prenom:'', role:'medecin', specialite:'', telephone:'', password:'clinique2026' })
 
-  const load = async () => {
+  const load = () => {
+    api.get('/admin/users').then(r => setUsers(r.data || [])).catch(() => {})
+  }
+  useEffect(() => { load() }, [])
+
+  const emailGenere = form.nom && form.prenom
+    ? `${form.prenom.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'')}.${form.nom.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,'')}@cliniquerebecca.ht`
+    : ''
+
+  const creer = async () => {
+    if (!form.nom || !form.prenom) { toast.error('Nom et prénom requis'); return }
     setLoading(true)
     try {
-      const res = await api.get('/admin/users')
-      setUsers(res.data)
-    } catch { toast.error('Erreur chargement') }
+      await api.post('/admin/creer-compte-personnel', {
+        email: emailGenere, nom: `${form.prenom} ${form.nom}`,
+        role: form.role, specialite: form.specialite,
+        telephone: form.telephone, password: form.password,
+      })
+      toast.success(`Compte créé : ${emailGenere} ✓`)
+      setForm({ nom:'', prenom:'', role:'medecin', specialite:'', telephone:'', password:'clinique2026' })
+      setShowForm(false); load()
+    } catch (e: any) { toast.error(e?.response?.data?.detail || 'Erreur') }
     finally { setLoading(false) }
   }
 
-  useEffect(() => { load() }, [])
-
-  const activate = async (id: number, nom: string) => {
+  const toggleActive = async (u: User) => {
     try {
-      await api.put(`/admin/users/${id}/activate`)
-      toast.success(`✅ ${nom} activé`)
+      await api.put(`/admin/users/${u.id}/${u.is_active ? 'suspendre' : 'reactiver'}`, {})
+      toast.success(u.is_active ? `${u.nom} suspendu` : `${u.nom} réactivé`)
       load()
     } catch { toast.error('Erreur') }
   }
 
-  const deactivate = async (id: number, nom: string) => {
-    try {
-      await api.put(`/admin/users/${id}/deactivate`)
-      toast.success(`⛔ ${nom} désactivé`)
-      load()
-    } catch { toast.error('Erreur') }
-  }
+  const inp = (key: string, ph: string, type='text') => (
+    <input type={type} value={(form as any)[key]} onChange={e => setForm(p => ({...p, [key]: e.target.value}))}
+      placeholder={ph} style={{ width:'100%', padding:'10px 12px', borderRadius:8, border:'1px solid #d1d5db', fontSize:13, boxSizing:'border-box' as const }} />
+  )
 
-  const deleteUser = async (id: number, nom: string) => {
-    if (!confirm(`Supprimer le compte de ${nom} ?`)) return
-    try {
-      await api.delete(`/admin/users/${id}`)
-      toast.success(`Compte supprimé`)
-      load()
-    } catch { toast.error('Erreur') }
-  }
-
-  const changeRole = async (id: number, role: string) => {
-    try {
-      await api.put(`/admin/users/${id}/role?role=${role}`)
-      toast.success(`Rôle mis à jour`)
-      load()
-    } catch { toast.error('Erreur') }
-  }
-
-  const filtered = users.filter(u => {
-    if (filter === 'actif') return u.is_active
-    if (filter === 'inactif') return !u.is_active
-    return true
-  })
-
-  const pending = users.filter(u => !u.is_active).length
+  const ROLE_COLORS: Record<string,string> = { admin:'#6366f1', medecin:'#0d9488', caissier:'#d97706', labo:'#16a34a', infirmier:'#0d9488', pharmacie:'#dc2626', patient:'#1641C8' }
 
   return (
-    <div className="p-7">
-      <div className="flex items-center justify-between mb-6">
+    <div style={{ padding:28, maxWidth:1000, margin:'0 auto' }}>
+      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
         <div>
-          <h1 className="text-xl font-extrabold">Gestion des utilisateurs</h1>
-          <p className="text-slate-500 text-[13px] mt-0.5">Validation, activation et gestion des rôles</p>
+          <h1 style={{ fontWeight:900, fontSize:'1.4rem', color:'#0f172a', margin:0, display:'flex', alignItems:'center', gap:10 }}>
+            <Users size={22} color="#1641C8" /> Gestion des utilisateurs
+          </h1>
+          <p style={{ color:'#64748b', margin:'4px 0 0', fontSize:13 }}>
+            Personnel : email @cliniquerebecca.ht · Patients : email personnel uniquement
+          </p>
         </div>
-        <button onClick={load} className="btn-ghost"><RefreshCw size={14} /> Actualiser</button>
+        <button onClick={() => setShowForm(!showForm)} style={{
+          background: showForm ? '#f1f5f9' : 'linear-gradient(135deg,#1641C8,#0d9488)',
+          color: showForm ? '#374151' : 'white', border:'none', borderRadius:12,
+          padding:'10px 20px', fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:8
+        }}>
+          <UserPlus size={14} /> {showForm ? 'Fermer' : 'Nouveau compte personnel'}
+        </button>
       </div>
 
-      {pending > 0 && (
-        <div className="bg-amber-50 border border-amber-300 rounded-xl p-4 mb-5 flex items-center gap-3">
-          <i className="fa-solid fa-clock text-amber-500 text-lg" />
-          <div>
-            <div className="font-bold text-amber-800">{pending} compte{pending > 1 ? 's' : ''} en attente de validation</div>
-            <div className="text-amber-600 text-xs mt-0.5">Ces utilisateurs ne peuvent pas se connecter tant que vous ne les avez pas activés.</div>
+      {/* Règle de séparation */}
+      <div style={{ background:'#eff6ff', border:'1px solid #bfdbfe', borderRadius:12, padding:'12px 16px', marginBottom:20, fontSize:13, color:'#1e40af' }}>
+        <strong>Règle d'intégrité :</strong> Le personnel utilise <strong>prenom.nom@cliniquerebecca.ht</strong> pour séparer leur travail de leur vie personnelle. Les patients s'inscrivent avec leur email personnel pour protéger la confidentialité de leurs données de santé.
+      </div>
+
+      {/* Formulaire création compte personnel */}
+      {showForm && (
+        <div style={{ background:'white', borderRadius:18, border:'1px solid #e2e8f0', padding:24, marginBottom:20 }}>
+          <h3 style={{ fontWeight:800, fontSize:15, color:'#0f172a', marginBottom:16 }}>Créer un compte personnel</h3>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14, marginBottom:14 }}>
+            <div>
+              <label style={{ display:'block', fontWeight:600, fontSize:12, color:'#374151', marginBottom:5 }}>Prénom *</label>
+              {inp('prenom','Prénom')}
+            </div>
+            <div>
+              <label style={{ display:'block', fontWeight:600, fontSize:12, color:'#374151', marginBottom:5 }}>Nom *</label>
+              {inp('nom','NOM')}
+            </div>
+            <div>
+              <label style={{ display:'block', fontWeight:600, fontSize:12, color:'#374151', marginBottom:5 }}>Rôle *</label>
+              <select value={form.role} onChange={e => setForm(p => ({...p, role:e.target.value}))}
+                style={{ width:'100%', padding:'10px 12px', borderRadius:8, border:'1px solid #d1d5db', fontSize:13 }}>
+                {ROLES_PERSONNEL.map(r => <option key={r.value} value={r.value}>{r.emoji} {r.label}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{ display:'block', fontWeight:600, fontSize:12, color:'#374151', marginBottom:5 }}>Spécialité (médecin)</label>
+              {inp('specialite','Ex: Gynécologie')}
+            </div>
+            <div>
+              <label style={{ display:'block', fontWeight:600, fontSize:12, color:'#374151', marginBottom:5 }}>Téléphone</label>
+              {inp('telephone','+509 xxxx-xxxx')}
+            </div>
+            <div>
+              <label style={{ display:'block', fontWeight:600, fontSize:12, color:'#374151', marginBottom:5 }}>Mot de passe initial</label>
+              <div style={{ position:'relative' }}>
+                <input type={showPwd ? 'text' : 'password'} value={form.password}
+                  onChange={e => setForm(p => ({...p, password:e.target.value}))}
+                  style={{ width:'100%', padding:'10px 40px 10px 12px', borderRadius:8, border:'1px solid #d1d5db', fontSize:13, boxSizing:'border-box' as const }} />
+                <button type="button" onClick={() => setShowPwd(!showPwd)}
+                  style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#94a3b8' }}>
+                  {showPwd ? <EyeOff size={14} /> : <Eye size={14} />}
+                </button>
+              </div>
+            </div>
           </div>
+
+          {emailGenere && (
+            <div style={{ background:'#f0fdf4', borderRadius:10, padding:'10px 14px', marginBottom:14, fontSize:13 }}>
+              <span style={{ fontWeight:600, color:'#166534' }}>Email généré automatiquement : </span>
+              <span style={{ fontFamily:'monospace', color:'#16a34a', fontWeight:700 }}>{emailGenere}</span>
+            </div>
+          )}
+
+          <button onClick={creer} disabled={loading || !emailGenere} style={{
+            background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', border:'none',
+            borderRadius:10, padding:'11px 24px', fontWeight:700, cursor:'pointer', fontSize:14,
+            opacity: !emailGenere ? 0.5 : 1
+          }}>
+            {loading ? 'Création...' : `✓ Créer le compte ${emailGenere}`}
+          </button>
         </div>
       )}
 
-      <div className="grid grid-cols-4 gap-4 mb-6">
-        <div className="kpi-card"><div className="text-2xl font-black text-[#1641C8] mb-1">{users.length}</div><div className="text-xs text-slate-500 font-semibold">Total comptes</div></div>
-        <div className="kpi-card"><div className="text-2xl font-black text-green-600 mb-1">{users.filter(u=>u.is_active).length}</div><div className="text-xs text-slate-500 font-semibold">Comptes actifs</div></div>
-        <div className="kpi-card"><div className="text-2xl font-black text-amber-500 mb-1">{pending}</div><div className="text-xs text-slate-500 font-semibold">En attente</div></div>
-        <div className="kpi-card"><div className="text-2xl font-black text-slate-700 mb-1">{users.filter(u=>u.role==='patient').length}</div><div className="text-xs text-slate-500 font-semibold">Patients</div></div>
-      </div>
-
-      <div className="flex gap-2 mb-4">
-        {(['tous','inactif','actif'] as const).map(f => (
-          <button key={f} onClick={() => setFilter(f)}
-            className={`px-4 py-1.5 rounded-full text-[12px] font-bold border cursor-pointer transition-all
-            ${filter === f ? 'bg-[#1641C8] text-white border-[#1641C8]' : 'bg-white text-slate-500 border-slate-200'}`}>
-            {f === 'tous' ? 'Tous' : f === 'inactif' ? '⏳ En attente' : '✅ Actifs'}
-          </button>
-        ))}
-      </div>
-
-      <div className="card overflow-hidden">
-        <table className="tbl w-full">
-          <thead><tr><th>Nom</th><th>Email</th><th>Rôle</th><th>Statut</th><th>Date création</th><th>Actions</th></tr></thead>
+      {/* Liste utilisateurs */}
+      <div style={{ background:'white', borderRadius:18, border:'1px solid #e2e8f0', overflow:'hidden' }}>
+        <table style={{ width:'100%', borderCollapse:'collapse', fontSize:13 }}>
+          <thead>
+            <tr style={{ background:'#f8fafc', borderBottom:'1px solid #e2e8f0' }}>
+              {['Nom','Email','Rôle','Statut','Action'].map(h => (
+                <th key={h} style={{ padding:'12px 16px', textAlign:'left', color:'#64748b', fontWeight:600, fontSize:12 }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
           <tbody>
-            {loading ? (
-              <tr><td colSpan={6} className="text-center py-10"><div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto"/></td></tr>
-            ) : filtered.map(u => (
-              <tr key={u.id}>
-                <td className="font-semibold text-[13px]">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-blue-100 text-[#1641C8] flex items-center justify-center text-xs font-bold">
-                      {u.nom?.[0]?.toUpperCase()}
-                    </div>
-                    {u.nom}
-                  </div>
-                </td>
-                <td className="text-[12.5px] text-slate-500">{u.email}</td>
-                <td>
-                  <select value={u.role} onChange={e => changeRole(u.id, e.target.value)}
-                    className="text-[11px] font-bold border border-slate-200 rounded-lg px-2 py-1 bg-white cursor-pointer">
-                    {ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-                  </select>
-                </td>
-                <td>
-                  <span className={`badge ${u.is_active ? 'badge-green' : 'badge-yellow'}`}>
-                    {u.is_active ? '✓ Actif' : '⏳ En attente'}
+            {users.map(u => (
+              <tr key={u.id} style={{ borderBottom:'1px solid #f8fafc' }}>
+                <td style={{ padding:'11px 16px', fontWeight:700, color:'#0f172a' }}>{u.nom}</td>
+                <td style={{ padding:'11px 16px', fontFamily:'monospace', fontSize:12, color:'#64748b' }}>{u.email}</td>
+                <td style={{ padding:'11px 16px' }}>
+                  <span style={{ background:`${ROLE_COLORS[u.role] || '#64748b'}15`, color:ROLE_COLORS[u.role] || '#64748b', borderRadius:50, padding:'3px 10px', fontSize:11, fontWeight:700 }}>
+                    {ROLES_PERSONNEL.find(r=>r.value===u.role)?.emoji || '👤'} {u.role}
                   </span>
                 </td>
-                <td className="text-[12px] text-slate-400">
-                  {new Date(u.created_at).toLocaleDateString('fr-FR', {day:'2-digit', month:'2-digit', year:'numeric'})}
+                <td style={{ padding:'11px 16px' }}>
+                  <span style={{ background:u.is_active ? '#f0fdf4' : '#fef2f2', color:u.is_active ? '#16a34a' : '#dc2626', borderRadius:50, padding:'3px 10px', fontSize:11, fontWeight:700 }}>
+                    {u.is_active ? 'Actif' : 'Suspendu'}
+                  </span>
                 </td>
-                <td>
-                  <div className="flex gap-1.5">
-                    {!u.is_active ? (
-                      <button onClick={() => activate(u.id, u.nom)}
-                        className="flex items-center gap-1 text-xs bg-green-100 text-green-700 border-none px-2.5 py-1.5 rounded-lg font-bold cursor-pointer hover:bg-green-200 transition-all">
-                        <UserCheck size={12} /> Activer
-                      </button>
-                    ) : (
-                      <button onClick={() => deactivate(u.id, u.nom)}
-                        className="flex items-center gap-1 text-xs bg-slate-100 text-slate-600 border-none px-2.5 py-1.5 rounded-lg font-bold cursor-pointer hover:bg-slate-200 transition-all">
-                        <UserX size={12} /> Désactiver
-                      </button>
-                    )}
-                    {u.role !== 'admin' && (
-                      <button onClick={() => deleteUser(u.id, u.nom)}
-                        className="w-7 h-7 rounded-lg bg-red-50 text-red-400 flex items-center justify-center hover:bg-red-100 border-none cursor-pointer">
-                        <Trash2 size={12} />
-                      </button>
-                    )}
-                  </div>
+                <td style={{ padding:'11px 16px' }}>
+                  {u.role !== 'admin' && (
+                    <button onClick={() => toggleActive(u)} style={{
+                      background: u.is_active ? '#fef2f2' : '#f0fdf4',
+                      color: u.is_active ? '#dc2626' : '#16a34a',
+                      border:'none', borderRadius:8, padding:'6px 12px', fontWeight:700, cursor:'pointer', fontSize:12
+                    }}>
+                      {u.is_active ? 'Suspendre' : 'Réactiver'}
+                    </button>
+                  )}
                 </td>
               </tr>
             ))}
-            {!loading && filtered.length === 0 && (
-              <tr><td colSpan={6} className="text-center text-slate-400 py-8 text-sm">Aucun utilisateur</td></tr>
+            {users.length === 0 && (
+              <tr><td colSpan={5} style={{ padding:32, textAlign:'center' as const, color:'#94a3b8' }}>Aucun utilisateur</td></tr>
             )}
           </tbody>
         </table>

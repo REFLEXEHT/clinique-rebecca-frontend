@@ -1,466 +1,231 @@
 'use client'
-// app/caissier/page.tsx — Espace caissier : tous les services + pharmacie + impression reçu
-import { useEffect, useState, useRef } from 'react'
-import { useAuth } from '@/context/AuthContext'
-import { useRouter } from 'next/navigation'
+import { useState } from 'react'
 import Link from 'next/link'
-import toast from 'react-hot-toast'
-import { stocksApi, comptaApi } from '@/lib/api'
-import { StockItem } from '@/types'
-import PatientForm, { PatientFormData } from '@/components/ui/PatientForm'
-import { genererNumeroRecu, formatDate, imprimerDeuxCopies, formatHTG } from '@/lib/utils'
-import { ShoppingCart, Plus, Minus, Trash2, Printer, LogOut, CheckCircle, X } from 'lucide-react'
+import { api } from '@/lib/api'
+import { ChevronLeft, Search, Printer, FileText, AlertCircle, Lock } from 'lucide-react'
 
-// ─── Catalogue des services (hors pharmacie) ─────────────────────────────────
-const SERVICES_CATALOGUE = [
-  // Clinique Externe
-  { cat: 'Consultations', items: [
-    { nom: 'Consultation générale', prix: 1000 },
-    { nom: 'Consultation spécialiste', prix: 1500 },
-    { nom: 'Consultation pédiatrie', prix: 1200 },
-    { nom: 'Consultation gynécologie', prix: 1500 },
-    { nom: 'Consultation neurologie', prix: 2000 },
-    { nom: 'Consultation chirurgie', prix: 2000 },
-    { nom: 'Consultation en ligne (vidéo)', prix: 1500 },
-  ]},
-  // Laboratoire
-  { cat: 'Laboratoire', items: [
-    { nom: 'NFS complète', prix: 800 },
-    { nom: 'Glycémie à jeun', prix: 350 },
-    { nom: 'Bilan lipidique', prix: 1200 },
-    { nom: 'TSH (Thyroïde)', prix: 1500 },
-    { nom: 'Créatininémie', prix: 600 },
-    { nom: 'Sérologie VIH', prix: 750 },
-    { nom: 'ECBU', prix: 700 },
-    { nom: 'HbA1c', prix: 1100 },
-    { nom: 'Transaminases', prix: 800 },
-    { nom: 'Test de grossesse', prix: 400 },
-  ]},
-  // Autres services
-  { cat: 'Autres services', items: [
-    { nom: 'Radiographie', prix: 1800 },
-    { nom: 'Échographie abdominale', prix: 2500 },
-    { nom: 'Échographie obstétricale', prix: 2000 },
-    { nom: 'Dentisterie - Consultation', prix: 1000 },
-    { nom: 'Dentisterie - Extraction', prix: 2500 },
-    { nom: 'Physiothérapie - Séance', prix: 1200 },
-    { nom: 'Optométrie - Examen', prix: 1500 },
-    { nom: 'Salle SOP - Intervention', prix: 15000 },
-    { nom: 'Accouchement normal', prix: 12000 },
-    { nom: 'Geste médical', prix: 800 },
-    { nom: 'Hospitalisation (par jour)', prix: 5000 },
-  ]},
-]
+interface DocInfo { type: string; label: string; icone: string; disponible: boolean; nb_transactions?: number; nb_resultats?: number }
+interface SearchResult { patient_numero: string; patient_nom: string; documents: DocInfo[] }
 
-const MODES_PAY = ['Espèces', 'Mobile Money (Moncash)', 'Natcash', 'Carte de crédit', 'Virement bancaire']
+function PrintModal({ title, couleur, children, onClose }: any) {
+  return (
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.65)', zIndex:1000, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+      <div style={{ background:'white', borderRadius:18, width:'100%', maxWidth:680, maxHeight:'90vh', overflowY:'auto' }}>
+        <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', padding:'18px 24px', borderBottom:'1px solid #e2e8f0' }}>
+          <h3 style={{ fontWeight:800, margin:0, fontSize:15 }}>{title}</h3>
+          <div style={{ display:'flex', gap:10 }}>
+            <button onClick={() => window.print()} style={{ background:couleur, color:'white', border:'none', borderRadius:10, padding:'8px 18px', fontWeight:700, cursor:'pointer', fontSize:13, display:'flex', alignItems:'center', gap:6 }}>
+              <Printer size={13} /> Imprimer
+            </button>
+            <button onClick={onClose} style={{ background:'#f1f5f9', border:'none', borderRadius:10, padding:'8px 14px', cursor:'pointer', fontWeight:600, color:'#374151', fontSize:13 }}>Fermer</button>
+          </div>
+        </div>
+        <div style={{ padding:24 }}>{children}</div>
+      </div>
+    </div>
+  )
+}
 
-interface PanierItem { label: string; prix: number; qte?: number; stock_id?: number }
+export default function CaissierDocumentsPage() {
+  const [patientId, setPatientId] = useState('')
+  const [result,    setResult]    = useState<SearchResult | null>(null)
+  const [error,     setError]     = useState('')
+  const [loading,   setLoading]   = useState(false)
+  const [modal,     setModal]     = useState<{type:string; data:any} | null>(null)
 
-type Onglet = 'services' | 'pharmacie'
-
-export default function CaissierPage() {
-  const { user, isAuthenticated, loading, logout } = useAuth()
-  const router = useRouter()
-  const [onglet, setOnglet] = useState<Onglet>('services')
-  const [catActive, setCatActive] = useState('Consultations')
-  const [panier, setPanier] = useState<PanierItem[]>([])
-  const [stocks, setStocks] = useState<StockItem[]>([])
-  const [searchMed, setSearchMed] = useState('')
-  const [modePay, setModePay] = useState(MODES_PAY[0])
-  const [etape, setEtape] = useState<'panier' | 'patient' | 'confirmation' | 'succes'>('panier')
-  const [patientData, setPatientData] = useState<PatientFormData | null>(null)
-  const [savLoading, setSavLoading] = useState(false)
-  const [derniereTransaction, setDerniereTransaction] = useState<any>(null)
-
-  useEffect(() => {
-    if (!loading && (!isAuthenticated || (user?.role !== 'caissier' && user?.role !== 'admin'))) router.push('/login')
-  }, [isAuthenticated, user, loading])
-
-  useEffect(() => {
-    stocksApi.list().then(r => setStocks(r.data)).catch(() => setStocks(STOCKS_DEMO))
-  }, [])
-
-  const STOCKS_DEMO: StockItem[] = [
-    { id:1, nom:'Amoxicilline 500mg', categorie:'Antibiotique', quantite:245, seuil_min:50, prix_unitaire:45, unite:'comprimé' },
-    { id:2, nom:'Paracétamol 500mg', categorie:'Analgésique', quantite:12, seuil_min:100, prix_unitaire:15, unite:'comprimé' },
-    { id:3, nom:'Ibuprofène 400mg', categorie:'Anti-inflammatoire', quantite:380, seuil_min:100, prix_unitaire:25, unite:'comprimé' },
-    { id:4, nom:'Metformine 500mg', categorie:'Antidiabétique', quantite:89, seuil_min:50, prix_unitaire:30, unite:'comprimé' },
-    { id:5, nom:'Amlodipine 5mg', categorie:'Antihypertenseur', quantite:156, seuil_min:50, prix_unitaire:40, unite:'comprimé' },
-    { id:6, nom:'Seringues 10ml', categorie:'Matériel', quantite:380, seuil_min:200, prix_unitaire:8, unite:'unité' },
-    { id:7, nom:'Solution IV 500ml', categorie:'Perfusion', quantite:92, seuil_min:30, prix_unitaire:180, unite:'flacon' },
-    { id:8, nom:'Paracétamol sirop', categorie:'Analgésique', quantite:45, seuil_min:20, prix_unitaire:120, unite:'flacon' },
-  ]
-
-  const total = panier.reduce((acc, p) => acc + p.prix * (p.qte || 1), 0)
-
-  const addService = (item: { nom: string; prix: number }) => {
-    setPanier(prev => {
-      const ex = prev.find(p => p.label === item.nom)
-      if (ex) return prev.map(p => p.label === item.nom ? { ...p, qte: (p.qte||1) + 1 } : p)
-      return [...prev, { label: item.nom, prix: item.prix, qte: 1 }]
-    })
-    toast.success(`${item.nom} ajouté`, { duration: 1200 })
-  }
-
-  const addMed = (s: StockItem) => {
-    if (s.quantite <= 0) { toast.error('Rupture de stock'); return }
-    setPanier(prev => {
-      const ex = prev.find(p => p.stock_id === s.id)
-      if (ex) return prev.map(p => p.stock_id === s.id ? { ...p, qte: (p.qte||1) + 1 } : p)
-      return [...prev, { label: `${s.nom} (${s.unite})`, prix: s.prix_unitaire, qte: 1, stock_id: s.id }]
-    })
-    toast.success(`${s.nom} ajouté`, { duration: 1200 })
-  }
-
-  const changeQte = (label: string, delta: number) => {
-    setPanier(prev => prev
-      .map(p => p.label === label ? { ...p, qte: Math.max(1, (p.qte||1) + delta) } : p)
-    )
-  }
-
-  const removeItem = (label: string) => setPanier(prev => prev.filter(p => p.label !== label))
-
-  // Est-ce que le panier contient seulement des médicaments?
-  const estPharmaciePure = panier.every(p => p.stock_id !== undefined)
-  const besoinInfoMedicale = !estPharmaciePure // Si consultation ou labo → infos médicales obligatoires
-
-  const onPatientConfirme = (data: PatientFormData) => {
-    setPatientData(data)
-    setEtape('confirmation')
-  }
-
-  const onFinaliser = async () => {
-    if (!patientData) return
-    setSavLoading(true)
-    const numero = genererNumeroRecu()
-    const dateNow = new Date().toLocaleString('fr-FR')
-    const service = panier.map(p => p.label).join(', ')
-
+  const chercher = async () => {
+    const id = patientId.trim().toUpperCase()
+    if (!id) return
+    setLoading(true); setError(''); setResult(null)
     try {
-      // Enregistrer le mouvement comptable
-      await comptaApi.create({
-        type: 'recette',
-        categorie: estPharmaciePure ? 'Pharmacie' : panier[0]?.label?.includes('Labo') ? 'Laboratoire' : 'Consultations',
-        description: `${service} — Patient: ${patientData.nom} (${patientData.code_unique})`,
-        montant: total,
-        mode_paiement: modePay,
-        date_mouvement: new Date().toISOString(),
-        reference: numero,
-        notes: `Code patient: ${patientData.code_unique}`,
-      }).catch(() => {})
+      const r = await api.get(`/caissier/documents-disponibles/${id}`)
+      setResult(r.data)
+    } catch (e: any) {
+      setError(e?.response?.data?.detail || 'Patient introuvable')
+    } finally { setLoading(false) }
+  }
 
-      // Mise à jour stocks si pharmacie
-      for (const item of panier) {
-        if (item.stock_id) {
-          const stock = stocks.find(s => s.id === item.stock_id)
-          if (stock) {
-            await stocksApi.update(item.stock_id, stock.quantite - (item.qte||1)).catch(() => {})
-          }
-        }
-      }
-
-      const recuData = {
-        numero,
-        date: dateNow,
-        patient_nom: patientData.nom,
-        patient_code: patientData.code_unique,
-        patient_tel: patientData.telephone,
-        service: estPharmaciePure ? 'Pharmacie' : 'Services clinique',
-        items: panier.map(p => ({ label: `${p.label} x${p.qte||1}`, prix: p.prix * (p.qte||1) })),
-        total,
-        mode_paiement: modePay,
-        caissier: user?.nom || 'Caissier',
-      }
-
-      setDerniereTransaction(recuData)
-      setEtape('succes')
-      toast.success('✓ Transaction enregistrée !')
-    } finally {
-      setSavLoading(false)
+  const ouvrirImpression = async (type: string) => {
+    if (!result) return
+    if (type === 'resultats_labo') {
+      try {
+        const r = await api.get(`/infirmier/imprimer-resultats-labo/${result.patient_numero}`)
+        setModal({ type, data: r.data })
+      } catch { alert('Aucun résultat disponible') }
+    } else {
+      setModal({ type, data: { patient_numero: result.patient_numero, patient_nom: result.patient_nom } })
     }
   }
 
-  const onNouvelleTransaction = () => {
-    setPanier([])
-    setPatientData(null)
-    setDerniereTransaction(null)
-    setEtape('panier')
-    setModePay(MODES_PAY[0])
+  const renderModal = () => {
+    if (!modal) return null
+    const { type, data } = modal
+    const onClose = () => setModal(null)
+
+    if (type === 'resultats_labo') {
+      return (
+        <PrintModal title="Résultats Laboratoire" couleur="#16a34a" onClose={onClose}>
+          <div style={{ textAlign:'center', borderBottom:'2px solid #16a34a', paddingBottom:14, marginBottom:20 }}>
+            <div style={{ fontWeight:900, fontSize:17, color:'#1641C8' }}>CLINIQUE DE LA REBECCA</div>
+            <div style={{ fontSize:12, color:'#64748b' }}>#44, Rue Rebecca, Pétion-Ville · (509) 4858-5757</div>
+            <div style={{ fontWeight:800, fontSize:14, marginTop:8, color:'#16a34a' }}>RÉSULTATS D'EXAMENS DE LABORATOIRE</div>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:16, fontSize:13 }}>
+            <div><strong>Patient :</strong> {data.patient_nom}</div>
+            <div><strong># Dossier :</strong> {data.patient_numero}</div>
+            <div><strong>Date impression :</strong> {new Date().toLocaleDateString('fr-FR')}</div>
+          </div>
+          {data.resultats?.length > 0 ? data.resultats.map((r: any, i: number) => (
+            <div key={i} style={{ background:'#f0fdf4', borderRadius:10, padding:14, marginBottom:10, border:'1px solid #bbf7d0' }}>
+              <div style={{ fontWeight:700, color:'#16a34a', marginBottom:6 }}>{r.type_examen}</div>
+              <div style={{ fontSize:13, whiteSpace:'pre-wrap', lineHeight:1.7 }}>{r.resultats}</div>
+              {r.notes && <div style={{ fontSize:12, color:'#64748b', marginTop:6 }}>{r.notes}</div>}
+              <div style={{ fontSize:11, color:'#94a3b8', marginTop:6 }}>{new Date(r.date_examen).toLocaleDateString('fr-FR')}</div>
+            </div>
+          )) : <p style={{ color:'#94a3b8', textAlign:'center' }}>Aucun résultat disponible.</p>}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginTop:20 }}>
+            <div><div style={{ fontSize:12, marginBottom:36 }}>Signature technicien</div><div style={{ borderBottom:'1px solid #374151', width:120 }} /></div>
+            <div><div style={{ fontSize:12, marginBottom:36 }}>Cachet laboratoire</div><div style={{ borderBottom:'1px solid #374151', width:120 }} /></div>
+          </div>
+        </PrintModal>
+      )
+    }
+
+    if (type === 'etat_compte') {
+      return (
+        <PrintModal title="État de Compte Patient" couleur="#1641C8" onClose={onClose}>
+          <div style={{ textAlign:'center', borderBottom:'2px solid #1641C8', paddingBottom:14, marginBottom:20 }}>
+            <div style={{ fontWeight:900, fontSize:17, color:'#1641C8' }}>CLINIQUE DE LA REBECCA</div>
+            <div style={{ fontSize:12, color:'#64748b' }}>#44, Rue Rebecca, Pétion-Ville · (509) 4858-5757</div>
+            <div style={{ fontWeight:800, fontSize:14, marginTop:8 }}>ÉTAT DE COMPTE PATIENT</div>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:16, fontSize:13 }}>
+            <div style={{ display:'flex', gap:6 }}><span style={{ fontWeight:600 }}>NOM DU PATIENT:</span> {data.patient_nom}</div>
+            <div style={{ display:'flex', gap:6 }}><span style={{ fontWeight:600 }}>TÉLÉPHONE:</span> <span style={{ borderBottom:'1px solid #d1d5db', flex:1 }} /></div>
+            <div style={{ display:'flex', gap:6 }}><span style={{ fontWeight:600 }}>DATE ARRIVÉE:</span> <span style={{ borderBottom:'1px solid #d1d5db', flex:1 }} /></div>
+            <div style={{ display:'flex', gap:6 }}><span style={{ fontWeight:600 }}>DATE DÉPART:</span> <span style={{ borderBottom:'1px solid #d1d5db', flex:1 }} /></div>
+            <div style={{ display:'flex', gap:6 }}><span style={{ fontWeight:600 }}>MD TRAITANT:</span> <span style={{ borderBottom:'1px solid #d1d5db', flex:1 }} /></div>
+            <div style={{ display:'flex', gap:6 }}><span style={{ fontWeight:600 }}>CHAMBRE:</span> <span style={{ borderBottom:'1px solid #d1d5db', flex:1 }} /></div>
+          </div>
+          {/* Tableau services */}
+          <div style={{ overflowX:'auto', marginBottom:16 }}>
+            <table style={{ width:'100%', borderCollapse:'collapse', fontSize:12 }}>
+              <thead>
+                <tr style={{ background:'#1641C8', color:'white' }}>
+                  {['Service','Jour 1','Jour 2','Jour 3','Jour 4','Jour 5','TOTAL'].map(h => (
+                    <th key={h} style={{ padding:'8px 10px', textAlign:'left', fontWeight:600 }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {['Consultation','Hospitalisation','Médicaments','Examens Labo','Actes médicaux','Autres'].map((service,i) => (
+                  <tr key={service} style={{ background: i%2===0 ? '#f8fafc' : 'white', borderBottom:'1px solid #e2e8f0' }}>
+                    <td style={{ padding:'8px 10px', fontWeight:500 }}>{service}</td>
+                    {[1,2,3,4,5,'total'].map(j => <td key={j} style={{ padding:'8px 10px', borderLeft:'1px solid #e2e8f0', minWidth:60 }}></td>)}
+                  </tr>
+                ))}
+                <tr style={{ background:'#1641C8', color:'white', fontWeight:700 }}>
+                  <td style={{ padding:'8px 10px' }}>TOTAL GÉNÉRAL</td>
+                  {[1,2,3,4,5,'total'].map(j => <td key={j} style={{ padding:'8px 10px', borderLeft:'1px solid #3b5bdb' }}></td>)}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style={{ display:'flex', gap:20, fontSize:13, marginBottom:20 }}>
+            <div style={{ display:'flex', gap:6 }}><span style={{ fontWeight:600 }}>MONTANT PAYÉ:</span> <span style={{ borderBottom:'1px solid #d1d5db', minWidth:100 }} /></div>
+            <div style={{ display:'flex', gap:6 }}><span style={{ fontWeight:600 }}>SOLDE DÛ:</span> <span style={{ borderBottom:'1px solid #d1d5db', minWidth:100 }} /></div>
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
+            <div><div style={{ fontSize:12, marginBottom:36 }}>Signature caissier</div><div style={{ borderBottom:'1px solid #374151', width:120 }} /></div>
+            <div><div style={{ fontSize:12, marginBottom:36 }}>Cachet clinique</div><div style={{ borderBottom:'1px solid #374151', width:120 }} /></div>
+          </div>
+        </PrintModal>
+      )
+    }
+
+    return null
   }
 
-  const medFiltres = stocks.filter(s =>
-    s.nom.toLowerCase().includes(searchMed.toLowerCase())
-  )
-
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"/></div>
+  const COLORS: Record<string,string> = { resultats_labo:'#16a34a', etat_compte:'#1641C8' }
+  const ICONES: Record<string,string> = { resultats_labo:'🔬', etat_compte:'💰' }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <div className="bg-[#0f172a] h-[70px] flex items-center px-6 gap-4 sticky top-0 z-40">
-        <Link href="/" className="text-white/60 hover:text-white text-sm no-underline transition-colors">
-          <i className="fa-solid fa-plus text-[#1641C8] mr-1"/>Accueil
+    <div style={{ minHeight:'100vh', background:'#f8fafc' }}>
+      <div style={{ background:'linear-gradient(135deg,#0f1e3d,#1641C8)', height:56, display:'flex', alignItems:'center', padding:'0 20px', gap:12 }}>
+        <Link href="/caissier" style={{ color:'rgba(255,255,255,0.7)', textDecoration:'none', display:'flex', alignItems:'center', gap:6, fontSize:13 }}>
+          <ChevronLeft size={14} /> Caisse
         </Link>
-        <h1 className="text-white font-bold ml-2">Espace Caissier</h1>
-        <div className="ml-auto flex items-center gap-3">
-          <span className="text-white/60 text-sm"><i className="fa-solid fa-cash-register text-[#1641C8] mr-1.5"/>{user?.nom}</span>
-          <button onClick={() => { logout(); router.push('/') }}
-            className="flex items-center gap-1.5 text-white/40 hover:text-red-400 text-xs border-none bg-transparent cursor-pointer transition-colors">
-            <LogOut size={13}/> Déconnexion
-          </button>
+        <span style={{ color:'white', fontWeight:700 }}>| Documents Patient</span>
+      </div>
+
+      <div style={{ maxWidth:640, margin:'36px auto', padding:'0 20px' }}>
+        <div style={{ background:'#fffbeb', border:'1px solid #fcd34d', borderRadius:12, padding:'12px 16px', marginBottom:24, display:'flex', gap:10, alignItems:'flex-start' }}>
+          <Lock size={16} style={{ color:'#d97706', flexShrink:0, marginTop:2 }} />
+          <div style={{ fontSize:13, color:'#92400e', lineHeight:1.6 }}>
+            <strong>Impression uniquement.</strong> Entrez l'ID du patient pour voir les documents disponibles.
+            Vous pouvez imprimer les résultats labo et l'état de compte — pas d'accès au dossier médical.
+          </div>
         </div>
+
+        <div style={{ background:'white', borderRadius:18, padding:24, border:'1px solid #e2e8f0', marginBottom:20 }}>
+          <h2 style={{ fontWeight:800, fontSize:'1.1rem', color:'#0f172a', marginBottom:16, display:'flex', alignItems:'center', gap:8 }}>
+            <FileText size={18} color="#1641C8" /> Rechercher par ID patient
+          </h2>
+          <div style={{ display:'flex', gap:10 }}>
+            <input
+              value={patientId}
+              onChange={e => setPatientId(e.target.value.toUpperCase())}
+              onKeyDown={e => e.key === 'Enter' && chercher()}
+              placeholder="Ex: #RB-0042"
+              style={{ flex:1, padding:'12px 16px', borderRadius:10, border:`2px solid ${error ? '#ef4444' : '#e2e8f0'}`, fontSize:16, fontFamily:'monospace', fontWeight:700, outline:'none' }}
+            />
+            <button onClick={chercher} disabled={loading} style={{ background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', border:'none', borderRadius:10, padding:'12px 22px', fontWeight:700, cursor:'pointer', fontSize:14, display:'flex', alignItems:'center', gap:8 }}>
+              <Search size={16} /> {loading ? 'Recherche...' : 'Chercher'}
+            </button>
+          </div>
+          {error && (
+            <div style={{ marginTop:12, display:'flex', alignItems:'center', gap:8, color:'#dc2626', fontSize:13, background:'#fef2f2', padding:'10px 14px', borderRadius:8 }}>
+              <AlertCircle size={14} /> {error}
+            </div>
+          )}
+        </div>
+
+        {result && (
+          <div style={{ background:'white', borderRadius:18, padding:24, border:'1px solid #e2e8f0' }}>
+            <div style={{ background:'#eff6ff', borderRadius:12, padding:'14px 18px', marginBottom:20, border:'1px solid #bfdbfe' }}>
+              <div style={{ fontWeight:800, fontSize:16, color:'#0f172a' }}>{result.patient_nom}</div>
+              <div style={{ fontFamily:'monospace', color:'#1641C8', fontWeight:700, fontSize:15, marginTop:2 }}>{result.patient_numero}</div>
+            </div>
+
+            <div style={{ fontWeight:700, fontSize:12, color:'#64748b', textTransform:'uppercase', letterSpacing:1, marginBottom:14 }}>
+              Documents disponibles
+            </div>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              {result.documents.map(doc => (
+                <div key={doc.type} style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 16px', borderRadius:14, border:'1px solid #e2e8f0', background:'#fafafa' }}>
+                  <div style={{ width:46, height:46, borderRadius:12, background:`${COLORS[doc.type] || '#64748b'}15`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
+                    {ICONES[doc.type] || '📄'}
+                  </div>
+                  <div style={{ flex:1 }}>
+                    <div style={{ fontWeight:700, color:'#0f172a', fontSize:14 }}>{doc.label}</div>
+                    {doc.nb_transactions !== undefined && (
+                      <div style={{ fontSize:12, color:'#64748b', marginTop:2 }}>{doc.nb_transactions} transaction(s) enregistrée(s)</div>
+                    )}
+                  </div>
+                  <button onClick={() => ouvrirImpression(doc.type)} style={{ background:COLORS[doc.type] || '#64748b', color:'white', border:'none', borderRadius:10, padding:'9px 18px', fontWeight:700, cursor:'pointer', fontSize:13, display:'flex', alignItems:'center', gap:6, flexShrink:0 }}>
+                    <Printer size={14} /> Imprimer
+                  </button>
+                </div>
+              ))}
+            </div>
+            <div style={{ marginTop:14, fontSize:12, color:'#dc2626', display:'flex', alignItems:'center', gap:6 }}>
+              <Lock size={12} /> Le contenu médical ne s'affiche pas — impression directe uniquement.
+            </div>
+          </div>
+        )}
       </div>
 
-      <div className="flex h-[calc(100vh-70px)]">
-        {/* ── SUCCÈS ──────────────────────────────────────────────────────── */}
-        {etape === 'succes' && derniereTransaction && (
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="card p-10 max-w-[480px] w-full text-center shadow-xl">
-              <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center text-4xl mx-auto mb-5">✅</div>
-              <h2 className="font-extrabold text-[22px] mb-2">Transaction réussie !</h2>
-              <div className="text-2xl font-extrabold text-[#1641C8] mb-1">{formatHTG(derniereTransaction.total)}</div>
-              <p className="text-slate-400 text-sm mb-6">{derniereTransaction.patient_nom} · {derniereTransaction.patient_code}</p>
-              <div className="bg-slate-50 rounded-xl p-4 text-left mb-6 text-sm space-y-1">
-                {derniereTransaction.items.map((i: any, idx: number) => (
-                  <div key={idx} className="flex justify-between">
-                    <span className="text-slate-600">{i.label}</span>
-                    <span className="font-bold">{i.prix.toLocaleString('fr')} HTG</span>
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-2 gap-3 mb-4">
-                <button onClick={() => imprimerDeuxCopies(derniereTransaction)}
-                  className="btn-primary justify-center">
-                  <Printer size={15}/> Imprimer reçu (2 copies)
-                </button>
-                <button onClick={onNouvelleTransaction} className="btn-secondary justify-center">
-                  <Plus size={15}/> Nouvelle transaction
-                </button>
-              </div>
-              <p className="text-xs text-slate-400">2 copies seront imprimées : une pour le patient, une pour la clinique</p>
-            </div>
-          </div>
-        )}
-
-        {/* ── FORMULAIRE PATIENT ───────────────────────────────────────── */}
-        {etape === 'patient' && (
-          <div className="flex-1 p-8 overflow-y-auto">
-            <div className="max-w-[680px] mx-auto">
-              <button onClick={() => setEtape('panier')} className="flex items-center gap-2 text-slate-500 hover:text-[#1641C8] text-sm font-medium mb-5 border-none bg-transparent cursor-pointer">
-                <i className="fa-solid fa-arrow-left"/> Retour au panier
-              </button>
-              <div className="bg-[#1641C8] text-white rounded-2xl p-4 mb-5 flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-bold opacity-70 mb-0.5">Total à encaisser</div>
-                  <div className="text-2xl font-extrabold">{formatHTG(total)}</div>
-                </div>
-                <div className="text-right">
-                  <div className="text-xs opacity-70">Mode paiement</div>
-                  <select value={modePay} onChange={e => setModePay(e.target.value)}
-                    className="bg-white/20 text-white border border-white/30 rounded-lg px-2 py-1 text-sm font-bold mt-1 cursor-pointer outline-none">
-                    {MODES_PAY.map(m => <option key={m} className="text-slate-900">{m}</option>)}
-                  </select>
-                </div>
-              </div>
-              <PatientForm
-                avecInfoMedicale={besoinInfoMedicale}
-                onConfirm={onPatientConfirme}
-                onCancel={() => setEtape('panier')}
-                titre="Informations du patient"
-              />
-            </div>
-          </div>
-        )}
-
-        {/* ── CONFIRMATION FINALE ──────────────────────────────────────── */}
-        {etape === 'confirmation' && patientData && (
-          <div className="flex-1 flex items-center justify-center p-8">
-            <div className="card p-8 max-w-[560px] w-full shadow-xl">
-              <h3 className="font-extrabold text-[18px] mb-5 text-center">Récapitulatif final</h3>
-
-              <div className="bg-slate-50 rounded-xl p-4 mb-4">
-                <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Patient</div>
-                <div className="font-extrabold text-[#1641C8] text-xl mb-1">{patientData.code_unique}</div>
-                <div className="font-bold">{patientData.nom}</div>
-                <div className="text-slate-500 text-sm">{patientData.telephone}</div>
-                {patientData.age && <div className="text-slate-500 text-sm">{patientData.age} ans · {patientData.sexe === 'M' ? 'Masculin' : patientData.sexe === 'F' ? 'Féminin' : 'Autre'}</div>}
-              </div>
-
-              <div className="bg-slate-50 rounded-xl p-4 mb-4">
-                <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-2">Services</div>
-                {panier.map(p => (
-                  <div key={p.label} className="flex justify-between text-sm mb-1.5">
-                    <span>{p.label} ×{p.qte||1}</span>
-                    <span className="font-bold">{((p.qte||1) * p.prix).toLocaleString('fr')} HTG</span>
-                  </div>
-                ))}
-                <div className="border-t border-slate-200 pt-2 mt-2 flex justify-between font-extrabold text-base">
-                  <span>TOTAL</span>
-                  <span className="text-[#1641C8]">{formatHTG(total)}</span>
-                </div>
-              </div>
-
-              <div className="bg-slate-50 rounded-xl p-4 mb-5">
-                <div className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider mb-1">Mode paiement</div>
-                <div className="font-bold">{modePay}</div>
-              </div>
-
-              <div className="flex gap-3">
-                <button onClick={() => setEtape('patient')} className="btn-ghost flex-1 justify-center">
-                  <i className="fa-solid fa-pen"/> Modifier
-                </button>
-                <button onClick={onFinaliser} disabled={savLoading} className="btn-primary flex-1 justify-center bg-green-600 hover:bg-green-700">
-                  {savLoading
-                    ? <><span className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2 inline-block"/>Enregistrement...</>
-                    : <><CheckCircle size={15}/> Encaisser & Imprimer</>
-                  }
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── PANIER + CATALOGUE ───────────────────────────────────────── */}
-        {etape === 'panier' && (
-          <>
-            {/* Catalogue (gauche) */}
-            <div className="flex-1 flex flex-col overflow-hidden border-r border-slate-200">
-              {/* Onglets Services / Pharmacie */}
-              <div className="flex border-b border-slate-200 bg-white px-4 pt-3 gap-2 flex-shrink-0">
-                {[
-                  { key: 'services', icon: 'fa-stethoscope', label: 'Services clinique' },
-                  { key: 'pharmacie', icon: 'fa-pills', label: 'Pharmacie' },
-                ].map(t => (
-                  <button key={t.key} onClick={() => setOnglet(t.key as Onglet)}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-t-lg font-bold text-sm border-b-2 cursor-pointer transition-all border-x-0 border-t-0 bg-transparent
-                    ${onglet === t.key ? 'border-b-[#1641C8] text-[#1641C8]' : 'border-b-transparent text-slate-400 hover:text-slate-600'}`}>
-                    <i className={`fa-solid ${t.icon}`}/> {t.label}
-                  </button>
-                ))}
-              </div>
-
-              {/* Services */}
-              {onglet === 'services' && (
-                <div className="flex flex-1 overflow-hidden">
-                  {/* Catégories */}
-                  <div className="w-44 bg-slate-50 border-r border-slate-200 overflow-y-auto flex-shrink-0">
-                    {SERVICES_CATALOGUE.map(cat => (
-                      <button key={cat.cat} onClick={() => setCatActive(cat.cat)}
-                        className={`w-full text-left px-4 py-3 text-[13px] font-semibold border-none cursor-pointer transition-all border-l-2
-                        ${catActive === cat.cat ? 'bg-blue-50 text-[#1641C8] border-l-[#1641C8]' : 'bg-transparent text-slate-500 border-l-transparent hover:bg-slate-100'}`}>
-                        {cat.cat}
-                      </button>
-                    ))}
-                  </div>
-                  {/* Items */}
-                  <div className="flex-1 overflow-y-auto p-4">
-                    <div className="grid grid-cols-2 gap-2">
-                      {SERVICES_CATALOGUE.find(c => c.cat === catActive)?.items.map(item => (
-                        <button key={item.nom} onClick={() => addService(item)}
-                          className="text-left p-3.5 bg-white border border-slate-200 rounded-xl hover:border-[#1641C8] hover:bg-blue-50 hover:text-[#1641C8] transition-all cursor-pointer group">
-                          <div className="font-semibold text-[13px] mb-1 group-hover:text-[#1641C8] text-slate-800">{item.nom}</div>
-                          <div className="font-extrabold text-[#1641C8] text-sm">{item.prix.toLocaleString('fr')} HTG</div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Pharmacie */}
-              {onglet === 'pharmacie' && (
-                <div className="flex-1 overflow-y-auto p-4">
-                  <input value={searchMed} onChange={e => setSearchMed(e.target.value)}
-                    className="input mb-4" placeholder="🔍 Rechercher un médicament..."/>
-                  <div className="grid grid-cols-2 gap-2">
-                    {medFiltres.map(s => (
-                      <button key={s.id} onClick={() => addMed(s)} disabled={s.quantite <= 0}
-                        className={`text-left p-3.5 border rounded-xl transition-all cursor-pointer
-                        ${s.quantite <= 0 ? 'bg-slate-50 border-slate-200 opacity-50 cursor-not-allowed'
-                          : 'bg-white border-slate-200 hover:border-[#1641C8] hover:bg-blue-50'}`}>
-                        <div className="font-semibold text-[13px] mb-0.5 text-slate-800">{s.nom}</div>
-                        <div className="flex justify-between items-center">
-                          <span className="font-extrabold text-[#1641C8] text-sm">{s.prix_unitaire} HTG/{s.unite}</span>
-                          <span className={`text-[11px] font-bold ${s.quantite <= 0 ? 'text-red-500' : s.quantite < s.seuil_min ? 'text-orange-500' : 'text-green-600'}`}>
-                            Stock: {s.quantite}
-                          </span>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Panier (droite) */}
-            <div className="w-[340px] flex-shrink-0 flex flex-col bg-white">
-              <div className="p-4 border-b border-slate-200 flex items-center gap-2">
-                <ShoppingCart size={16} className="text-[#1641C8]"/>
-                <span className="font-extrabold text-[15px]">Panier</span>
-                {panier.length > 0 && (
-                  <span className="ml-auto badge-blue">{panier.length} article(s)</span>
-                )}
-              </div>
-
-              <div className="flex-1 overflow-y-auto p-3 space-y-2">
-                {panier.length === 0 ? (
-                  <div className="h-full flex flex-col items-center justify-center text-slate-300 py-12">
-                    <ShoppingCart size={36} className="mb-3 opacity-40"/>
-                    <p className="text-sm">Sélectionnez des services</p>
-                  </div>
-                ) : panier.map(p => (
-                  <div key={p.label} className="flex items-center gap-2 bg-slate-50 rounded-xl p-2.5 border border-slate-100">
-                    <div className="flex-1 min-w-0">
-                      <div className="text-xs font-bold truncate">{p.label}</div>
-                      <div className="text-[11px] text-slate-400">{p.prix.toLocaleString('fr')} HTG</div>
-                    </div>
-                    <div className="flex items-center gap-1">
-                      <button onClick={() => changeQte(p.label, -1)}
-                        className="w-6 h-6 rounded-lg bg-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-300 border-none cursor-pointer text-xs font-bold">
-                        <Minus size={10}/>
-                      </button>
-                      <span className="w-6 text-center text-xs font-extrabold">{p.qte||1}</span>
-                      <button onClick={() => changeQte(p.label, 1)}
-                        className="w-6 h-6 rounded-lg bg-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-300 border-none cursor-pointer text-xs font-bold">
-                        <Plus size={10}/>
-                      </button>
-                    </div>
-                    <div className="text-xs font-extrabold text-[#1641C8] w-20 text-right">
-                      {((p.qte||1)*p.prix).toLocaleString('fr')} HTG
-                    </div>
-                    <button onClick={() => removeItem(p.label)}
-                      className="text-red-400 hover:text-red-600 border-none bg-transparent cursor-pointer p-0.5">
-                      <X size={13}/>
-                    </button>
-                  </div>
-                ))}
-              </div>
-
-              {/* Total + Payer */}
-              <div className="p-4 border-t border-slate-200">
-                <div className="flex justify-between font-extrabold text-lg mb-3">
-                  <span>TOTAL</span>
-                  <span className="text-[#1641C8]">{formatHTG(total)}</span>
-                </div>
-                <select value={modePay} onChange={e => setModePay(e.target.value)} className="input mb-3 text-sm">
-                  {MODES_PAY.map(m => <option key={m}>{m}</option>)}
-                </select>
-                <button
-                  onClick={() => { if (panier.length === 0) { toast.error('Ajoutez des articles'); return } setEtape('patient') }}
-                  disabled={panier.length === 0}
-                  className="btn-primary w-full justify-center py-3.5 text-base disabled:opacity-40">
-                  <i className="fa-solid fa-user-plus mr-1"/> Enregistrer patient & Encaisser
-                </button>
-                {panier.length > 0 && (
-                  <button onClick={() => setPanier([])} className="w-full text-center text-xs text-slate-400 hover:text-red-400 mt-2 border-none bg-transparent cursor-pointer transition-colors">
-                    Vider le panier
-                  </button>
-                )}
-              </div>
-            </div>
-          </>
-        )}
-      </div>
+      {renderModal()}
     </div>
   )
 }

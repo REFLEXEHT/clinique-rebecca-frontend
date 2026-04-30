@@ -129,7 +129,7 @@ export default function ServicesPage() {
                 {/* Photo */}
                 <div style={{ position: 'relative', height: 190, overflow: 'hidden' }}>
                   <Image src={s.image} alt={s.titre} fill style={{ objectFit: 'cover' }} />
-                  <div style={{ position: 'absolute', inset: 0, background: `linear-gradient(to top, ${s.couleur}cc 0%, transparent 60%)` }} />
+                  <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.4) 0%, transparent 50%)' }} />
                   <div style={{ position: 'absolute', bottom: 14, left: 14, display: 'flex', alignItems: 'center', gap: 8 }}>
                     <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.2)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <i className={`fa-solid ${s.icon}`} style={{ color: 'white', fontSize: 16 }} />

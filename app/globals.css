@@ -564,3 +564,5 @@
   .btn-primary, .btn-secondary { padding: 12px 20px; font-size: 14px; }
   .specs-grid { grid-template-columns: 1fr !important; }
 }
+
+@keyframes spin { to { transform: rotate(360deg); } }
