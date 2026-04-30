@@ -125,8 +125,8 @@ export default function HomePage() {
                 <div style={{ background:'white', borderRadius:16, padding:'20px 16px', border:'1px solid #e2e8f0', textAlign:'center', cursor:'pointer', transition:'all 0.2s' }}
                   onMouseEnter={e=>{const el=e.currentTarget as HTMLDivElement;el.style.transform='translateY(-4px)';el.style.boxShadow='0 8px 24px rgba(22,65,200,0.12)'}}
                   onMouseLeave={e=>{const el=e.currentTarget as HTMLDivElement;el.style.transform='translateY(0)';el.style.boxShadow='none'}}>
-                  <div style={{ width:48, height:48, borderRadius:12, background:s.bg, display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
-                    <i className={`fa-solid ${s.icon}`} style={{ color:s.color, fontSize:20 }} />
+                  <div style={{ width:48, height:48, borderRadius:12, background:'#f1f5f9', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
+                    <i className={`fa-solid ${s.icon}`} style={{ color:'#1641C8', fontSize:20 }} />
                   </div>
                   <div style={{ fontWeight:700, color:'#0f172a', fontSize:13, lineHeight:1.3 }}>{t(s.key)}</div>
                 </div>
@@ -192,5 +192,133 @@ export default function HomePage() {
       <AiChatWidget />
       <Footer />
     </>
+  )
+}
+
+// ── Composant Pourquoi Nous Choisir ──────────────────────────────────────
+function PourquoiSection() {
+  const { lang } = useLang()
+  const [idx, setIdx] = useState(0)
+
+  const RAISONS = [
+    {
+      icon: '🏆',
+      fr: { titre: '30+ médecins certifiés', msg: 'Une équipe de spécialistes formés aux meilleures universités, dévoués à votre santé.' },
+      ht: { titre: '30+ doktè sètifye', msg: 'Yon ekip espesyalis ki fòme nan pi bon inivèsite yo, dedye pou sante ou.' },
+      en: { titre: '30+ certified doctors', msg: 'A team of specialists trained at the best universities, dedicated to your health.' },
+      es: { titre: '30+ médicos certificados', msg: 'Un equipo de especialistas formados en las mejores universidades, dedicados a su salud.' },
+      zh: { titre: '30+位认证医生', msg: '由顶尖大学培训的专科医生团队，专注于您的健康。' },
+    },
+    {
+      icon: '⚡',
+      fr: { titre: 'Résultats labo en 24-48h', msg: 'Vos résultats d'analyses vous sont envoyés directement sur WhatsApp. Rapide, fiable, sécurisé.' },
+      ht: { titre: 'Rezilta labo nan 24-48h', msg: 'Rezilta analiz ou voye dirèkteman sou WhatsApp. Rapid, fyab, sekirize.' },
+      en: { titre: 'Lab results in 24-48h', msg: 'Your test results are sent directly to your WhatsApp. Fast, reliable, secure.' },
+      es: { titre: 'Resultados en 24-48h', msg: 'Sus resultados se envían directamente a su WhatsApp. Rápido, fiable, seguro.' },
+      zh: { titre: '24-48小时内出结果', msg: '检验结果直接发送到您的WhatsApp。快速、可靠、安全。' },
+    },
+    {
+      icon: '🔒',
+      fr: { titre: 'Confidentialité garantie', msg: 'Votre dossier médical est 100% confidentiel. Seuls vous et votre médecin y avez accès.' },
+      ht: { titre: 'Konfidansyalite garanti', msg: 'Dosye medikal ou 100% konfidansyèl. Se sèlman ou ak doktè ou ki gen aksè a li.' },
+      en: { titre: 'Guaranteed confidentiality', msg: 'Your medical record is 100% confidential. Only you and your doctor have access.' },
+      es: { titre: 'Confidencialidad garantizada', msg: 'Su expediente médico es 100% confidencial. Solo usted y su médico tienen acceso.' },
+      zh: { titre: '保密性保证', msg: '您的医疗记录100%保密。只有您和您的医生才能访问。' },
+    },
+    {
+      icon: '📍',
+      fr: { titre: 'Tout sous un même toit', msg: 'Clinique, labo, pharmacie, dentiste, physiothérapie — une visite suffit pour tout régler.' },
+      ht: { titre: 'Tout anba yon sèl tèt', msg: 'Klinik, labo, famasi, dantis, fizeyoterapi — yon vizit sifi pou tout ranje.' },
+      en: { titre: 'Everything under one roof', msg: 'Clinic, lab, pharmacy, dentist, physiotherapy — one visit handles everything.' },
+      es: { titre: 'Todo bajo un mismo techo', msg: 'Clínica, laboratorio, farmacia, dentista, fisioterapia — una visita lo resuelve todo.' },
+      zh: { titre: '一站式服务', msg: '诊所、实验室、药房、牙科、物理治疗——一次就诊解决所有问题。' },
+    },
+    {
+      icon: '📱',
+      fr: { titre: 'Rendez-vous en ligne 24h/24', msg: 'Prenez rendez-vous depuis votre téléphone à toute heure. Confirmation immédiate.' },
+      ht: { titre: 'Randevou sou entènèt 24h/24', msg: 'Pran randevou depi telefòn ou nenpòt lè. Konfirmasyon imedyat.' },
+      en: { titre: 'Online booking 24/7', msg: 'Book appointments from your phone anytime. Immediate confirmation.' },
+      es: { titre: 'Citas en línea 24/7', msg: 'Reserve citas desde su teléfono en cualquier momento. Confirmación inmediata.' },
+      zh: { titre: '24/7在线预约', msg: '随时通过手机预约。即时确认。' },
+    },
+    {
+      icon: '💚',
+      fr: { titre: 'Des soins accessibles', msg: 'Des tarifs transparents et équitables. La qualité médicale ne doit pas être un luxe.' },
+      ht: { titre: 'Swen aksesib', msg: 'Pri transparan ak ekitab. Kalite medikal pa ta dwe yon liks.' },
+      en: { titre: 'Accessible care', msg: 'Transparent and fair pricing. Quality medical care should not be a luxury.' },
+      es: { titre: 'Atención accesible', msg: 'Precios transparentes y justos. La calidad médica no debe ser un lujo.' },
+      zh: { titre: '普惠医疗', msg: '透明公平的价格。优质医疗不应是奢侈品。' },
+    },
+  ]
+
+  useEffect(() => {
+    const t = setInterval(() => setIdx(p => (p + 1) % RAISONS.length), 4000)
+    return () => clearInterval(t)
+  }, [RAISONS.length])
+
+  const r = RAISONS[idx]
+  const txt = r[lang as 'fr'] || r.fr
+
+  return (
+    <section style={{ padding:'72px 5%', background:'white' }}>
+      <div style={{ maxWidth:1100, margin:'0 auto' }}>
+        {/* Titre */}
+        <div style={{ textAlign:'center', marginBottom:48 }}>
+          <div style={{ color:'#1641C8', fontWeight:700, fontSize:13, textTransform:'uppercase', letterSpacing:1, marginBottom:8 }}>
+            {lang === 'en' ? 'Why choose us' : lang === 'es' ? 'Por qué elegirnos' : lang === 'zh' ? '为什么选择我们' : lang === 'ht' ? 'Poukwa chwazi nou' : 'Pourquoi nous choisir'}
+          </div>
+          <h2 style={{ fontWeight:900, fontSize:'clamp(1.5rem,3vw,2rem)', color:'#0f172a', margin:0 }}>
+            {lang === 'en' ? 'What makes us different' : lang === 'es' ? 'Lo que nos hace diferentes' : lang === 'zh' ? '我们的与众不同' : lang === 'ht' ? 'Sa ki fè nou diferan' : 'Ce qui nous distingue'}
+          </h2>
+        </div>
+
+        {/* Layout: carrousel gauche + stats droite */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:40, alignItems:'center' }}>
+
+          {/* Carrousel messages catchy */}
+          <div>
+            <div style={{ background:'linear-gradient(135deg,#0f1e3d,#1641C8)', borderRadius:24, padding:40, minHeight:220, position:'relative', overflow:'hidden' }}>
+              {/* Cercles déco */}
+              <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
+              <div style={{ position:'absolute', bottom:-30, left:-30, width:120, height:120, borderRadius:'50%', background:'rgba(13,148,136,0.15)' }} />
+              {/* Contenu */}
+              <div style={{ position:'relative', zIndex:1 }}>
+                <div style={{ fontSize:48, marginBottom:16 }}>{r.icon}</div>
+                <h3 style={{ color:'white', fontWeight:900, fontSize:'1.4rem', margin:'0 0 12px', lineHeight:1.2 }}>{txt.titre}</h3>
+                <p style={{ color:'rgba(255,255,255,0.8)', fontSize:15, lineHeight:1.7, margin:'0 0 24px' }}>{txt.msg}</p>
+                {/* Indicateurs */}
+                <div style={{ display:'flex', gap:6 }}>
+                  {RAISONS.map((_,i) => (
+                    <button key={i} onClick={() => setIdx(i)} style={{
+                      width: i === idx ? 28 : 8, height:8, borderRadius:4, border:'none',
+                      background: i === idx ? 'white' : 'rgba(255,255,255,0.3)',
+                      cursor:'pointer', transition:'all 0.3s', padding:0
+                    }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Stats chiffrées */}
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+            {[
+              { n:'30+',    icon:'fa-user-doctor',   label:{ fr:'Médecins spécialistes', en:'Specialist doctors', ht:'Doktè espesyalis', es:'Médicos especialistas', zh:'专科医生' } },
+              { n:'165',    icon:'fa-flask-vial',    label:{ fr:'Analyses disponibles',  en:'Tests available',     ht:'Analiz disponib',    es:'Análisis disponibles',  zh:'可用检验' } },
+              { n:'1 200+', icon:'fa-star',          label:{ fr:'Patients satisfaits',   en:'Satisfied patients',  ht:'Pasyan satisfè',     es:'Pacientes satisfechos', zh:'满意患者' } },
+              { n:'6j/7',   icon:'fa-clock',         label:{ fr:'Jours d'ouverture',    en:'Days open',           ht:'Jou ouvri',          es:'Días abiertos',         zh:'开放天数' } },
+            ].map((s,i) => (
+              <div key={i} style={{ background:'#f8fafc', borderRadius:18, padding:24, border:'1px solid #e2e8f0', textAlign:'center' }}>
+                <div style={{ width:44, height:44, borderRadius:12, background:'#eff6ff', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
+                  <i className={`fa-solid ${s.icon}`} style={{ color:'#1641C8', fontSize:18 }} />
+                </div>
+                <div style={{ fontWeight:900, fontSize:'1.8rem', color:'#0f172a', marginBottom:4 }}>{s.n}</div>
+                <div style={{ color:'#64748b', fontSize:13, lineHeight:1.3 }}>{(s.label as any)[lang] || s.label.fr}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
   )
 }

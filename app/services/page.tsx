@@ -139,7 +139,7 @@ export default function ServicesPage() {
                     onError={e => { (e.target as HTMLImageElement).style.display = 'none' }}
                   />
                   {/* Overlay gradient bas */}
-                  <div style={{ position:'absolute', bottom:0, left:0, right:0, height:80, background:`linear-gradient(to top, ${s.couleur}dd, transparent)` }} />
+                  <div style={{ position:'absolute', bottom:0, left:0, right:0, height:80, background:'linear-gradient(to top, rgba(0,0,0,0.55), transparent)' }} />
                   {/* Titre sur la photo */}
                   <div style={{ position:'absolute', bottom:14, left:16, display:'flex', alignItems:'center', gap:10 }}>
                     <div style={{ width:34, height:34, borderRadius:9, background:'rgba(255,255,255,0.2)', backdropFilter:'blur(8px)', display:'flex', alignItems:'center', justifyContent:'center' }}>
