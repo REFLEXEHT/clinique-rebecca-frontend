@@ -9,7 +9,7 @@ import { horairesApi } from '@/lib/api'
 import { Horaire } from '@/types'
 
 const SERVICES = [
-  { icon:'fa-stethoscope', color:'#1641C8', bg:'#eff6ff', title:'Clinique Externe', sub:'12 spécialités médicales', desc:'Consultations, suivis, diagnostics — 12 spécialistes dédiés à votre santé.', link:'/specialites' },
+  { icon:'fa-stethoscope', color:'#1641C8', bg:'#eff6ff', title:'Clinique Externe', sub:'12 spécialités médicales', desc:'Consultations, suivis, diagnostics — 12 spécialistes dédiés à votre santé.', link:'/services/clinique-externe' },
   { icon:'fa-flask-vial',  color:'#0d9488', bg:'#f0fdfa', title:'Laboratoire',      sub:'Résultats par WhatsApp',    desc:'Analyses biologiques complètes avec résultats envoyés directement sur votre téléphone.', link:'/services/laboratoire' },
   { icon:'fa-pills',       color:'#d97706', bg:'#fffbeb', title:'Pharmacie',        sub:'Médicaments génériques et de marque', desc:'Notre pharmacie interne vous offre accès immédiat à vos médicaments après consultation.', link:'/services/pharmacie' },
   { icon:'fa-tooth',       color:'#6366f1', bg:'#f5f3ff', title:'Dentisterie',      sub:'Soins complets',            desc:'Consultation, extraction, prophylaxie, orthodontie et prothèses dentaires.', link:'/services/dentisterie' },
@@ -163,7 +163,7 @@ export default function HomePage() {
           <button onClick={() => setRdvOpen(true)} style={{ background:'#0d9488', color:'white', border:'none', borderRadius:12, padding:'14px 30px', fontWeight:700, cursor:'pointer', fontSize:'1rem' }}>
             <i className="fa-solid fa-calendar-check" style={{ marginRight:8 }} />Prendre RDV
           </button>
-          <Link href="/specialites" style={{ background:'rgba(255,255,255,0.1)', color:'white', textDecoration:'none', borderRadius:12, padding:'14px 30px', fontWeight:600, border:'1px solid rgba(255,255,255,0.2)' }}>
+          <Link href="/services" style={{ background:'rgba(255,255,255,0.1)', color:'white', textDecoration:'none', borderRadius:12, padding:'14px 30px', fontWeight:600, border:'1px solid rgba(255,255,255,0.2)' }}>
             Voir nos spécialistes
           </Link>
         </div>
