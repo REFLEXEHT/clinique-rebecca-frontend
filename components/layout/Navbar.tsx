@@ -7,15 +7,16 @@ import { useAuth } from '@/context/AuthContext'
 import { LOGO_SRC } from '@/lib/images'
 
 const SERVICES = [
-  { label: 'Clinique externe', icon: 'fa-stethoscope', href: '/specialites' },
-  { label: 'Dentisterie', icon: 'fa-tooth', href: '/services/dentisterie' },
-  { label: 'Laboratoire', icon: 'fa-flask-vial', href: '/services/laboratoire' },
-  { label: 'Pharmacie', icon: 'fa-pills', href: '/services/pharmacie' },
-  { label: 'Physiothérapie', icon: 'fa-person-walking', href: '/services/physiotherapie' },
-  { label: 'Optométrie', icon: 'fa-glasses', href: '/services/optometrie' },
-  { label: 'Salle SOP', icon: 'fa-scalpel', href: '/services/sop' },
-  { label: 'Maternité', icon: 'fa-baby', href: '/services/maternite' },
-  { label: 'Gestes médicaux', icon: 'fa-syringe', href: '/services/gestes' },
+  { label: 'Clinique Externe',   icon: 'fa-stethoscope',    href: '/services/clinique-externe' },
+  { label: 'Laboratoire',        icon: 'fa-flask-vial',     href: '/services/laboratoire'      },
+  { label: 'Pharmacie',          icon: 'fa-pills',          href: '/services/pharmacie'        },
+  { label: 'Dentisterie',        icon: 'fa-tooth',          href: '/services/dentisterie'      },
+  { label: 'Physiothérapie',     icon: 'fa-person-walking', href: '/services/physiotherapie'   },
+  { label: 'Optométrie',         icon: 'fa-glasses',        href: '/services/optometrie'       },
+  { label: 'Maternité',          icon: 'fa-baby',           href: '/services/maternite'        },
+  { label: 'Salle SOP',          icon: 'fa-scalpel',        href: '/services/salle-sop'        },
+  { label: 'Gestes Médicaux',    icon: 'fa-syringe',        href: '/services/gestes-medicaux'  },
+  { label: 'Hospitalisation',    icon: 'fa-bed-pulse',      href: '/services/hospitalisation'  },
 ]
 
 const SPECIALITES = [
