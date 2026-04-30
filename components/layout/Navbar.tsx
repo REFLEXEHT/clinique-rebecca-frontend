@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
+import { useLang } from '@/context/LangContext'
 import { LOGO_SRC } from '@/lib/images'
 
 const SERVICES = [
@@ -37,6 +38,67 @@ const SPECIALITES = [
 interface NavbarProps {
   onRdvClick?: () => void
   variant?: 'public' | 'admin' | 'medecin' | 'patient'
+}
+
+
+// ── Sélecteur de langue ─────────────────────────────────────────────────
+const LANGS = [
+  { code: 'fr', label: 'FR', full: 'Français',         flag: '🇫🇷' },
+  { code: 'ht', label: 'HT', full: 'Kreyòl Ayisyen',   flag: '🇭🇹' },
+  { code: 'en', label: 'EN', full: 'English',           flag: '🇬🇧' },
+]
+
+function LangSelector() {
+  const { lang, setLang } = useLang()
+  const [open, setOpen] = useState(false)
+  const current = LANGS.find(l => l.code === lang) || LANGS[0]
+
+  return (
+    <div style={{ position: 'relative' }}>
+      <button
+        onClick={() => setOpen(!open)}
+        style={{
+          display: 'flex', alignItems: 'center', gap: 6,
+          background: 'transparent', border: '1px solid #e2e8f0',
+          borderRadius: 8, padding: '6px 10px', cursor: 'pointer',
+          fontSize: 13, fontWeight: 600, color: '#374151'
+        }}
+      >
+        <span>{current.flag}</span>
+        <span>{current.label}</span>
+        <i className="fa-solid fa-chevron-down" style={{ fontSize: 9, color: '#94a3b8' }} />
+      </button>
+      {open && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 6px)', right: 0,
+          background: 'white', borderRadius: 12, border: '1px solid #e2e8f0',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.1)', zIndex: 200, minWidth: 160, overflow: 'hidden'
+        }}>
+          {LANGS.map(l => (
+            <button
+              key={l.code}
+              onClick={() => { setLang(l.code as any); setOpen(false) }}
+              style={{
+                width: '100%', padding: '10px 16px', border: 'none', cursor: 'pointer',
+                display: 'flex', alignItems: 'center', gap: 10, fontSize: 13,
+                background: lang === l.code ? '#eff6ff' : 'white',
+                color: lang === l.code ? '#1641C8' : '#374151',
+                fontWeight: lang === l.code ? 700 : 400,
+                borderBottom: '1px solid #f1f5f9', textAlign: 'left' as const,
+              }}
+            >
+              <span style={{ fontSize: 18 }}>{l.flag}</span>
+              <div>
+                <div style={{ fontWeight: 600 }}>{l.label}</div>
+                <div style={{ fontSize: 11, color: '#64748b' }}>{l.full}</div>
+              </div>
+              {lang === l.code && <span style={{ marginLeft: 'auto', color: '#1641C8' }}>✓</span>}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) {
@@ -151,7 +213,10 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
 
         {/* Right side desktop */}
         <div className="hidden md:flex items-center gap-2.5 ml-auto">
-          {mounted && isAuthenticated ? (
+          {/* Sélecteur de langue */}
+        <LangSelector />
+
+        {mounted && isAuthenticated ? (
             <>
               <Link href={getDashboardHref()}
                 className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50
@@ -273,7 +338,10 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
 
               {/* Auth buttons mobile */}
               <div className="pt-3 border-t border-slate-100 space-y-2">
-                {mounted && isAuthenticated ? (
+                {/* Sélecteur de langue */}
+        <LangSelector />
+
+        {mounted && isAuthenticated ? (
                   <>
                     <Link href={getDashboardHref()}
                       className="flex items-center gap-2 justify-center px-4 py-3 rounded-xl
