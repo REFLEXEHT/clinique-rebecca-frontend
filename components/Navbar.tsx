@@ -118,7 +118,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
               <div className="nav-dropdown">
                 <div className="dropdown-title">Nos 9 services</div>
                 {SERVICES.map((s) => (
-                  <Link key={s.href} href="/services">
+                  <Link key={s.href} href={s.href}>
                     <i className={`fa-solid ${s.icon}`} />{s.label}
                   </Link>
                 ))}
@@ -134,7 +134,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
               <div className="nav-dropdown">
                 <div className="dropdown-title">12 spécialités</div>
                 {SPECIALITES.map((s) => (
-                  <Link key={s.slug} href="/specialites">
+                  <Link key={s.slug} href={`/specialites/${s.slug}`}>
                     <i className={`fa-solid ${s.icon}`} />{s.label}
                   </Link>
                 ))}
@@ -252,7 +252,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
               {mobileSection === 'specs' && (
                 <div className="ml-8 space-y-1 pb-1">
                   {SPECIALITES.map(s => (
-                    <Link key={s.slug} href="/specialites"
+                    <Link key={s.slug} href={`/specialites/${s.slug}`}
                       className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600
                         font-medium text-[14px] hover:bg-blue-50 hover:text-[#1641C8] transition-all"
                       onClick={() => setMobileOpen(false)}>
