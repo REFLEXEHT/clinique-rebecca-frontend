@@ -113,10 +113,10 @@ export default function HomePage() {
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:36 }}>
             <div>
               <div style={{ color:'#1641C8', fontWeight:700, fontSize:13, textTransform:'uppercase', letterSpacing:1, marginBottom:8 }}>
-                {lang === 'en' ? 'Our services' : lang === 'ht' ? 'Sèvis nou yo' : lang === 'es' ? 'Nuestros servicios' : lang === 'zh' ? '我们的服务' : 'Nos services'}
+                {t('home.nosServices')}
               </div>
               <h2 style={{ fontWeight:900, fontSize:'clamp(1.5rem,3vw,2rem)', color:'#0f172a', margin:0 }}>
-                {lang === 'en' ? 'Everything under one roof' : lang === 'ht' ? 'Tout anba yon sèl tèt' : lang === 'es' ? 'Todo bajo un mismo techo' : lang === 'zh' ? '一站式医疗服务' : 'Tout sous un même toit'}
+                {t('home.sousNos')}
               </h2>
             </div>
             <Link href="/services" style={{ color:'#1641C8', fontWeight:700, fontSize:14, textDecoration:'none', display:'flex', alignItems:'center', gap:6 }}>
