@@ -72,6 +72,105 @@ const DEMO_ACTES: ActeLocal[] = [
 ]
 
 // ═════════════════════════════════════════════════════════════════════════════
+
+// ── Composant Recommandation avec résumé IA ───────────────────────────────
+function RecommandationPanel({ dossierId }: { dossierId: number | null }) {
+  const [specialiste, setSpecialiste] = useState('')
+  const [motif,       setMotif]       = useState('')
+  const [resumeIA,    setResumeIA]    = useState('')
+  const [loading,     setLoading]     = useState(false)
+  const [sent,        setSent]        = useState(false)
+
+  const SPECIALISTES_LIMITES = [
+    { val: 'physiotherapeute', label: 'Physiothérapeute' },
+    { val: 'dentiste',         label: 'Dentiste' },
+    { val: 'optometriste',     label: 'Optométriste' },
+  ]
+
+  const envoyer = async () => {
+    if (!dossierId || !specialiste || !motif) return
+    setLoading(true)
+    try {
+      // 1. Enregistrer la recommandation + obtenir contexte
+      const r = await api.post(`/medecin/recommander-avec-resume/${dossierId}`, {
+        specialiste_cible: specialiste, motif
+      })
+      
+      // 2. Générer résumé IA limité (pas le dossier complet)
+      const resIA = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514', max_tokens: 300,
+          messages: [{
+            role: 'user',
+            content: `Tu es un médecin rédigeant une fiche de recommandation. Génère un résumé LIMITÉ pour un(e) ${specialiste} — inclure UNIQUEMENT: motif de consultation, informations pertinentes pour leur spécialité, points d'attention cliniques. NE PAS inclure: diagnostic complet, antécédents médicaux complets, médicaments sensibles. Motif: "${motif}". Contexte: ${JSON.stringify(r.data.resume_context)}. Max 150 mots.`
+          }]
+        })
+      })
+      const iaData = await resIA.json()
+      setResumeIA(iaData.content?.[0]?.text || '')
+      setSent(true)
+      toast.success(`Recommandation envoyée à ${specialiste} ✓`)
+    } catch (e: any) {
+      toast.error(e?.response?.data?.detail || 'Erreur')
+    } finally { setLoading(false) }
+  }
+
+  if (!dossierId) return (
+    <div style={{ fontSize: 13, color: '#94a3b8' }}>Sélectionnez un dossier pour faire une recommandation.</div>
+  )
+
+  return (
+    <div>
+      {!sent ? (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <label style={{ display: 'block', fontWeight: 600, fontSize: 13, marginBottom: 6 }}>Spécialiste cible</label>
+            <select value={specialiste} onChange={e => setSpecialiste(e.target.value)}
+              style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 14, background: 'white' }}>
+              <option value="">-- Sélectionner --</option>
+              {SPECIALISTES_LIMITES.map(s => <option key={s.val} value={s.val}>{s.label}</option>)}
+            </select>
+          </div>
+          <div>
+            <label style={{ display: 'block', fontWeight: 600, fontSize: 13, marginBottom: 6 }}>Motif de recommandation *</label>
+            <input value={motif} onChange={e => setMotif(e.target.value)}
+              placeholder="Ex: Rééducation post-fracture"
+              style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 14, boxSizing: 'border-box' as const }} />
+          </div>
+          <div style={{ gridColumn: '1/-1' }}>
+            <button onClick={envoyer} disabled={loading || !specialiste || !motif} style={{
+              background: 'linear-gradient(135deg,#7c3aed,#0d9488)', color: 'white',
+              border: 'none', borderRadius: 10, padding: '10px 20px', fontWeight: 700,
+              cursor: 'pointer', fontSize: 14, opacity: (!specialiste || !motif) ? 0.5 : 1
+            }}>
+              {loading ? '⏳ Génération résumé IA...' : '🤖 Recommander + Résumé IA'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div>
+          <div style={{ background: '#f5f3ff', borderRadius: 12, padding: 16, marginBottom: 12, border: '1px solid #ddd6fe' }}>
+            <div style={{ fontWeight: 700, color: '#7c3aed', marginBottom: 8 }}>
+              ✓ Recommandation envoyée à {specialiste}
+            </div>
+            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 6 }}>Résumé IA généré (accès limité) :</div>
+            <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{resumeIA}</div>
+            <div style={{ marginTop: 10, fontSize: 11, color: '#94a3b8' }}>
+              ℹ️ Ce résumé est la seule information transmise au spécialiste — le dossier complet reste confidentiel.
+            </div>
+          </div>
+          <button onClick={() => { setSent(false); setSpecialiste(''); setMotif(''); setResumeIA('') }}
+            style={{ background: 'none', border: '1px solid #e2e8f0', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontSize: 13, color: '#64748b' }}>
+            Nouvelle recommandation
+          </button>
+        </div>
+      )}
+    </div>
+  )
+}
+
 export default function MedecinDashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth()
   const router   = useRouter()
@@ -475,6 +574,17 @@ export default function MedecinDashboard() {
                     <i className="fa-solid fa-save" style={{ marginRight: 8 }} />Enregistrer l'acte
                   </button>
                 </form>
+                
+                {/* ── RECOMMANDATION ── */}
+                <div style={{ marginTop: 20, borderTop: '1px solid #e2e8f0', paddingTop: 16 }}>
+                  <h4 style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 10 }}>
+                    🔄 Recommander vers un spécialiste
+                  </h4>
+                  <p style={{ fontSize: 12, color: '#64748b', marginBottom: 12, lineHeight: 1.5 }}>
+                    Physio / Dentiste / Optométriste — l'IA génère un résumé limité pour le spécialiste, sans exposer le dossier complet.
+                  </p>
+                  <RecommandationPanel dossierId={dossierId} />
+                </div>
               </div>
             )}
 

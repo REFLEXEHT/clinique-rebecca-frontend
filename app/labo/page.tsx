@@ -1,4 +1,5 @@
 'use client'
+import React, { useRef } from 'react'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
@@ -104,6 +105,60 @@ function detecterValeurCritique(examen: string, resultats: string) {
     }
   }
   return null
+}
+
+
+// ── Searchable exam selector ──────────────────────────────────────────────
+function ExamenSearchable({ value, onChange, examens }: { value: string; onChange: (v: string) => void; examens: string[] }) {
+  const [search, setSearch] = useState('')
+  const [open,   setOpen]   = useState(false)
+  const ref = React.useRef<HTMLDivElement>(null)
+
+  const filtered = search.length > 1
+    ? examens.filter(e => e.toLowerCase().includes(search.toLowerCase())).slice(0, 20)
+    : examens.slice(0, 30)
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  return (
+    <div ref={ref} style={{ position: 'relative' }}>
+      <input
+        value={value || search}
+        onChange={e => { setSearch(e.target.value); onChange(''); setOpen(true) }}
+        onFocus={() => setOpen(true)}
+        placeholder="Taper pour rechercher (ex: Glycémie, HIV, TSH...)"
+        style={{ width: '100%', padding: '11px 14px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, boxSizing: 'border-box' as const }}
+      />
+      {open && filtered.length > 0 && !value && (
+        <div style={{
+          position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 200,
+          background: 'white', borderRadius: 10, border: '1px solid #e2e8f0',
+          boxShadow: '0 8px 24px rgba(0,0,0,0.1)', maxHeight: 260, overflowY: 'auto'
+        }}>
+          {filtered.map(ex => (
+            <button key={ex} type="button" onClick={() => { onChange(ex); setSearch(''); setOpen(false) }}
+              style={{ width: '100%', padding: '9px 14px', border: 'none', background: 'white', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: '#374151', borderBottom: '1px solid #f8fafc' }}
+              onMouseEnter={e => (e.currentTarget.style.background = '#eff6ff')}
+              onMouseLeave={e => (e.currentTarget.style.background = 'white')}>
+              {ex}
+            </button>
+          ))}
+          {search.length > 1 && (
+            <button type="button" onClick={() => { onChange(search); setOpen(false) }}
+              style={{ width: '100%', padding: '9px 14px', border: 'none', background: '#f8fafc', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: '#1641C8', fontWeight: 600 }}>
+              ✚ Utiliser "{search}" (examen personnalisé)
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 export default function LaboPage() {
