@@ -161,7 +161,7 @@ function PageCliniqueExterne() {
 
   useEffect(() => {
     // Fetch doctors from API for live propagation
-    fetch('/api/specialistes')
+    fetch('https://clinique-rebecca-api.onrender.com/api/specialistes')
       .then(r => r.json())
       .then(data => { if (Array.isArray(data) && data.length > 0) setMedecinsList(data) })
       .catch(() => {}) // fallback to hardcoded BRANCHES_CLINIQUE
@@ -209,13 +209,13 @@ function PageCliniqueExterne() {
                 <h2 style={{fontWeight:900,fontSize:'1.3rem',color:'#0f172a',marginBottom:8}}>{b?.icon} {b?.label}</h2>
                 <p style={{color:'#64748b',fontSize:14,marginBottom:20,lineHeight:1.7}}>{b?.desc}</p>
                 <p style={{color:'#94a3b8',fontSize:13,marginBottom:16}}>Contact : <a href={`mailto:${b?.email}`} style={{color:'#1641C8'}}>{b?.email}</a> · {CLINIQUE_TEL}</p>
-                {!getMedecinsForBranche(b!).length ? (
+                {!b||!getMedecinsForBranche(b).length ? (
                   <div style={{background:'white',borderRadius:14,padding:24,border:'1px solid #e2e8f0'}}>
                     <p style={{color:'#64748b'}}>Disponible sur demande — appelez le {CLINIQUE_TEL}</p>
                   </div>
                 ) : (
                   <div style={{display:'flex',flexDirection:'column',gap:12}}>
-                    {getMedecinsForBranche(b!).map(nom=>{
+                    {(b ? getMedecinsForBranche(b) : []).map(nom=>{
                       const info=MEDECINS_INFO[nom]||{}
                       return (
                         <div key={nom} style={{background:'white',borderRadius:14,padding:18,border:'1px solid #e2e8f0',display:'flex',gap:14,alignItems:'center'}}>
