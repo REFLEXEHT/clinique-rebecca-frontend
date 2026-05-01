@@ -1,4 +1,5 @@
 'use client'
+import React from 'react'
 // context/AuthContext.tsx
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { User, Role } from '@/types'

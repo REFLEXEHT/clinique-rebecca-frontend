@@ -112,8 +112,8 @@ export default function HomePage() {
         <div style={{ maxWidth:1100, margin:'0 auto' }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:36 }}>
             <div>
-              <div style={{ color:'#1641C8', fontWeight:700, fontSize:13, textTransform:'uppercase', letterSpacing:1, marginBottom:8 }}>{t('home.pourquoi')}</div>
-              <h2 style={{ fontWeight:900, fontSize:'clamp(1.5rem,3vw,2rem)', color:'#0f172a', margin:0 }}>{t('home.nosServices')}</h2>
+              <div style={{ color:'#1641C8', fontWeight:700, fontSize:13, textTransform:'uppercase', letterSpacing:1, marginBottom:8 }}>{t('home.nosServices')?.toUpperCase?.() || 'NOS SERVICES'}</div>
+              <h2 style={{ fontWeight:900, fontSize:'clamp(1.5rem,3vw,2rem)', color:'#0f172a', margin:0 }}>{t('home.sousNos')}</h2>
             </div>
             <Link href="/services" style={{ color:'#1641C8', fontWeight:700, fontSize:14, textDecoration:'none', display:'flex', alignItems:'center', gap:6 }}>
               {t('home.voirTout')} <i className="fa-solid fa-arrow-right" style={{ fontSize:11 }} />
@@ -136,34 +136,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── POURQUOI NOUS ─────────────────────────────────────────── */}
-      <section style={{ padding:'72px 5%', background:'white' }}>
-        <div style={{ maxWidth:1100, margin:'0 auto', display:'grid', gridTemplateColumns:'1fr 1fr', gap:60, alignItems:'center' }}>
-          <div>
-            <div style={{ color:'#1641C8', fontWeight:700, fontSize:13, textTransform:'uppercase', letterSpacing:1, marginBottom:8 }}>{t('home.pourquoi')}</div>
-            <h2 style={{ fontWeight:900, fontSize:'clamp(1.5rem,3vw,2rem)', color:'#0f172a', margin:'0 0 16px' }}>{t('home.refTitle')}</h2>
-            <p style={{ color:'#64748b', fontSize:15, lineHeight:1.8, margin:'0 0 28px' }}>{t('home.refDesc')}</p>
-            {[
-              { icon:'fa-user-doctor',   tk:'home.feat4Title', dk:'home.feat4Desc' },
-              { icon:'fa-flask-vial',    tk:'home.feat5Title', dk:'home.feat5Desc' },
-              { icon:'fa-shield-halved', tk:'home.feat6Title', dk:'home.feat6Desc' },
-            ].map(f => (
-              <div key={f.tk} style={{ display:'flex', gap:14, marginBottom:20 }}>
-                <div style={{ width:42, height:42, borderRadius:12, background:'#eff6ff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
-                  <i className={`fa-solid ${f.icon}`} style={{ color:'#1641C8', fontSize:18 }} />
-                </div>
-                <div>
-                  <div style={{ fontWeight:700, color:'#0f172a', fontSize:14, marginBottom:4 }}>{t(f.tk)}</div>
-                  <div style={{ color:'#64748b', fontSize:13 }}>{t(f.dk)}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
-
-          </div>
-        </div>
-      </section>
+      {/* ── POURQUOI ── */}
+      <PourquoiSection />
 
       {/* ── CTA ───────────────────────────────────────────────────── */}
       <section style={{ background:'linear-gradient(135deg,#0f1e3d,#1641C8,#0d9488)', padding:'72px 5%', textAlign:'center' }}>

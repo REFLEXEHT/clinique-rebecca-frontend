@@ -14,7 +14,22 @@ export const metadata: Metadata = {
   description: 'Soins spécialisés de qualité — Pétion-Ville, Haïti',
 }
 
-export default function RootLayout({ children }: { children: import('react').ReactNode }) {
+
+function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <LangProvider children={
+      <AuthProvider children={
+        <>
+          <BackBar />
+          {children}
+          <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+        </>
+      } />
+    } />
+  )
+}
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="fr">
       <head>
@@ -23,13 +38,7 @@ export default function RootLayout({ children }: { children: import('react').Rea
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" />
       </head>
       <body className={inter.className} suppressHydrationWarning>
-        <LangProvider>
-          <AuthProvider>
-            <BackBar />
-            {children}
-            <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
-          </AuthProvider>
-        </LangProvider>
+        <Providers children={children} />
       </body>
     </html>
   )

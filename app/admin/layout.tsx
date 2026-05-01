@@ -1,4 +1,5 @@
 'use client'
+import React from 'react'
 // app/admin/layout.tsx — Layout admin avec sidebar
 import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
