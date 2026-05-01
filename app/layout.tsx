@@ -1,3 +1,4 @@
+import React from 'react'
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
@@ -23,11 +24,11 @@ export default function RootLayout({ children }: { children: import('react').Rea
       </head>
       <body className={inter.className} suppressHydrationWarning>
         <LangProvider>
-        <AuthProvider>
-          <BackBar />
-          {children}
-          <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
-        </AuthProvider>
+          <AuthProvider>
+            <BackBar />
+            {children}
+            <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+          </AuthProvider>
         </LangProvider>
       </body>
     </html>

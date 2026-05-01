@@ -1,3 +1,4 @@
+import React from 'react'
 'use client'
 // context/AuthContext.tsx
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'

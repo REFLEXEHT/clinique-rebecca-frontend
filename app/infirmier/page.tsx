@@ -61,7 +61,7 @@ export default function InfirmierDashboard() {
     setSubmitting(true)
     try {
       const payload: any = { dossier_id: selected.id }
-      Object.entries(sv).forEach(([k, v]) => { if (v) payload[k] = parseFloat(v) || v })
+      Object.entries(sv).forEach(([k, v]) => { if (v) payload[k] = parseFloat(v as string) || v })
       const r = await api.post('/infirmier/signes-vitaux', payload)
       if (r.data.alerte) {
         toast.error(`🚨 Alertes critiques !\n${r.data.alertes.join('\n')}`, { duration: 8000 })
