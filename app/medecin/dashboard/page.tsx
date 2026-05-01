@@ -178,8 +178,11 @@ export default function MedecinDashboard() {
   const [rdvs,   setRdvs]   = useState<RendezVous[]>([])
   const [actes,  setActes]  = useState<ActeLocal[]>([])
   const [showForm, setShowForm] = useState(false)
+  const [dossierId, setDossierId] = useState<number|null>(null)
   const [editProfil, setEditProfil] = useState(false)
   const [filtreActe, setFiltreActe] = useState<TypeActe | 'tous'>('tous')
+  const [synthese,  setSynthese]  = useState<Record<number,string>>({})
+  const [loadSynth, setLoadSynth] = useState<number|null>(null)
   const [profil, setProfil] = useState({
     bio: '', telephone: '', disponibilites: 'Lun–Ven 07h–17h · Sam 07h–12h', emoji: '👨‍⚕️'
   })
@@ -239,6 +242,24 @@ export default function MedecinDashboard() {
       </div>
     </div>
   )
+
+  const genererSyntheseDossier = async (dossier: any) => {
+    setLoadSynth(dossier.id)
+    try {
+      const res = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'claude-sonnet-4-20250514', max_tokens: 400,
+          messages: [{ role: 'user', content: `Synthèse clinique concise pour médecin (200 mots max): ${JSON.stringify(dossier)}. Format: situation clinique (2 phrases), points clés, résultats significatifs.` }]
+        })
+      })
+      const data = await res.json()
+      setSynthese(prev => ({...prev, [dossier.id]: data.content?.[0]?.text || ''}))
+    } catch { setSynthese(prev => ({...prev, [dossier.id]: 'Erreur génération'})) }
+    finally { setLoadSynth(null) }
+  }
+
 
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
