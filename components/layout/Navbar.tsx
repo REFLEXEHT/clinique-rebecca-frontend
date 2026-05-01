@@ -182,8 +182,11 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
               </button>
               <div className="nav-dropdown">
                 <div className="dropdown-title">Nos 9 services</div>
+                <Link href="/services" style={{fontWeight:700,color:'#1641C8'}}>
+                  → Voir tous les services
+                </Link>
                 {SERVICES.map((s) => (
-                  <Link key={s.href} href="/services">
+                  <Link key={s.href} href={s.href}>
                     <i className={`fa-solid ${s.icon}`} />{s.label}
                   </Link>
                 ))}
@@ -198,8 +201,11 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
               </button>
               <div className="nav-dropdown">
                 <div className="dropdown-title">12 spécialités</div>
+                <Link href="/specialites" style={{fontWeight:700,color:'#1641C8'}}>
+                  → Voir tous les spécialistes
+                </Link>
                 {SPECIALITES.map((s) => (
-                  <Link key={s.slug} href="/specialites">
+                  <Link key={s.slug} href={`/specialites?specialite=${encodeURIComponent(s.label)}`}>
                     <i className={`fa-solid ${s.icon}`} />{s.label}
                   </Link>
                 ))}
