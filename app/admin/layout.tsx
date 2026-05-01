@@ -1,4 +1,3 @@
-import React from 'react'
 'use client'
 // app/admin/layout.tsx — Layout admin avec sidebar
 import { useEffect } from 'react'
