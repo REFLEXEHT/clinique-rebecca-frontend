@@ -51,7 +51,7 @@ const LANGS = [
 ]
 
 function LangSelector() {
-  const { lang, setLang } = useLang()
+  const { lang, setLang, t } = useLang()
   const [open, setOpen] = useState(false)
   const current = LANGS.find(l => l.code === lang) || LANGS[0]
 
@@ -171,19 +171,19 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
           <div className="hidden md:flex items-center gap-0.5 mx-auto">
             <Link href="/" className={`nav-item px-3.5 py-2 rounded-lg text-sm font-medium
               transition-all ${pathname === '/' ? 'text-[#1641C8] bg-blue-50 font-bold' : 'text-slate-600 hover:text-[#1641C8] hover:bg-blue-50'}`}>
-              Accueil
+              {t('nav.accueil')}
             </Link>
 
             <div className="nav-item relative nav-dropdown-trigger">
               <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm
                 font-medium text-slate-600 hover:text-[#1641C8] hover:bg-blue-50
                 transition-all border-none bg-transparent cursor-pointer font-sans">
-                Services <i className="fa-solid fa-chevron-down text-[10px]" />
+                {t('nav.services')} <i className="fa-solid fa-chevron-down text-[10px]" />
               </button>
               <div className="nav-dropdown">
-                <div className="dropdown-title">Nos 9 services</div>
+                <div className="dropdown-title">{lang === 'en' ? 'Our 10 services' : lang === 'ht' ? 'Sèvis nou yo' : lang === 'es' ? 'Nuestros servicios' : lang === 'zh' ? '我们的服务' : 'Nos 10 services'}</div>
                 <Link href="/services" style={{fontWeight:700,color:'#1641C8'}}>
-                  → Voir tous les services
+                  {lang === 'en' ? '→ All services' : lang === 'ht' ? '→ Tout sèvis' : lang === 'es' ? '→ Todos los servicios' : lang === 'zh' ? '→ 所有服务' : '→ Voir tous les services'}
                 </Link>
                 {SERVICES.map((s) => (
                   <Link key={s.href} href={s.href}>
@@ -197,12 +197,12 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
               <button className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm
                 font-medium text-slate-600 hover:text-[#1641C8] hover:bg-blue-50
                 transition-all border-none bg-transparent cursor-pointer font-sans">
-                Spécialités <i className="fa-solid fa-chevron-down text-[10px]" />
+                {t('nav.specialites')} <i className="fa-solid fa-chevron-down text-[10px]" />
               </button>
               <div className="nav-dropdown">
-                <div className="dropdown-title">12 spécialités</div>
+                <div className="dropdown-title">{lang === 'en' ? 'Our specialists' : lang === 'ht' ? 'Espesyalis nou yo' : lang === 'es' ? 'Nuestros especialistas' : lang === 'zh' ? '我们的专科' : '15 spécialités'}</div>
                 <Link href="/specialites" style={{fontWeight:700,color:'#1641C8'}}>
-                  → Voir tous les spécialistes
+                  {lang === 'en' ? '→ All specialists' : lang === 'ht' ? '→ Tout espesyalis' : lang === 'es' ? '→ Todos los especialistas' : lang === 'zh' ? '→ 所有专科' : '→ Voir tous les spécialistes'}
                 </Link>
                 {SPECIALITES.map((s) => (
                   <Link key={s.slug} href={`/specialites?specialite=${encodeURIComponent(s.label)}`}>
@@ -214,7 +214,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
 
             <Link href="/consultation" className={`px-3.5 py-2 rounded-lg text-sm font-medium
               transition-all ${pathname === '/consultation' ? 'text-[#1641C8] bg-blue-50 font-bold' : 'text-slate-600 hover:text-[#1641C8] hover:bg-blue-50'}`}>
-              Consultation
+              {t('nav.consultation')}
             </Link>
           </div>
         )}
@@ -244,7 +244,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
               <Link href="/login" className="px-4 py-2 rounded-full border-[1.5px]
                 border-slate-200 text-slate-700 font-semibold text-[13.5px]
                 hover:border-[#1641C8] hover:text-[#1641C8] hover:bg-blue-50 transition-all">
-                <i className="fa-regular fa-user mr-1.5" />Connexion
+                <i className="fa-regular fa-user mr-1.5" />{t('nav.connexion')}
               </Link>
               <button
                 onClick={onRdvClick}
@@ -252,7 +252,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                   text-white font-bold text-[13.5px] border-none cursor-pointer
                   hover:bg-[#0f2fa3] hover:-translate-y-0.5 hover:shadow-lg
                   hover:shadow-blue-200 transition-all">
-                <i className="fa-regular fa-calendar-check" />Prendre RDV
+                <i className="fa-regular fa-calendar-check" />{t('nav.prendreRdv')}
               </button>
             </>
           )}
@@ -282,7 +282,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
               <Link href="/" className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700
                 font-semibold text-[15px] hover:bg-blue-50 hover:text-[#1641C8] transition-all"
                 onClick={() => setMobileOpen(false)}>
-                <i className="fa-solid fa-house w-5 text-center text-[#1641C8]" /> Accueil
+                <i className="fa-solid fa-house w-5 text-center text-[#1641C8]" /> {t('nav.accueil')}
               </Link>
 
               {/* Services */}
@@ -293,7 +293,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                 onClick={() => setMobileSection(mobileSection === 'services' ? null : 'services')}
               >
                 <span className="flex items-center gap-3">
-                  <i className="fa-solid fa-grid-2 w-5 text-center text-[#1641C8]" /> Services
+                  <i className="fa-solid fa-grid-2 w-5 text-center text-[#1641C8]" /> {t('nav.services')}
                 </span>
                 <i className={`fa-solid fa-chevron-${mobileSection === 'services' ? 'up' : 'down'} text-xs text-slate-400`} />
               </button>
@@ -319,7 +319,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                 onClick={() => setMobileSection(mobileSection === 'specs' ? null : 'specs')}
               >
                 <span className="flex items-center gap-3">
-                  <i className="fa-solid fa-user-doctor w-5 text-center text-[#1641C8]" /> Spécialités
+                  <i className="fa-solid fa-user-doctor w-5 text-center text-[#1641C8]" /> {t('nav.specialites')}
                 </span>
                 <i className={`fa-solid fa-chevron-${mobileSection === 'specs' ? 'up' : 'down'} text-xs text-slate-400`} />
               </button>
@@ -341,7 +341,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                 className="flex items-center gap-3 px-4 py-3 rounded-xl text-slate-700
                   font-semibold text-[15px] hover:bg-blue-50 hover:text-[#1641C8] transition-all"
                 onClick={() => setMobileOpen(false)}>
-                <i className="fa-solid fa-video w-5 text-center text-[#1641C8]" /> Consultation
+                <i className="fa-solid fa-video w-5 text-center text-[#1641C8]" /> {t('nav.consultation')}
               </Link>
 
               {/* Auth buttons mobile */}
@@ -371,12 +371,12 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                         border-[1.5px] border-slate-200 text-slate-700 font-semibold text-[14px]
                         hover:border-[#1641C8] hover:text-[#1641C8] transition-all"
                       onClick={() => setMobileOpen(false)}>
-                      <i className="fa-regular fa-user" /> Connexion
+                      <i className="fa-regular fa-user" /> {t('nav.connexion')}
                     </Link>
                     <button
                       onClick={() => { onRdvClick?.(); setMobileOpen(false) }}
                       className="w-full btn-primary justify-center py-3">
-                      <i className="fa-regular fa-calendar-check" /> Prendre RDV
+                      <i className="fa-regular fa-calendar-check" /> {t('nav.prendreRdv')}
                     </button>
                   </>
                 )}
