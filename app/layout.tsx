@@ -16,15 +16,12 @@ export const metadata: Metadata = {
 
 function Providers({ children }: { children: React.ReactNode }) {
   return (
-    <LangProvider children={
-      <AuthProvider children={
-        <>
-          <BackBar />
-          {children}
-          <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
-        </>
-      } />
-    } />
+    <LangProvider>
+      <AuthProvider>
+        {children}
+        <Toaster position="top-right" toastOptions={{ duration: 4000 }} />
+      </AuthProvider>
+    </LangProvider>
   )
 }
 
