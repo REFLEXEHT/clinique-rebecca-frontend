@@ -148,6 +148,7 @@ export default function MedecinDashboard() {
   const [actes,  setActes]  = useState<ActeLocal[]>([])
   const [showForm,     setShowForm]     = useState(false)
   const [dossierId,    setDossierId]    = useState<number|null>(null)
+  const [selected,     setSelected]     = useState<any>(null)
   const [fileAttente,  setFileAttente]  = useState<any[]>([])
   const [nbAttente,    setNbAttente]    = useState(0)
   const [synthese,     setSynthese]     = useState<Record<number,string>>({})
