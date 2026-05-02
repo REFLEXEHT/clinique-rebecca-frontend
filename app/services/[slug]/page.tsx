@@ -554,7 +554,7 @@ const SERVICES_CONTENT: Record<string,{
       {titre:'Blanchiment dentaire',desc:'Éclaircissement professionnel des dents en une séance. Résultats visibles immédiatement.'},
       {titre:'Prothèse dentaire',desc:'Dentier partiel ou complet pour remplacer les dents manquantes et restaurer la mastication et le sourire.'},
     ],
-    infos:['Lun–Sam 07h–17h · Dim 07h–15h',Anesthésie locale disponible','Radiographies sur place','Urgences dentaires acceptées'],
+    infos:['Lun–Sam 07h–17h · Dim 07h–15h','Anesthésie locale disponible','Radiographies sur place','Urgences dentaires acceptées'],
   },
   physiotherapie:{
     titre:'Physiothérapie',icon:'🏥',couleur:'#d97706',gradient:'linear-gradient(135deg,#0f1e3d,#d97706)',
