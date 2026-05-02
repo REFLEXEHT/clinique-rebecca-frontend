@@ -128,7 +128,7 @@ export const DOCUMENTS: DocType[] = [
     icon: '✍️',
     couleur: '#374151',
     services: [...SERVICE_HOSPIT, 'neurochirurgie','chirurgie-generale',
-               'chirurgie-pediatrique','orthopedie','salle-sop'],
+               'chirurgie-pediatrique','orthopedie','salle-sop','orl','urologie'],
     roles: ALL_ROLES,
   },
   {

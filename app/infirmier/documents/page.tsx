@@ -526,18 +526,77 @@ function renderDocument(type: string, data: any, user: any, onClose: () => void)
 
     // ── OPTOMÉTRIE ────────────────────────────────────────────────────
     examen_vue: (
-      <PrintModal title="Fiche Examen de la Vue" couleur={couleur} onClose={onClose}>
-        <EnteteClinique titre="Fiche d'Examen de la Vue" couleur={couleur} />
-        {baseInfo} {ligne('Optométriste', user?.nom)}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-          {ligne('Acuité visuelle OD (sans correction)')} {ligne('Acuité visuelle OG (sans correction)')}
-          {ligne('Acuité visuelle OD (avec correction)')} {ligne('Acuité visuelle OG (avec correction)')}
+      <PrintModal title="Fiche d'Examen de la Vue" couleur={couleur} onClose={onClose}>
+        <EnteteClinique titre="Fiche d'Examen Optométrique" couleur={couleur} />
+        <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr 1fr', gap: 8 }}>
+          {ligne('Nom et Prénom')} {ligne('Âge')} {ligne('Sexe')}
         </div>
-        {ligne('Tension oculaire')} {ligne('Réfraction')}
-        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, marginTop: 10 }}>Fond d'œil</div>
-        {ligneVide(40)}
-        {ligne('Diagnostic')} {ligneVide(30)}
-        {ligne('Recommandations')} {ligneVide(30)}
+        {ligne('Motif de consultation')}
+        {/* Acuité visuelle */}
+        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, marginTop: 12, color: couleur }}>ACUITÉ VISUELLE</div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 12 }}>
+          <thead>
+            <tr style={{ background: '#f8fafc' }}>
+              {['', 'Sans correction', 'Avec ancienne correction', 'Trou sténopéique'].map(h => (
+                <th key={h} style={{ border: '1px solid #e2e8f0', padding: '7px 10px', fontWeight: 700, textAlign: 'center' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {['Œil Droit (OD)', 'Œil Gauche (OG)', 'Binoculaire'].map(eye => (
+              <tr key={eye}>
+                <td style={{ border: '1px solid #e2e8f0', padding: '10px', fontWeight: 600 }}>{eye}</td>
+                {[0,1,2].map(i => <td key={i} style={{ border: '1px solid #e2e8f0', padding: '10px' }} />)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {/* Réfraction */}
+        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: couleur }}>RÉFRACTION OBJECTIVE / SUBJECTIVE</div>
+        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, marginBottom: 12 }}>
+          <thead>
+            <tr style={{ background: '#f8fafc' }}>
+              {['', 'Sphère', 'Cylindre', 'Axe', 'ADD', 'AV finale'].map(h => (
+                <th key={h} style={{ border: '1px solid #e2e8f0', padding: '7px 10px', fontWeight: 700, textAlign: 'center' }}>{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {['Œil Droit (OD)', 'Œil Gauche (OG)'].map(eye => (
+              <tr key={eye}>
+                <td style={{ border: '1px solid #e2e8f0', padding: '10px', fontWeight: 600 }}>{eye}</td>
+                {[0,1,2,3,4].map(i => <td key={i} style={{ border: '1px solid #e2e8f0', padding: '10px' }} />)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {/* Examen biomicroscopique */}
+        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: couleur }}>EXAMEN BIOMICROSCOPIQUE (Lampe à fente)</div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, fontSize: 12, marginBottom: 12 }}>
+          {['Conjonctive OD', 'Conjonctive OG', 'Cornée OD', 'Cornée OG',
+            'Chambre antérieure OD', 'Chambre antérieure OG', 'Cristallin OD', 'Cristallin OG'].map(item => (
+            <div key={item} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ minWidth: 160 }}>{item} :</span>
+              <div style={{ flex: 1, borderBottom: '1px solid #d1d5db' }} />
+            </div>
+          ))}
+        </div>
+        {/* Tension oculaire + Fond œil */}
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: couleur }}>TENSION OCULAIRE</div>
+            {ligne('OD (mmHg)')} {ligne('OG (mmHg)')} {ligne('Méthode')}
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, color: couleur }}>FOND D'ŒIL</div>
+            {ligne('Papille OD')} {ligne('Papille OG')} {ligne('Rétine')}
+          </div>
+        </div>
+        {/* Diagnostic + plan */}
+        <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 8, marginTop: 10, color: couleur }}>DIAGNOSTIC & PLAN</div>
+        {ligne('Diagnostic')} {ligneVide(36)}
+        {ligne('Traitement / Prescription')} {ligneVide(36)}
+        {ligne('Prochain contrôle')}
         {sigMedecin}
       </PrintModal>
     ),
