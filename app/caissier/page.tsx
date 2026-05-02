@@ -156,6 +156,7 @@ export default function CaissierPage() {
     nom:'', prenom:'', age:'', adresse:'', telephone:'', email:'',
     contact_urgence:'', type_visite:'premiere' as 'premiere'|'rdv'
   })
+  const [registre,   setRegistre] = useState<any[]>([])
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || !['caissier','admin'].includes(user?.role||'')))
