@@ -80,7 +80,7 @@ export default function HomePage() {
           <div style={{ display:'flex', gap:32, flexWrap:'wrap' }}>
             {([
               {n:'30+', k:'home.stat1'},{n:'10', k:'home.stat2'},
-              {n:'15',  k:'home.stat3'},{n:'6j/7',k:'home.stat4'}
+              {n:'15',  k:'home.stat3'},{n:'7j/7',k:'home.stat4'}
             ] as const).map(s => (
               <div key={s.k}>
                 <div style={{ fontWeight:900, fontSize:'1.7rem', color:'#1641C8', lineHeight:1 }}>{s.n}</div>

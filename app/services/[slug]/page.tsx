@@ -247,18 +247,48 @@ function PageCliniqueExterne() {
 // ══════════════════════════════════════════════════════════════════════════
 function PageLaboratoire() {
   const EXAMENS_CARR = [
-    {titre:'Hémogramme Complet (NFS)',desc:'Analyse complète du sang : globules rouges, blancs, plaquettes. Détecte anémie, infections et troubles de la coagulation. Résultat sous 4h.'},
+    {titre:'Hémogramme Complet (NFS)',desc:'Analyse complète du sang : globules rouges, blancs, plaquettes. Détecte anémie, infections et troubles de la coagulation.'},
     {titre:'Glycémie à jeun',desc:'Mesure du taux de sucre sanguin. Indispensable pour le dépistage et suivi du diabète de type 1 et 2. À faire le matin avant de manger.'},
-    {titre:'Sérologie HIV 1 & 2',desc:'Dépistage des anticorps VIH. Résultat confidentiel sous 24h. Conseil pré et post-test inclus par notre équipe.'},
-    {titre:'Hépatite B & C',desc:'Détection du virus de l\'hépatite. Recommandé avant toute vaccination ou suivi de traitement antiviral. Résultats sous 48h.'},
-    {titre:'Bilan Rénal Complet',desc:'Créatinine, urée, clairance. Évalue le fonctionnement des reins. Essentiel pour diabétiques et hypertendus traités.'},
-    {titre:'HBA1C (Hémoglobine glyquée)',desc:'Reflète la glycémie des 3 derniers mois. Outil clé pour le suivi à long terme du diabète.'},
-    {titre:'TORCH (5 antigènes)',desc:'Toxoplasmose, Rubéole, CMV, Herpès I & II. Bilan recommandé en début de grossesse pour protéger mère et bébé.'},
-    {titre:'TSH Thyroïde',desc:'Dépiste hypo et hyperthyroïdie. Recommandé en cas de fatigue chronique, prise de poids inexpliquée ou troubles du rythme.'},
-    {titre:'Bilan Lipidique',desc:'Cholestérol total, HDL, LDL, triglycérides. Évalue votre risque cardiovasculaire. À faire à jeun pendant 12h.'},
-    {titre:'VDRL/RPR (Syphilis)',desc:'Dépistage de la syphilis. Recommandé pendant la grossesse et dans tout bilan IST complet.'},
-    {titre:'βHCG Grossesse',desc:'Test de grossesse quantitatif dans le sang. Plus fiable que le test urinaire, détectable dès 10 jours après conception.'},
-    {titre:'CRP & Procalcitonine',desc:'Marqueurs inflammatoires et infectieux. Distingue infection bactérienne de virale. Aide à guider l\'antibiothérapie.'},
+    {titre:'Sérologie HIV 1 & 2',desc:'Dépistage des anticorps VIH. Résultat confidentiel. Conseil pré et post-test inclus par notre équipe.'},
+    {titre:'Hépatite B (AgHBs)',desc:'Détection de l'antigène de surface du virus B. Recommandé avant toute vaccination anti-hépatite B.'},
+    {titre:'Hépatite C (Ac anti-VHC)',desc:'Dépistage du virus de l'hépatite C. Essentiel avant chirurgie ou chez personnes à risque.'},
+    {titre:'Bilan Rénal (Urée + Créatinine)',desc:'Évalue la fonction rénale. Essentiel pour diabétiques, hypertendus et patients sous néphrotoxiques.'},
+    {titre:'HBA1C (Hémoglobine glyquée)',desc:'Reflète la glycémie des 3 derniers mois. Outil clé pour le suivi du diabète.'},
+    {titre:'TORCH Complet (5 antigènes)',desc:'Toxoplasmose, Rubéole, CMV, Herpès I & II. Bilan recommandé en début de grossesse.'},
+    {titre:'TSH (Thyroïde)',desc:'Dépiste hypo et hyperthyroïdie. Indiqué en cas de fatigue chronique, prise de poids ou troubles du rythme.'},
+    {titre:'Bilan Lipidique Complet',desc:'Cholestérol total, HDL, LDL, triglycérides. Évalue le risque cardiovasculaire. À faire à jeun.'},
+    {titre:'VDRL / RPR (Syphilis)',desc:'Dépistage de la syphilis. Obligatoire pendant la grossesse et dans tout bilan IST.'},
+    {titre:'βHCG Quantitatif',desc:'Test de grossesse sanguin quantitatif. Plus fiable que le test urinaire, détectable très tôt.'},
+    {titre:'CRP & Procalcitonine',desc:'Marqueurs inflammatoires et infectieux. Distingue infection bactérienne de virale. Guide l'antibiothérapie.'},
+    {titre:'Bilan Hépatique (SGOT/SGPT/GGT)',desc:'Évalue la santé du foie. Indiqué en cas de jaunisse, alcool ou médicaments hépatotoxiques.'},
+    {titre:'Widal (Fièvre typhoïde)',desc:'Dépistage de la typhoïde. Très demandé en contexte haïtien.'},
+    {titre:'Groupe Sanguin & Rhésus',desc:'Détermination du groupe ABO et du facteur Rhésus. Obligatoire avant transfusion ou grossesse.'},
+    {titre:'Ferritine & Transferrine',desc:'Évalue les réserves en fer. Essentiel pour le diagnostic et suivi de l'anémie ferriprive.'},
+    {titre:'Ionogramme (Na, K, Cl)',desc:'Mesure des électrolytes. Indispensable en cas de vomissements, diarrhées ou insuffisance rénale.'},
+    {titre:'Troponine I & T',desc:'Marqueur cardiaque. Détecte les lésions myocardiques en cas de douleur thoracique suspecte.'},
+    {titre:'D-Dimères',desc:'Détecte les caillots sanguins. Indiqué en suspicion d'embolie pulmonaire ou thrombose veineuse.'},
+    {titre:'TP / INR (Coagulation)',desc:'Évalue la coagulation sanguine. Essentiel pour patients sous anticoagulants (Warfarine, AVK).'},
+    {titre:'Hormones Sexuelles (FSH/LH/E2)',desc:'FSH, LH, Estradiol, Progestérone. Bilan pour infertilité, ménopause et troubles du cycle.'},
+    {titre:'Vitamine D (25-OH)',desc:'Mesure le taux de vitamine D. Carence fréquente : fatigue, douleurs osseuses, immunité réduite.'},
+    {titre:'Vitamine B12 & Acide Folique',desc:'Déficits responsables d'anémie et troubles neurologiques. Indispensable chez la femme enceinte.'},
+    {titre:'PSA Total (Prostate)',desc:'Dépistage du cancer de la prostate. Recommandé chez l'homme de plus de 50 ans.'},
+    {titre:'CA 125 (Marqueur ovarien)',desc:'Marqueur tumoral ovarien. Diagnostic et suivi du cancer de l'ovaire.'},
+    {titre:'Culture Urine (ECBU)',desc:'Identifie le germe d'une infection urinaire et teste sa sensibilité aux antibiotiques.'},
+    {titre:'Frottis Vaginal & Culture',desc:'Recherche de germes pathogènes vaginaux. Indiqué en cas de pertes anormales ou IST suspectée.'},
+    {titre:'Goutte Épaisse (Malaria)',desc:'Examen de référence pour le diagnostic du paludisme à Plasmodium falciparum.'},
+    {titre:'Antigène Paludisme (TDR rapide)',desc:'Test rapide de dépistage du paludisme. Résultat en 15 minutes sur place.'},
+    {titre:'Spermiogramme',desc:'Analyse de la fertilité masculine : mobilité, morphologie et concentration des spermatozoïdes.'},
+    {titre:'Amylase & Lipase',desc:'Marqueurs pancréatiques. Indiqués en urgence en cas de douleurs abdominales intenses.'},
+    {titre:'Glycémie Post-Prandiale',desc:'Mesure la glycémie 2h après repas. Détecte le diabète et évalue l'équilibre glycémique.'},
+    {titre:'Hémoglobine S (Sickling Test)',desc:'Dépistage de la drépanocytose. Prévalence élevée du trait drépanocytaire en Haïti.'},
+    {titre:'Bilirubine Totale & Directe',desc:'Évalue la jaunisse. Distingue les causes hépatiques, hémolytiques et obstructives.'},
+    {titre:'Albumine & Protéines Totales',desc:'Évalue l'état nutritionnel et la fonction hépatique. Abaissée en malnutrition ou cirrhose.'},
+    {titre:'Acide Urique',desc:'Dépistage et suivi de la goutte. Mesuré aussi en insuffisance rénale ou chimiothérapie.'},
+    {titre:'Calcium Sérique',desc:'Dépiste hypo et hypercalcémies. Indiqué en crampes, ostéoporose, lithiase rénale ou cancer.'},
+    {titre:'Numération Plaquettes',desc:'Compte précis des plaquettes. Indiqué en saignements, purpura ou sous chimiothérapie.'},
+    {titre:'Coombs Direct & Indirect',desc:'Détecte les anticorps anti-globules rouges. Indispensable avant transfusion.'},
+    {titre:'ACE (Antigène Carcinoembryonnaire)',desc:'Marqueur tumoral digestif. Suivi des cancers colorectaux et gastriques sous traitement.'},
+    {titre:'Interleukine 6 (IL-6)',desc:'Marqueur inflammatoire avancé. Suivi des infections sévères et maladies auto-immunes.'},
   ]
 
   const TOUS_EXAMENS = ['Hémogramme','NFS','Glycémie','Urée','Créatinine','Cholestérol','HDL','LDL','VLDL','Triglycérides','SGOT','SGPT','Gamma GT','Bilirubine','Albumine','TSH','T3','T4','HIV','Hépatite B','Hépatite C','VDRL','RPR','Widal','CRP','RA-Latex','ASO','H.Pylori','PSA','HBA1C','BHCG','Ferritine','Fer sérique','Calcium','Phosphore','Acide urique','Hémoglobine','Réticulocytes','Plaquettes','TS','TC','PT/INR','D-Dimères','Groupe sanguin','Sickling','Électrophorèse','Malaria','Monotest','TORCH','Toxoplasmose','Rubéole','CMV','Herpès','Frottis vaginal','Frottis urétral','Crachats','Culture urine','Culture selles','Culture pus','Goutte pendante','Leucocytes','Nitrite','Albumine urinaire','Glucose urinaire','Interleukine 6','Procalcitonine','Cortisol','DHEA','Testostérone','Progestérone','Estradiol','FSH','LH','Prolactine','Insuline','Peptide C','Microalbuminurie','Créatinine urinaire','Acide valproïque','Digoxine','Phénobarbital','Troponine','BNP','NT-proBNP','Amylase','Lipase','LDH','CPK','Potassium','Sodium','Chlorures','Bicarbonates','Zinc','Cuivre','Vitamine D','Vitamine B12','Acide folique','Rétinol','Fer','Transferrine','TPHA','FTA-ABS','Western Blot','PCR','ELISA','Coombs direct','Coombs indirect','Numération leucocytes','Numération globulaire','Formule sanguine','Hématocrite','MCV','MCH','RDW','Antigène HBs','Anticorps HBs','CD4','CD8','Charge virale','Thyroglobuline','Anti-TPO','T3 libre','T4 libre','Spermiogramme','Bilan coagulation']
@@ -276,14 +306,14 @@ function PageLaboratoire() {
     <div style={{minHeight:'100vh',background:'#f8fafc'}}>
       <Navbar variant="public"/>
       <Hero titre="Laboratoire" icon="🔬" gradient="linear-gradient(135deg,#0f1e3d,#16a34a)"
-        desc="165 analyses biologiques · Résultats envoyés par WhatsApp sous 24-48h · Lun–Sam 07h–15h"/>
+        desc="165 analyses biologiques disponibles · Lun–Sam 07h–17h · Dim 07h–15h · Prélèvement sans RDV"/>
       <div style={{maxWidth:1000,margin:'0 auto',padding:'36px 20px'}}>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24}}>
           <div>
             <h2 style={{fontWeight:800,color:'#0f172a',fontSize:'1.1rem',marginBottom:16}}>🔬 Examens disponibles (165+)</h2>
             <Carrousel items={EXAMENS_CARR} couleur="#16a34a" vitesse={3500}/>
             <div style={{marginTop:16,background:'#f0fdf4',borderRadius:12,padding:'12px 16px',fontSize:13}}>
-              {['Résultats envoyés par WhatsApp','Lun–Sam 07h–15h, pas de RDV requis','Prélèvement sur place'].map((i,k)=>(
+              {['Résultats communiqués par le laboratoire','Lun–Sam 07h–17h · Dim 07h–15h','Prélèvement sur place'].map((i,k)=>(
                 <div key={k} style={{color:'#475569',display:'flex',gap:8,marginTop:k?6:0}}><span style={{color:'#16a34a'}}>✓</span>{i}</div>
               ))}
             </div>
@@ -306,7 +336,7 @@ function PageLaboratoire() {
         </div>
         <div style={{marginTop:28,background:'linear-gradient(135deg,#16a34a,#0d9488)',borderRadius:18,padding:24,textAlign:'center'}}>
           <h3 style={{color:'white',fontWeight:800,fontSize:'1.1rem',margin:'0 0 8px'}}>Besoin d'un examen ?</h3>
-          <p style={{color:'rgba(255,255,255,0.8)',margin:'0 0 14px',fontSize:13}}>Lun–Sam 07h–15h · {CLINIQUE_TEL}</p>
+          <p style={{color:'rgba(255,255,255,0.8)',margin:'0 0 14px',fontSize:13}}>Lun–Sam 07h–17h · Dim 07h–15h · {CLINIQUE_TEL}</p>
           <Link href="/consultation" style={{background:'white',color:'#16a34a',textDecoration:'none',borderRadius:10,padding:'10px 24px',fontWeight:700,display:'inline-block'}}>Prendre rendez-vous</Link>
         </div>
       </div>
@@ -320,24 +350,65 @@ function PageLaboratoire() {
 // ══════════════════════════════════════════════════════════════════════════
 function PagePharmacie() {
   const MEDICAMENTS = [
-    {nom:'Amoxicilline 500mg',cat:'Antibiotique',dispo:true,exp:'12/2026',inst:'Sur ordonnance. Avec de la nourriture toutes les 8h. Compléter le traitement.'},
-    {nom:'Metformine 500mg & 850mg',cat:'Antidiabétique',dispo:true,exp:'06/2026',inst:'Pendant les repas. Surveiller la glycémie. Ne pas écraser.'},
-    {nom:'Amlodipine 5mg & 10mg',cat:'Antihypertenseur',dispo:true,exp:'09/2026',inst:'Une prise par jour à heure fixe. Ne jamais arrêter brutalement.'},
-    {nom:'Oméprazole 20mg',cat:'Antiulcéreux',dispo:true,exp:'03/2027',inst:'30 minutes avant le repas. Protège l\'estomac des brûlures.'},
-    {nom:'Ibuprofène 400mg',cat:'Anti-inflammatoire',dispo:true,exp:'11/2026',inst:'Avec de la nourriture. Max 3 comprimés/jour. Déconseillé en grossesse.'},
-    {nom:'Paracétamol 500mg & 1g',cat:'Antalgique',dispo:true,exp:'08/2027',inst:'Max 4g/jour adulte. Intervalle minimum 6h entre les prises.'},
-    {nom:'Azithromycine 500mg',cat:'Antibiotique macrolide',dispo:true,exp:'07/2026',inst:'1 comprimé/jour pendant 3 jours. Ne pas prendre avec antiacides.'},
-    {nom:'Clotrimazole crème 1%',cat:'Antifongique',dispo:true,exp:'05/2026',inst:'Application 2x/jour pendant 2-4 semaines. Éviter les yeux.'},
-    {nom:'Salbutamol inhalateur',cat:'Bronchodilatateur',dispo:true,exp:'04/2026',inst:'En crise d\'asthme. Agiter avant usage. Max 4 inhalations/jour.'},
-    {nom:'Zinc + Vitamine C',cat:'Complément',dispo:true,exp:'01/2027',inst:'Dissoudre dans l\'eau. 1 comprimé/jour. Renforce l\'immunité.'},
-    {nom:'Fer + Acide folique',cat:'Supplément grossesse',dispo:true,exp:'10/2026',inst:'À jeun pour meilleure absorption. Recommandé pendant la grossesse.'},
-    {nom:'Lévothyroxine 50-100µg',cat:'Hormones thyroïdiennes',dispo:true,exp:'08/2026',inst:'À jeun 30 min avant le petit-déjeuner. Prise régulière essentielle.'},
-    {nom:'Metronidazole 250mg',cat:'Antiprotozoaire',dispo:true,exp:'06/2026',inst:'Avec repas. Éviter l\'alcool pendant et 48h après le traitement.'},
-    {nom:'Doxycycline 100mg',cat:'Antibiotique',dispo:true,exp:'05/2026',inst:'Avec grand verre d\'eau en position assise. Éviter le soleil.'},
-    {nom:'Captopril 25mg',cat:'Antihypertenseur IEC',dispo:true,exp:'11/2026',inst:'À jeun 1h avant les repas. Peut causer une toux sèche.'},
-    {nom:'Tramadol 50mg',cat:'Antalgique opioïde',dispo:false,exp:'—',inst:'Sur ordonnance médicale uniquement. Appelez pour vérifier le stock.'},
-    {nom:'Prednisolone 5mg',cat:'Corticoïde',dispo:false,exp:'—',inst:'Sur ordonnance stricte. Ne jamais arrêter brutalement.'},
-    {nom:'Ciprofloxacine 500mg',cat:'Antibiotique fluoroquinolone',dispo:true,exp:'09/2026',inst:'2 prises/jour. Éviter les laitages et antiacides dans les 2h.'},
+    {nom:'Amoxicilline 500mg',cat:'Antibiotique',dispo:true,inst:'Avec nourriture toutes les 8h. Compléter le traitement.'},
+    {nom:'Amoxicilline + Ac. Clavulanique',cat:'Antibiotique large spectre',dispo:true,inst:'Avec repas. Toutes les 8-12h. Compléter le traitement prescrit.'},
+    {nom:'Azithromycine 500mg',cat:'Antibiotique macrolide',dispo:true,inst:'1 comprimé/jour pendant 3 jours. Ne pas prendre avec antiacides.'},
+    {nom:'Ciprofloxacine 500mg',cat:'Antibiotique fluoroquinolone',dispo:true,inst:'2 prises/jour. Éviter les laitages et antiacides dans les 2h.'},
+    {nom:'Cotrimoxazole 480mg',cat:'Antibiotique sulfamide',dispo:true,inst:'2 comprimés 2x/jour. Boire beaucoup d'eau. Éviter le soleil.'},
+    {nom:'Métronidazole 250mg & 500mg',cat:'Antiprotozoaire',dispo:true,inst:'Avec repas. Éviter l'alcool pendant et 48h après le traitement.'},
+    {nom:'Érythromycine 500mg',cat:'Antibiotique macrolide',dispo:true,inst:'4 prises/jour à intervalles réguliers. Peut causer des nausées.'},
+    {nom:'Doxycycline 100mg',cat:'Antibiotique tétracycline',dispo:true,inst:'Avec grand verre d'eau en position assise. Éviter le soleil.'},
+    {nom:'Nitrofurantoïne 100mg',cat:'Antiseptique urinaire',dispo:true,inst:'Avec repas. Urine peut brunir. Traitement 5-7 jours.'},
+    {nom:'Paracétamol 500mg & 1g',cat:'Antalgique',dispo:true,inst:'Max 4g/jour adulte. Intervalle minimum 6h entre les prises.'},
+    {nom:'Ibuprofène 400mg & 600mg',cat:'Anti-inflammatoire',dispo:true,inst:'Avec repas. Max 1200-1800mg/jour. Déconseillé en grossesse.'},
+    {nom:'Diclofénac 50mg',cat:'Anti-inflammatoire AINS',dispo:true,inst:'Avec nourriture. Ne pas écraser. Déconseillé en IR.'},
+    {nom:'Tramadol 50mg',cat:'Antalgique opioïde',dispo:false,inst:'Sur ordonnance stricte. Appelez pour vérifier le stock.'},
+    {nom:'Colchicine 1mg',cat:'Anti-goutteux',dispo:true,inst:'En crise: 1cp toutes les 3h jusqu'à soulagement. Max 6/jour.'},
+    {nom:'Metformine 500mg & 850mg',cat:'Antidiabétique',dispo:true,inst:'Pendant les repas. Surveiller la glycémie régulièrement.'},
+    {nom:'Glibenclamide 5mg',cat:'Antidiabétique sulfamide',dispo:true,inst:'Avant repas. Surveiller hypoglycémie. Éviter l'alcool.'},
+    {nom:'Insuline NPH (flacon)',cat:'Insuline intermédiaire',dispo:false,inst:'Sur ordonnance stricte. Réfrigérée. Appelez pour vérifier.'},
+    {nom:'Amlodipine 5mg & 10mg',cat:'Antihypertenseur',dispo:true,inst:'1 prise/jour à heure fixe. Ne jamais arrêter brutalement.'},
+    {nom:'Losartan 50mg & 100mg',cat:'Antihypertenseur ARA2',dispo:true,inst:'1 prise/jour. Surveiller la tension et la fonction rénale.'},
+    {nom:'Captopril 25mg',cat:'Antihypertenseur IEC',dispo:true,inst:'À jeun 1h avant repas. Peut causer toux sèche.'},
+    {nom:'Atenolol 50mg',cat:'Bêtabloquant',dispo:true,inst:'Le matin. Ne jamais arrêter brutalement. Surveiller le pouls.'},
+    {nom:'Nifédipine 10mg',cat:'Inhibiteur calcique',dispo:true,inst:'Avaler entier. Ne pas croquer. Éviter le jus de pamplemousse.'},
+    {nom:'Furosémide 40mg',cat:'Diurétique',dispo:true,inst:'Le matin. Surveiller kaliémie et tension artérielle.'},
+    {nom:'Hydrochlorothiazide 25mg',cat:'Diurétique thiazidique',dispo:true,inst:'Le matin avec repas. Peut abaisser le potassium.'},
+    {nom:'Spironolactone 25mg',cat:'Diurétique antialdostérone',dispo:true,inst:'Avec repas. Surveiller kaliémie. Traitement cardiaques/HTA.'},
+    {nom:'Atorvastatine 10mg & 20mg',cat:'Hypolipémiant',dispo:true,inst:'Le soir de préférence. Surveiller douleurs musculaires.'},
+    {nom:'Allopurinol 100mg & 300mg',cat:'Hypo-uricémiant (goutte)',dispo:true,inst:'Après repas. Début entre crises. Boire beaucoup d'eau.'},
+    {nom:'Oméprazole 20mg & 40mg',cat:'Antiulcéreux IPP',dispo:true,inst:'30 min avant le repas. Protège l'estomac.'},
+    {nom:'Ranitidine 150mg',cat:'Antiulcéreux anti-H2',dispo:true,inst:'2x/jour ou 1x la nuit. Peut être pris sans tenir compte des repas.'},
+    {nom:'Métoclopramide 10mg',cat:'Antiémétique',dispo:true,inst:'30 min avant repas. Max 3/jour. Traitement court.'},
+    {nom:'Domperidone 10mg',cat:'Antiémétique prokinétique',dispo:true,inst:'Avant repas et au coucher. Éviter chez cardiaques.'},
+    {nom:'Artéméther + Luméfantrine',cat:'Antipaludéen',dispo:true,inst:'Avec repas gras. Compléter les 6 doses sur 3 jours. Ordonnance.'},
+    {nom:'Chloroquine 250mg',cat:'Antipaludéen',dispo:true,inst:'Avec repas. Contrôle ophtalmologique si traitement long.'},
+    {nom:'Mébendazole 100mg',cat:'Antiparasitaire',dispo:true,inst:'1cp 2x/jour pendant 3 jours. Traiter toute la famille.'},
+    {nom:'Albendazole 400mg',cat:'Antiparasitaire large spectre',dispo:true,inst:'Dose unique avec nourriture grasse pour meilleure absorption.'},
+    {nom:'Lévothyroxine 50-100µg',cat:'Hormones thyroïdiennes',dispo:true,inst:'À jeun 30 min avant le petit-déjeuner. Prise régulière essentielle.'},
+    {nom:'TSH suivi + Bilan thyroïde',cat:'Bilan thyroïdien',dispo:true,inst:'Sur ordonnance. Test disponible au laboratoire attenant.'},
+    {nom:'Prednisolone 5mg & 20mg',cat:'Corticoïde oral',dispo:true,inst:'Le matin après petit-déjeuner. Jamais arrêter brutalement.'},
+    {nom:'Béclométasone spray nasal',cat:'Corticoïde nasal',dispo:true,inst:'1-2 pulvérisations/narine 1x/jour. Traitement au long cours OK.'},
+    {nom:'Salbutamol inhalateur',cat:'Bronchodilatateur',dispo:true,inst:'Agiter avant. En crise d'asthme. Max 4 inhalations/jour.'},
+    {nom:'Fluconazole 150mg',cat:'Antifongique systémique',dispo:true,inst:'Dose unique pour candidose vaginale. Sur ordonnance.'},
+    {nom:'Clotrimazole crème 1%',cat:'Antifongique local',dispo:true,inst:'Application 2x/jour pendant 2-4 semaines. Éviter les yeux.'},
+    {nom:'Nystatine suspension',cat:'Antifongique oral',dispo:true,inst:'Garder en bouche avant avaler. 4x/jour après repas. 7-14 jours.'},
+    {nom:'Aciclovir 200mg & 400mg',cat:'Antiviral herpès',dispo:true,inst:'5 prises/jour en curatif. Commencer dès les premiers symptômes.'},
+    {nom:'Amitriptyline 25mg',cat:'Antidépresseur tricyclique',dispo:true,inst:'Le soir. Effets secondaires en début de traitement normaux.'},
+    {nom:'Fluoxétine 20mg',cat:'Antidépresseur ISRS',dispo:true,inst:'Le matin avec repas. Effets dès 2-4 semaines. Ne pas arrêter brutalement.'},
+    {nom:'Carbamazépine 200mg',cat:'Antiépileptique',dispo:true,inst:'Prise régulière indispensable. Surveiller numération sanguine.'},
+    {nom:'Cétirizine 10mg',cat:'Antihistaminique',dispo:true,inst:'1 comprimé/jour. Peu sédatif. Matin ou soir.'},
+    {nom:'Loratadine 10mg',cat:'Antihistaminique non sédatif',dispo:true,inst:'1 comprimé/jour. Non sédatif. Idéal pour personnes actives.'},
+    {nom:'Fer + Acide folique',cat:'Supplément grossesse',dispo:true,inst:'À jeun pour meilleure absorption. Recommandé pendant la grossesse.'},
+    {nom:'Zinc + Vitamine C effervescent',cat:'Complément immunitaire',dispo:true,inst:'1 comprimé/jour dans eau. Renforce les défenses immunitaires.'},
+    {nom:'Vitamine D3 1000 UI',cat:'Supplément vitaminique',dispo:true,inst:'1 comprimé/jour avec repas gras. Traitement de la carence en D3.'},
+    {nom:'Magnésium 300mg',cat:'Complément minéral',dispo:true,inst:'1-2 comprimés/jour. Réduit crampes, anxiété et fatigue musculaire.'},
+    {nom:'SRO (Sels de Réhydratation)',cat:'Réhydratation orale',dispo:true,inst:'1 sachet dans 1 litre d'eau potable. À boire par petites gorgées.'},
+    {nom:'Amoxicilline Sirop Péd.',cat:'Antibiotique enfant',dispo:true,inst:'Selon poids. Compléter le traitement. Conserver au réfrigérateur.'},
+    {nom:'Ibuprofène Sirop Péd.',cat:'Anti-inflammatoire enfant',dispo:true,inst:'Selon poids. Max 4 doses/jour. Avec repas.'},
+    {nom:'Zinc Sirop Péd.',cat:'Supplément zinc enfant',dispo:true,inst:'Pendant/après repas. Réduit durée et sévérité des diarrhées.'},
+    {nom:'Gentamicine collyre',cat:'Antibiotique oculaire',dispo:true,inst:'1-2 gouttes toutes les 4h dans l'œil atteint. Pencher la tête.'},
+    {nom:'Métronidazole gel vaginal',cat:'Antiprotozoaire local',dispo:true,inst:'1 applicateur/jour pendant 5 jours. Le soir au coucher.'},
   ]
 
   const [idx, setIdx] = useState(0)
@@ -363,11 +434,11 @@ function PagePharmacie() {
     <div style={{minHeight:'100vh',background:'#f8fafc'}}>
       <Navbar variant="public"/>
       <Hero titre="Pharmacie" icon="💊" gradient="linear-gradient(135deg,#0f1e3d,#7c3aed)"
-        desc="Médicaments génériques et de marque · Commander par téléphone · Lun–Ven 07h–17h, Sam 07h–12h"/>
+        desc="Médicaments génériques et de marque · Lun–Sam 07h–17h · Dim 07h–15h"/>
       <div style={{maxWidth:1000,margin:'0 auto',padding:'36px 20px'}}>
         <div style={{background:'#7c3aed',borderRadius:14,padding:'14px 20px',marginBottom:24,display:'flex',alignItems:'center',gap:12}}>
           <span style={{fontSize:22}}>📞</span>
-          <div style={{color:'white'}}><div style={{fontWeight:700}}>Commander par téléphone</div><div style={{fontSize:13,opacity:0.85}}>{CLINIQUE_TEL} · Lun–Ven 07h–17h, Sam 07h–12h</div></div>
+          <div style={{color:'white'}}><div style={{fontWeight:700}}>Commander par téléphone</div><div style={{fontSize:13,opacity:0.85}}>{CLINIQUE_TEL} · Lun–Sam 07h–17h · Dim 07h–15h</div></div>
         </div>
 
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24}}>
@@ -448,7 +519,7 @@ const SERVICES_CONTENT: Record<string,{
       {titre:'Blanchiment dentaire',desc:'Éclaircissement professionnel des dents en une séance. Résultats visibles immédiatement.'},
       {titre:'Prothèse dentaire',desc:'Dentier partiel ou complet pour remplacer les dents manquantes et restaurer la mastication et le sourire.'},
     ],
-    infos:['Lun–Sam 07h–17h','Anesthésie locale disponible','Radiographies sur place','Urgences dentaires acceptées'],
+    infos:['Lun–Sam 07h–17h · Dim 07h–15h',Anesthésie locale disponible','Radiographies sur place','Urgences dentaires acceptées'],
   },
   physiotherapie:{
     titre:'Physiothérapie',icon:'🏥',couleur:'#d97706',gradient:'linear-gradient(135deg,#0f1e3d,#d97706)',
