@@ -7,11 +7,11 @@ import { Specialiste } from '@/types'
 import { Trash2, Edit2, Save, X, Plus, User } from 'lucide-react'
 
 const SPECIALITES_LIST = [
-  'Chirurgie générale','Neurochirurgie','Neurologie','Orthopédie','Pédiatrie',
-  'Dermatologie','Urologie','ORL','Gynécologie','Chirurgie pédiatrique',
-  'Médecine interne','Ophtalmologie','Cardiologie','Endocrinologie',
-  'Dentisterie','Physiothérapie','Optométrie','Psychologie','Radiologie',
-  'Anesthésiologie / Réanimation',
+  'Médecine interne','Gynécologie','Pédiatrie','Neurologie','Neurochirurgie',
+  'Orthopédie','Chirurgie Générale','Chirurgie Pédiatrique','Dermatologie',
+  'ORL','Urologie','Anesthésiologie / Réanimation','Dentisterie','Physiothérapie',
+  'Optométrie','Psychologie','Radiologie','Cardiologie','Endocrinologie',
+  'Ophtalmologie','Autre (saisir manuellement)',
 ]
 
 const EMOJIS = [
@@ -27,7 +27,7 @@ const TYPE_MEDECIN = [
 ]
 
 interface FormData {
-  nom: string; specialite: string; description: string
+  nom: string; specialite: string; specialite_autre?: string; description: string; photo?: string
   emoji: string; categorie: string; email: string
   telephone: string; ordre: number
   prix_consultation: number; prix_rdv: number

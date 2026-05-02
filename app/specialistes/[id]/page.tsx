@@ -1,13 +1,12 @@
 'use client'
-// app/specialistes/[id]/page.tsx — Profil public spécialiste (lecture seule)
+// app/specialistes/[id]/page.tsx — Profil public spécialiste
 import { useEffect, useState } from 'react'
 import { useParams } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import RdvModal from '@/components/ui/RdvModal'
-import { specialistesApi } from '@/lib/api'
-import { Specialiste } from '@/types'
+import { MEDECINS, nomComplet } from '@/lib/medecins'
+import { api } from '@/lib/api'
 
 const SPECS_DATA: Record<number, Specialiste & { tags: string[]; bio: string; disponibilites: string; experience: string }> = {
   1: { id:1, nom:'Dr. Michel Dubois', specialite:'Chirurgie générale', description:'Chirurgien senior', emoji:'🔬', categorie:'chirurgie', email:'m.dubois@cliniquerebecca.ht', telephone:'+509 3456-0001', actif:true, ordre:0, bio:'Chirurgien général spécialisé dans la chirurgie digestive et laparoscopique. Plus de 15 ans d\'expérience dans les interventions chirurgicales complexes, formé à l\'Hôpital Universitaire d\'État d\'Haïti et en France.', tags:['Chirurgie digestive','Laparoscopie','Urgences chirurgicales','Hernies'], disponibilites:'Lun–Ven 08h–17h · Sam 08h–12h', experience:'15 ans d\'expérience' },
@@ -28,6 +27,27 @@ export default function SpecialistePage() {
   const params = useParams()
   const id = Number(params.id)
   const [rdvOpen, setRdvOpen] = useState(false)
+  // Get from single source of truth, try to enrich from API
+  const baseDoc = MEDECINS.find(m => m.id === id)
+  const [apiData, setApiData] = useState<any>(null)
+
+  useEffect(() => {
+    api.get('/specialistes').then(r => {
+      const found = r.data?.find((d: any) =>
+        d.email === baseDoc?.email ||
+        d.nom?.toLowerCase().includes(baseDoc?.nom?.toLowerCase().split(' ')[0] || '')
+      )
+      if (found) setApiData(found)
+    }).catch(() => {})
+  }, [id])
+
+  const doc = apiData ? {
+    ...baseDoc,
+    nom: apiData.nom?.replace(/^(Dr\.?|Mme\.?|Mr\.?|M\.?)\s*/i, '') || baseDoc?.nom,
+    photo: apiData.photo || baseDoc?.photo,
+    bio: apiData.description || baseDoc?.bio,
+    telephone: apiData.telephone || baseDoc?.telephone,
+  } : baseDoc
   const [spec, setSpec] = useState(SPECS_DATA[id] || null)
 
   useEffect(() => {

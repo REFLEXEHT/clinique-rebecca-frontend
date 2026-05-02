@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
+import { MEDECINS, nomComplet } from '@/lib/medecins'
 
 const CLINIQUE_TEL = '(509) 4858-5757'
 
