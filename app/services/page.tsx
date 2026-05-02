@@ -20,7 +20,7 @@ const SERVICES = [
     couleur:     '#16a34a',
     icon:        'fa-flask-vial',
     titreKey:    'svc.labo',
-    desc:        { fr:'165 analyses biologiques complètes. Résultats envoyés par WhatsApp sous 24-48h.', ht:'165 analiz byolojik konplè. Rezilta voye pa WhatsApp anba 24-48h.', en:'165 complete biological tests. Results sent via WhatsApp within 24-48h.' },
+    desc:        { fr:'165 analyses biologiques · Prélèvements Lun–Sam 07h–17h · Dim 07h–15h.', ht:'165 analiz byolojik · Prelèvman Lun–Sam 07h–17h · Dim 07h–15h.', en:'165 complete biological tests. Results sent via WhatsApp within 24-48h.' },
   },
   {
     slug:        'pharmacie',

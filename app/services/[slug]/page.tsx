@@ -246,6 +246,23 @@ function PageCliniqueExterne() {
 // LABORATOIRE
 // ══════════════════════════════════════════════════════════════════════════
 function PageLaboratoire() {
+  // Fetch real exam list from backend - fallback to static list
+  const [examensFromDB, setExamensFromDB] = useState<{titre:string;desc:string}[]>([])
+  useEffect(() => {
+    fetch('https://clinique-rebecca-api.onrender.com/api/admin/labo/examens')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setExamensFromDB(data.map((e: any) => ({
+            titre: e.nom || e.type_examen || e.name || String(e),
+            desc: e.description || e.desc || `Analyse disponible au laboratoire de la Clinique de la Rebecca. Prélèvement sans rendez-vous Lun–Sam 07h–17h · Dim 07h–15h.`
+          })))
+        }
+      })
+      .catch(() => {}) // use EXAMENS_CARR fallback
+  }, [])
+
+  const allExamens = examensFromDB.length > 0 ? examensFromDB : EXAMENS_CARR
   const EXAMENS_CARR = [
     {titre:'Hémogramme Complet (NFS)',desc:'Analyse complète du sang : globules rouges, blancs, plaquettes. Détecte anémie, infections et troubles de la coagulation.'},
     {titre:'Glycémie à jeun',desc:'Mesure du taux de sucre sanguin. Indispensable pour le dépistage et suivi du diabète de type 1 et 2. À faire le matin avant de manger.'},
@@ -306,12 +323,12 @@ function PageLaboratoire() {
     <div style={{minHeight:'100vh',background:'#f8fafc'}}>
       <Navbar variant="public"/>
       <Hero titre="Laboratoire" icon="🔬" gradient="linear-gradient(135deg,#0f1e3d,#16a34a)"
-        desc="165 analyses biologiques disponibles · Lun–Sam 07h–17h · Dim 07h–15h · Prélèvement sans RDV"/>
+        desc={`${allExamens.length > 42 ? allExamens.length : 165}+ analyses biologiques disponibles · Lun–Sam 07h–17h · Dim 07h–15h · Prélèvement sans RDV`}/>
       <div style={{maxWidth:1000,margin:'0 auto',padding:'36px 20px'}}>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24}}>
           <div>
             <h2 style={{fontWeight:800,color:'#0f172a',fontSize:'1.1rem',marginBottom:16}}>🔬 Examens disponibles (165+)</h2>
-            <Carrousel items={EXAMENS_CARR} couleur="#16a34a" vitesse={3500}/>
+            <Carrousel items={allExamens} couleur="#16a34a" vitesse={3000}/>
             <div style={{marginTop:16,background:'#f0fdf4',borderRadius:12,padding:'12px 16px',fontSize:13}}>
               {['Résultats communiqués par le laboratoire','Lun–Sam 07h–17h · Dim 07h–15h','Prélèvement sur place'].map((i,k)=>(
                 <div key={k} style={{color:'#475569',display:'flex',gap:8,marginTop:k?6:0}}><span style={{color:'#16a34a'}}>✓</span>{i}</div>
@@ -349,6 +366,24 @@ function PageLaboratoire() {
 // PHARMACIE
 // ══════════════════════════════════════════════════════════════════════════
 function PagePharmacie() {
+  const [medsFromDB, setMedsFromDB] = useState<typeof MEDICAMENTS>([])
+  useEffect(() => {
+    fetch('https://clinique-rebecca-api.onrender.com/api/pharmacie/medicaments')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setMedsFromDB(data.map((m: any) => ({
+            nom: m.nom || m.name || String(m),
+            cat: m.categorie || m.cat || 'Médicament',
+            dispo: m.disponible !== false,
+            inst: m.instructions || m.inst || 'Disponible sur ordonnance. Consultez notre pharmacien.',
+          })))
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const allMeds = medsFromDB.length > 0 ? medsFromDB : MEDICAMENTS
   const MEDICAMENTS = [
     {nom:'Amoxicilline 500mg',cat:'Antibiotique',dispo:true,inst:'Avec nourriture toutes les 8h. Compléter le traitement.'},
     {nom:'Amoxicilline + Ac. Clavulanique',cat:'Antibiotique large spectre',dispo:true,inst:'Avec repas. Toutes les 8-12h. Compléter le traitement prescrit.'},
@@ -416,17 +451,17 @@ function PagePharmacie() {
   const [resultSearch, setResultSearch] = useState<'dispo'|'non'|null>(null)
 
   useEffect(() => {
-    const t = setInterval(()=>setIdx(p=>(p+1)%MEDICAMENTS.length), 2500)
+    const t = setInterval(()=>setIdx(p=>(p+1)%allMeds.length), 2500)
     return ()=>clearInterval(t)
-  }, [MEDICAMENTS.length])
+  }, [allMeds.length])
 
-  const med = MEDICAMENTS[idx]
+  const med = allMeds[idx] || allMeds[0] || MEDICAMENTS[0]
 
   const chercher = () => {
     if (!search.trim()) return
-    const ok = MEDICAMENTS.some(m=>m.nom.toLowerCase().includes(search.toLowerCase())||m.cat.toLowerCase().includes(search.toLowerCase()))
+    const ok = allMeds.some(m=>m.nom.toLowerCase().includes(search.toLowerCase())||m.cat.toLowerCase().includes(search.toLowerCase()))
     setResultSearch(ok?'dispo':'non')
-    const found = MEDICAMENTS.findIndex(m=>m.nom.toLowerCase().includes(search.toLowerCase()))
+    const found = allMeds.findIndex(m=>m.nom.toLowerCase().includes(search.toLowerCase()))
     if (found >= 0) setIdx(found)
   }
 
@@ -458,11 +493,11 @@ function PagePharmacie() {
               <p style={{color:'#475569',fontSize:13,lineHeight:1.7,margin:'0 0 10px'}}>{med.inst}</p>
               {med.dispo&&<div style={{fontSize:11,color:'#94a3b8'}}>📅 Exp: {med.exp}</div>}
               <div style={{display:'flex',gap:5,marginTop:16}}>
-                {MEDICAMENTS.map((_,i)=>(
+                {allMeds.map((_,i)=>(
                   <button key={i} onClick={()=>setIdx(i)} style={{width:i===idx?24:6,height:6,borderRadius:3,background:i===idx?'#7c3aed':'#e2e8f0',border:'none',cursor:'pointer',transition:'all 0.3s',padding:0}}/>
                 ))}
               </div>
-              <div style={{fontSize:11,color:'#94a3b8',textAlign:'right',marginTop:6}}>{idx+1} / {MEDICAMENTS.length}</div>
+              <div style={{fontSize:11,color:'#94a3b8',textAlign:'right',marginTop:6}}>{idx+1} / {allMeds.length}</div>
             </div>
           </div>
 

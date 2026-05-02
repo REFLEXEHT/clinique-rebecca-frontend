@@ -5,7 +5,6 @@ import './globals.css'
 import { Toaster } from 'react-hot-toast'
 import { AuthProvider } from '@/context/AuthContext'
 import { LangProvider } from '@/context/LangContext'
-import BackBar from '@/components/ui/BackBar'
 
 const inter = Inter({ subsets: ['latin'] })
 
