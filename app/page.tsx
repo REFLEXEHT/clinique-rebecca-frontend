@@ -140,6 +140,7 @@ function PourquoiSection() {
   const RAISONS = [
     {
       icon: '🏠',
+      img: 'https://cdn-icons-png.flaticon.com/512/609/609803.png',
       fr: { titre: 'Tout sous un même toit', msg: 'Clinique, labo, pharmacie, physio et hospitalisation — tout en un seul lieu.' },
       ht: { titre: 'Tout anba yon sèl tèt', msg: 'Klinik, labo, famasi, fizeyoterapi — tout nan yon sèl kote.' },
       en: { titre: 'Everything under one roof', msg: 'Clinic, lab, pharmacy, physio — all in one place.' },
@@ -148,6 +149,7 @@ function PourquoiSection() {
     },
     {
       icon: '💛',
+      img: 'https://cdn-icons-png.flaticon.com/512/3081/3081559.png',
       fr: { titre: 'À votre écoute, toujours', msg: 'Chaque patient accueilli avec bienveillance. Un suivi personnalisé et rassurant à chaque visite.' },
       ht: { titre: 'Nou koute ou, toujou', msg: 'Chak pasyan resevwa ak kè, swivi pèsonalize ak rekonfortan.' },
       en: { titre: 'Always here for you', msg: 'Every patient welcomed warmly. Personalized, reassuring care at every visit.' },
@@ -156,6 +158,7 @@ function PourquoiSection() {
     },
     {
       icon: '👥',
+      img: 'https://cdn-icons-png.flaticon.com/512/681/681494.png',
       fr: { titre: 'Équipe pluridisciplinaire', msg: 'Médecins, infirmiers, physios et techniciens — ensemble pour votre santé.' },
       ht: { titre: 'Ekip konplè pou ou', msg: 'Doktè, enfimyè, fizeyoterapis — ansanm pou sante ou.' },
       en: { titre: 'Full multidisciplinary team', msg: 'Doctors, nurses, physios and techs — together for your health.' },
@@ -164,6 +167,7 @@ function PourquoiSection() {
     },
     {
       icon: '✨',
+      img: 'https://cdn-icons-png.flaticon.com/512/2922/2922561.png',
       fr: { titre: 'Espaces modernes & propres', msg: 'Salles lumineuses, équipements de qualité, environnement professionnel et apaisant.' },
       ht: { titre: 'Espas modèn ak pwòp', msg: 'Sal liminyè, ekipman kalite, anviwònman pwofesyonèl ak kalm.' },
       en: { titre: 'Modern & clean spaces', msg: 'Bright rooms, quality equipment, professional and calming environment.' },
@@ -172,6 +176,7 @@ function PourquoiSection() {
     },
     {
       icon: '🤝',
+      img: 'https://cdn-icons-png.flaticon.com/512/4233/4233830.png',
       fr: { titre: 'Engagés pour la communauté', msg: 'Prévention, éducation sanitaire, soutien local — pour une meilleure santé publique.' },
       ht: { titre: 'Angaje pou kominote a', msg: 'Prevansyon, edikasyon sante, sipò lokal — pou yon pi bon sante piblik.' },
       en: { titre: 'Committed to the community', msg: 'Prevention, health education, local support — for better public health.' },
@@ -212,7 +217,9 @@ function PourquoiSection() {
                 background: i===idx ? 'linear-gradient(135deg,#1641C8,#0d9488)' : '#f8fafc',
                 transition:'all 0.25s'
               }}>
-                <span style={{ fontSize:26, flexShrink:0 }}>{r.icon}</span>
+                <span style={{ width:36, height:36, borderRadius:10, background: i===idx?'rgba(255,255,255,0.2)':'#eff6ff', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0, overflow:'hidden' }}>
+                  <img src={r.img} alt="" style={{ width:24, height:24, objectFit:'contain' }}/>
+                </span>
                 <span style={{ fontWeight:700, fontSize:14, color: i===idx?'white':'#374151' }}>
                   {(r as any)[lang]?.titre || r.fr.titre}
                 </span>
@@ -222,7 +229,9 @@ function PourquoiSection() {
 
           {/* Contenu actif */}
           <div style={{ background:'linear-gradient(135deg,#0f1e3d,#1641C8)', borderRadius:24, padding:'48px 44px', minHeight:280 }}>
-            <div style={{ fontSize:72, marginBottom:24 }}>{RAISONS[idx].icon}</div>
+            <div style={{ width:80, height:80, borderRadius:20, background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', marginBottom:24, overflow:'hidden' }}>
+                <img src={RAISONS[idx].img} alt="" style={{ width:56, height:56, objectFit:'contain', filter:'brightness(0) invert(1)' }}/>
+              </div>
             <h3 style={{ color:'white', fontWeight:900, fontSize:'clamp(1.4rem,2.5vw,2rem)', margin:'0 0 16px', lineHeight:1.2 }}>
               {(RAISONS[idx] as any)[lang]?.titre || RAISONS[idx].fr.titre}
             </h3>

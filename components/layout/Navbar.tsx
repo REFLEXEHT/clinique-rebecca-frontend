@@ -1,4 +1,5 @@
 'use client'
+import React from 'react'
 // components/layout/Navbar.tsx — Navigation responsive avec menu mobile
 import Link from 'next/link'
 import { useRouter, usePathname } from 'next/navigation'
@@ -104,7 +105,9 @@ function LangSelector() {
 }
 
 export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) {
-  const [scrolled, setScrolled] = useState(false)
+  const [scrolled,   setScrolled]   = useState(false)
+  const [hidden,     setHidden]     = useState(false)
+  const lastScrollY = React.useRef(0)
   const [mobileOpen, setMobileOpen] = useState(false)
   const [mobileSection, setMobileSection] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
@@ -116,8 +119,18 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
   useEffect(() => { setMounted(true) }, [])
 
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 60)
-    window.addEventListener('scroll', onScroll)
+    const onScroll = () => {
+      const y = window.scrollY
+      setScrolled(y > 60)
+      // Hide on scroll down (past 120px), show on scroll up
+      if (y > 120) {
+        setHidden(y > lastScrollY.current + 8)
+      } else {
+        setHidden(false)
+      }
+      lastScrollY.current = y
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
@@ -162,8 +175,9 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
   return (
     <>
       <nav className={`fixed top-0 left-0 right-0 z-50 h-[70px] flex items-center
-        px-[5%] bg-white/97 border-b border-slate-200 transition-shadow duration-300
-        ${scrolled ? 'shadow-xl' : 'shadow-sm'}`}>
+        px-[5%] bg-white/97 border-b border-slate-200 transition-all duration-300
+        ${scrolled ? 'shadow-xl' : 'shadow-sm'}`}
+        style={{ transform: hidden ? 'translateY(-100%)' : 'translateY(0)', transition: 'transform 0.3s ease, box-shadow 0.3s ease' }}>
 
         {navLogo}
 
