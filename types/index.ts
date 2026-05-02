@@ -1,7 +1,7 @@
 // types/index.ts — Types complets v3
 
 export type Role = 'patient' | 'medecin' | 'admin' | 'caissier' | 'labo' | 'pharmacie'
-export type StatutRDV = 'en_attente' | 'confirme' | 'annule' | 'termine'
+export type StatutRDV = 'en_attente' | 'paiement_requis' | 'paiement_effectue' | 'confirme' | 'propose_autre_moment' | 'annule' | 'termine'
 export type TypeRDV = 'presentiel' | 'video'
 export type TypeMouvement = 'recette' | 'depense'
 export type TypeActe = 'consultation' | 'geste' | 'intervention' | 'observation' | 'hospitalisation'
@@ -129,6 +129,11 @@ export interface RendezVous {
   lien_video?: string
   numero_rdv?: string
   created_at: string
+  confirme_par_role?: string
+  autre_moment_propose?: string
+  autre_moment_message?: string
+  medecin_nom?: string
+  medecin_id?: number
 }
 
 export interface RendezVousCreate {
