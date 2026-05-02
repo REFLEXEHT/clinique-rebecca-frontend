@@ -59,7 +59,7 @@ function PrintModal({ title, couleur, onClose, children }: any) {
 }
 
 // ── Rendus des documents ────────────────────────────────────────────────────
-function renderDocument(type: string, data: any, user: any, onClose: () => void) {
+function renderDocument(type: string, data: any, user: any, onClose: () => void, signatures: Record<string,string|null>, setSignatures: (fn: any) => void) {
   const couleur = DOCUMENTS.find(d => d.type === type)?.couleur || '#1641C8'
 
   const baseInfo = (
@@ -776,7 +776,7 @@ export default function InfirmierDocuments() {
       </div>
 
       {/* Modal */}
-      {modal && renderDocument(modal.type, modal.data, user, () => setModal(null))}
+      {modal && renderDocument(modal.type, modal.data, user, () => setModal(null), signatures, setSignatures)}
     </div>
   )
 }
