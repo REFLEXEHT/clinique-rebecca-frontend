@@ -7,6 +7,7 @@ import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { rdvApi, actesApi, api } from '@/lib/api'
+import SignaturePad from '@/components/ui/SignaturePad'
 import { RendezVous } from '@/types'
 import { LogOut, Edit2, Save, X, Calendar, Clock, User, FileText, Star, ChevronRight, Video, ExternalLink } from 'lucide-react'
 
@@ -170,7 +171,12 @@ export default function MedecinDashboard() {
   // Polling file d'attente every 30 seconds
   useEffect(() => {
     const chargerFile = () => {
-      api.get('/medecin/file-attente')
+      // Charger la signature du médecin
+    api.get('/medecin/ma-signature')
+      .then(r => { if (r.data?.signature) setMaSignature(r.data.signature) })
+      .catch(() => {})
+
+    api.get('/medecin/file-attente')
         .then(r => {
           const file = r.data || []
           setFileAttente(file)
@@ -884,6 +890,9 @@ export default function MedecinDashboard() {
 
 function DemandeAccesSection() {
   const [patientNumero, setPatientNumero] = React.useState('')
+  const [maSignature,  setMaSignature]  = React.useState<string | null>(null)
+  const [signLoading,  setSignLoading]  = React.useState(false)
+  const [signSaved,    setSignSaved]    = React.useState(false)
   const [motif,         setMotif]         = React.useState('')
   const [urgence,       setUrgence]       = React.useState(false)
   const [mesdemandes,   setMesDemandes]   = React.useState<any[]>([])

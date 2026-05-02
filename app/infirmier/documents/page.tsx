@@ -70,10 +70,23 @@ function renderDocument(type: string, data: any, user: any, onClose: () => void)
     </>
   )
 
+  // Signature médecin — utilise la signature sauvegardée si disponible, sinon pad
   const sigMedecin = (
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20, marginTop: 24 }}>
-      <div><div style={{ fontSize: 12, marginBottom: 36 }}>Signature du médecin</div><div style={{ borderBottom: '1px solid #374151', width: 140 }} /></div>
-      <div><div style={{ fontSize: 12, marginBottom: 36 }}>Cachet clinique</div><div style={{ borderBottom: '1px solid #374151', width: 120 }} /></div>
+      <div>
+        {signatures['medecin_saved'] ? (
+          <div>
+            <div style={{ fontSize: 11, color: '#64748b', marginBottom: 6 }}>Signature du médecin</div>
+            <img src={signatures['medecin_saved']} alt="Signature" style={{ height: 70, border: '1px solid #e2e8f0', borderRadius: 8, background: 'white' }}/>
+          </div>
+        ) : (
+          <SignaturePad label="Signature du médecin" onSign={(d) => setSignatures(s => ({...s, doc_medecin: d}))} width={220} height={110} />
+        )}
+      </div>
+      <div>
+        <div style={{ fontSize: 12, marginBottom: 36 }}>Cachet clinique</div>
+        <div style={{ borderBottom: '1px solid #374151', width: 120 }} />
+      </div>
     </div>
   )
 
@@ -666,6 +679,16 @@ export default function InfirmierDocuments() {
 
   const ouvrirDoc = async (type: string) => {
     let data = patientData ? { patient_nom: patientData.nom, patient_numero: patientData.numero } : {}
+
+    // Load medecin's signature if they are a medecin
+    if (userRole === 'medecin' && !signatures['medecin_saved']) {
+      try {
+        const sigR = await api.get('/medecin/ma-signature')
+        if (sigR.data?.signature) {
+          setSignatures(s => ({ ...s, medecin_saved: sigR.data.signature }))
+        }
+      } catch { /* no signature yet */ }
+    }
 
     // Load lab results if needed
     if (type === 'resultats_labo' && patientData) {
