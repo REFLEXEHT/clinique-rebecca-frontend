@@ -172,6 +172,7 @@ export default function CaissierPage() {
       setDepenses(r.data?.depenses||[])
       setTotalDepenses(r.data?.total||0)
     }).catch(()=>{})
+    api.get('/registre-rdv?jours=30').then(r => setRegistre(r.data?.rdvs||[])).catch(()=>{})
   }, [isAuthenticated])
 
   const chercherPatientPaiement = async () => {
@@ -628,6 +629,60 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
               color:'white',border:'none',borderRadius:12,padding:'13px',fontWeight:700,cursor:'pointer',fontSize:15,
               opacity:(!formNouv.nom||!formNouv.prenom)?0.5:1
             }}>✓ Créer le dossier patient</button>
+          </div>
+        )}
+
+        {/* ── REGISTRE RDV ──────────────────────────────────────── */}
+        {onglet==='registre' && (
+          <div>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
+              <h2 style={{fontWeight:900,fontSize:'1.2rem',margin:0}}>📅 Registre des rendez-vous (30 jours)</h2>
+              <button onClick={()=>api.get('/registre-rdv?jours=30').then(r=>setRegistre(r.data?.rdvs||[]))} style={{background:'#1641C8',color:'white',border:'none',borderRadius:10,padding:'8px 16px',fontWeight:700,cursor:'pointer',fontSize:13}}>
+                🔄 Actualiser
+              </button>
+            </div>
+            <div style={{background:'white',borderRadius:16,border:'1px solid #e2e8f0',overflow:'hidden'}}>
+              <table style={{width:'100%',borderCollapse:'collapse',fontSize:13}}>
+                <thead>
+                  <tr style={{background:'#f8fafc',borderBottom:'1px solid #e2e8f0'}}>
+                    {['Date & Heure','Patient','Médecin','Spécialité','Type','Statut','Action'].map(h=>(
+                      <th key={h} style={{padding:'10px 14px',textAlign:'left',color:'#64748b',fontWeight:600,fontSize:12}}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {registre.map((r:any)=>(
+                    <tr key={r.id} style={{borderBottom:'1px solid #f8fafc'}}>
+                      <td style={{padding:'10px 14px',fontWeight:600,whiteSpace:'nowrap'}}>{new Date(r.date_rdv).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+                      <td style={{padding:'10px 14px'}}><div style={{fontWeight:600}}>{r.patient_nom}</div><div style={{fontSize:11,color:'#94a3b8'}}>{r.motif}</div></td>
+                      <td style={{padding:'10px 14px',color:'#64748b'}}>{r.medecin_nom||'—'}</td>
+                      <td style={{padding:'10px 14px',color:'#0d9488',fontWeight:600}}>{r.specialite}</td>
+                      <td style={{padding:'10px 14px'}}><span style={{background:r.type_rdv==='video'?'#f5f3ff':'#eff6ff',color:r.type_rdv==='video'?'#7c3aed':'#1641C8',borderRadius:50,padding:'2px 10px',fontSize:11,fontWeight:700}}>{r.type_rdv==='video'?'📹 Vidéo':'🏥 Présentiel'}</span></td>
+                      <td style={{padding:'10px 14px'}}>
+                        <span style={{background:r.statut==='confirme'?'#f0fdf4':r.statut==='en_attente'?'#fffbeb':'#eff6ff',color:r.statut==='confirme'?'#16a34a':r.statut==='en_attente'?'#d97706':'#1641C8',borderRadius:50,padding:'2px 10px',fontSize:11,fontWeight:700}}>
+                          {r.statut==='confirme'?'✓ Confirmé':r.statut==='en_attente'?'⏳ En attente':r.statut==='paiement_effectue'?'💳 Payé':r.statut}
+                        </span>
+                      </td>
+                      <td style={{padding:'10px 14px'}}>
+                        {(r.statut==='en_attente'||r.statut==='paiement_effectue')&&(
+                          <button onClick={()=>api.post(`/rdv/confirmer/${r.id}`,{}).then(()=>{toast.success('RDV confirmé');api.get('/registre-rdv?jours=30').then(res=>setRegistre(res.data?.rdvs||[]))})}
+                            style={{background:'#16a34a',color:'white',border:'none',borderRadius:8,padding:'5px 12px',fontWeight:700,cursor:'pointer',fontSize:12}}>
+                            ✓ Confirmer
+                          </button>
+                        )}
+                        {r.statut==='confirme'&&r.type_rdv==='presentiel'&&(
+                          <button onClick={()=>api.post(`/rdv/initiation-physique/${r.id}`,{}).then(res=>{toast.success(`Patient ${res.data.patient_numero} — Dossier créé`)})}
+                            style={{background:'#1641C8',color:'white',border:'none',borderRadius:8,padding:'5px 12px',fontWeight:700,cursor:'pointer',fontSize:12}}>
+                            🏥 Initier visite
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {registre.length===0&&<div style={{padding:32,textAlign:'center',color:'#94a3b8'}}>Aucun RDV dans les 30 prochains jours</div>}
+            </div>
           </div>
         )}
 

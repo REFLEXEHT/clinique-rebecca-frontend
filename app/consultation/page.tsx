@@ -16,14 +16,32 @@ export default function ConsultationPage() {
   const [typeChoisi, setTypeChoisi] = useState<'presentiel'|'video'|null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [step, setStep] = useState<'form'|'paiement_video'|'attente_confirmation'>('form')
+  const [rdvCreated, setRdvCreated] = useState<any>(null)
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>()
 
   const onSubmit = async (data: FormData) => {
     setLoading(true)
     try {
-      await rdvApi.create({ ...data, patient_nom: data.nom, patient_telephone: data.telephone, patient_email: data.email, date_rdv: new Date(data.date_rdv).toISOString() })
-      setSuccess(true); reset()
-      toast.success('Votre demande a été envoyée !')
+      const payload = {
+        ...data,
+        patient_nom: data.nom,
+        patient_telephone: data.telephone,
+        patient_email: data.email,
+        date_rdv: new Date(data.date_rdv).toISOString(),
+        // For video: starts as paiement_requis, for physique: en_attente
+        statut: data.type_rdv === 'video' ? 'paiement_requis' : 'en_attente',
+      }
+      const rdv = await rdvApi.create(payload)
+
+      if (data.type_rdv === 'video') {
+        // Video requires payment before confirmation
+        setRdvCreated(rdv.data)
+        setStep('paiement_video')
+      } else {
+        setSuccess(true); reset()
+        toast.success('Votre demande a été envoyée ! Nous vous contacterons pour confirmer.')
+      }
     } catch { toast.error('Erreur lors de la soumission') }
     finally { setLoading(false) }
   }

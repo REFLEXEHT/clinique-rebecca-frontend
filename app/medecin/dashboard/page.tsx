@@ -324,6 +324,24 @@ export default function MedecinDashboard() {
                             Rejoindre
                           </a>
                         )}
+                        {r.statut === 'en_attente' || r.statut === 'paiement_effectue' ? (
+                          <div style={{ display: 'flex', gap: 4 }}>
+                            <button onClick={async () => {
+                              await api.post(`/rdv/confirmer/${r.id}`, {})
+                              toast.success('RDV confirmé ✓')
+                              const updated = await rdvApi.list()
+                              setRdvAVenir(updated.data?.filter((x: any) => new Date(x.date_rdv) >= new Date()) || [])
+                            }} style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
+                              ✓ Confirmer
+                            </button>
+                            <button onClick={() => {
+                              const msg = prompt('Votre message + nouveau créneau proposé:')
+                              if (msg) api.post(`/rdv/proposer-autre-moment/${r.id}`, { message: msg, nouveau_moment: msg }).then(() => toast.success('Proposition envoyée'))
+                            }} style={{ background: '#d97706', color: 'white', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
+                              📅 Autre moment
+                            </button>
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   )
