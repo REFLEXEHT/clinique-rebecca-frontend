@@ -159,34 +159,32 @@ export default function InfirmierDocumentsPage() {
     }
 
     if (type === 'rdv_suivi') {
-      return {
-        titre: 'Feuille de Rendez-vous de Suivi',
-        couleur: '#1641C8',
-        content: (
-          <div>
-            <p style={{ fontSize:13, marginBottom:16 }}>
-              Suite à votre consultation du <strong>{new Date().toLocaleDateString('fr-FR')}</strong>,
-              votre médecin vous recommande un rendez-vous de suivi.
-            </p>
-            <div style={{ border:'1px solid #e2e8f0', borderRadius:8, padding:14, marginBottom:12, fontSize:13 }}>
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-                <div><strong>Prochain RDV :</strong><div style={{ borderBottom:'1px solid #374151', marginTop:20, width:'80%' }}/></div>
-                <div><strong>Heure :</strong><div style={{ borderBottom:'1px solid #374151', marginTop:20, width:'80%' }}/></div>
-                <div><strong>Médecin :</strong><div style={{ borderBottom:'1px solid #374151', marginTop:20, width:'80%' }}/></div>
-                <div><strong>Service :</strong><div style={{ borderBottom:'1px solid #374151', marginTop:20, width:'80%' }}/></div>
-              </div>
-            </div>
-            <div style={{ fontSize:12, color:'#64748b', marginTop:12 }}>
-              ⚠️ Veuillez vous présenter 15 minutes avant l'heure du rendez-vous.
-              Apportez ce document et votre dossier patient.
-            </div>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginTop:24 }}>
-              <div><div style={{ fontSize:12 }}>Signature du médecin</div><div style={{ borderBottom:'1px solid #374151', marginTop:28, width:140 }}/></div>
-              <div><div style={{ fontSize:12 }}>Cachet clinique</div><div style={{ borderBottom:'1px solid #374151', marginTop:28, width:120 }}/></div>
+      return (
+        <PrintModal title="Feuille de RDV de Suivi" couleur="#1641C8" onClose={onClose}>
+          <EnteteClinique titre="Feuille de Rendez-vous de Suivi" couleur="#1641C8" />
+          {ligne('Patient', data.patient_nom)}
+          {ligne('# Dossier', data.patient_numero)}
+          {ligne('Date 1ère consultation', new Date().toLocaleDateString('fr-FR'))}
+          <p style={{ fontSize:13, marginBottom:16, marginTop:14, color:'#475569' }}>
+            Suite à votre consultation, votre médecin vous recommande un rendez-vous de suivi.
+          </p>
+          <div style={{ border:'1px solid #e2e8f0', borderRadius:8, padding:16, marginBottom:12, fontSize:13 }}>
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
+              <div><strong>Prochain RDV :</strong><div style={{ borderBottom:'1px solid #374151', marginTop:22, width:'90%' }}/></div>
+              <div><strong>Heure :</strong><div style={{ borderBottom:'1px solid #374151', marginTop:22, width:'90%' }}/></div>
+              <div><strong>Médecin :</strong><div style={{ borderBottom:'1px solid #374151', marginTop:22, width:'90%' }}/></div>
+              <div><strong>Service :</strong><div style={{ borderBottom:'1px solid #374151', marginTop:22, width:'90%' }}/></div>
             </div>
           </div>
-        )
-      }
+          <div style={{ background:'#fffbeb', borderRadius:8, padding:'10px 14px', fontSize:12, color:'#92400e', marginBottom:16 }}>
+            ⚠️ Veuillez vous présenter 15 minutes avant l'heure du rendez-vous. Apportez ce document et votre carte patient.
+          </div>
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20, marginTop:20 }}>
+            <div><div style={{ fontSize:12, marginBottom:36 }}>Signature du médecin</div><div style={{ borderBottom:'1px solid #374151', width:140 }}/></div>
+            <div><div style={{ fontSize:12, marginBottom:36 }}>Cachet clinique</div><div style={{ borderBottom:'1px solid #374151', width:120 }}/></div>
+          </div>
+        </PrintModal>
+      )
     }
     if (type === 'certificat') {
       return (
