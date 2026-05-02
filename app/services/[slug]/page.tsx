@@ -262,7 +262,6 @@ function PageLaboratoire() {
       .catch(() => {}) // use EXAMENS_CARR fallback
   }, [])
 
-  const allExamens = examensFromDB.length > 0 ? examensFromDB : EXAMENS_CARR
   const EXAMENS_CARR = [
     {titre:'Hémogramme Complet (NFS)',desc:'Analyse complète du sang : globules rouges, blancs, plaquettes. Détecte anémie, infections et troubles de la coagulation.'},
     {titre:'Glycémie à jeun',desc:'Mesure du taux de sucre sanguin. Indispensable pour le dépistage et suivi du diabète de type 1 et 2. À faire le matin avant de manger.'},
@@ -307,6 +306,8 @@ function PageLaboratoire() {
     {titre:'ACE (Antigène Carcinoembryonnaire)',desc:'Marqueur tumoral digestif. Suivi des cancers colorectaux et gastriques sous traitement.'},
     {titre:'Interleukine 6 (IL-6)',desc:'Marqueur inflammatoire avancé. Suivi des infections sévères et maladies auto-immunes.'},
   ]
+
+  const allExamens = examensFromDB.length > 0 ? examensFromDB : EXAMENS_CARR
 
   const TOUS_EXAMENS = ['Hémogramme','NFS','Glycémie','Urée','Créatinine','Cholestérol','HDL','LDL','VLDL','Triglycérides','SGOT','SGPT','Gamma GT','Bilirubine','Albumine','TSH','T3','T4','HIV','Hépatite B','Hépatite C','VDRL','RPR','Widal','CRP','RA-Latex','ASO','H.Pylori','PSA','HBA1C','BHCG','Ferritine','Fer sérique','Calcium','Phosphore','Acide urique','Hémoglobine','Réticulocytes','Plaquettes','TS','TC','PT/INR','D-Dimères','Groupe sanguin','Sickling','Électrophorèse','Malaria','Monotest','TORCH','Toxoplasmose','Rubéole','CMV','Herpès','Frottis vaginal','Frottis urétral','Crachats','Culture urine','Culture selles','Culture pus','Goutte pendante','Leucocytes','Nitrite','Albumine urinaire','Glucose urinaire','Interleukine 6','Procalcitonine','Cortisol','DHEA','Testostérone','Progestérone','Estradiol','FSH','LH','Prolactine','Insuline','Peptide C','Microalbuminurie','Créatinine urinaire','Acide valproïque','Digoxine','Phénobarbital','Troponine','BNP','NT-proBNP','Amylase','Lipase','LDH','CPK','Potassium','Sodium','Chlorures','Bicarbonates','Zinc','Cuivre','Vitamine D','Vitamine B12','Acide folique','Rétinol','Fer','Transferrine','TPHA','FTA-ABS','Western Blot','PCR','ELISA','Coombs direct','Coombs indirect','Numération leucocytes','Numération globulaire','Formule sanguine','Hématocrite','MCV','MCH','RDW','Antigène HBs','Anticorps HBs','CD4','CD8','Charge virale','Thyroglobuline','Anti-TPO','T3 libre','T4 libre','Spermiogramme','Bilan coagulation']
 
@@ -383,7 +384,6 @@ function PagePharmacie() {
       .catch(() => {})
   }, [])
 
-  const allMeds = medsFromDB.length > 0 ? medsFromDB : MEDICAMENTS
   const MEDICAMENTS = [
     {nom:'Amoxicilline 500mg',cat:'Antibiotique',dispo:true,inst:'Avec nourriture toutes les 8h. Compléter le traitement.'},
     {nom:'Amoxicilline + Ac. Clavulanique',cat:'Antibiotique large spectre',dispo:true,inst:'Avec repas. Toutes les 8-12h. Compléter le traitement prescrit.'},
@@ -445,6 +445,8 @@ function PagePharmacie() {
     {nom:'Gentamicine collyre',cat:'Antibiotique oculaire',dispo:true,inst:'1-2 gouttes toutes les 4h dans l\'œil atteint. Pencher la tête.'},
     {nom:'Métronidazole gel vaginal',cat:'Antiprotozoaire local',dispo:true,inst:'1 applicateur/jour pendant 5 jours. Le soir au coucher.'},
   ]
+
+  const allMeds = medsFromDB.length > 0 ? medsFromDB : MEDICAMENTS
 
   const [idx, setIdx] = useState(0)
   const [search, setSearch] = useState('')
