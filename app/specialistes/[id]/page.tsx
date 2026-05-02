@@ -46,7 +46,7 @@ export default function SpecialistePage() {
 
   useEffect(() => {
     if (id) {
-      specialistesApi.getById(id)
+      api.get(`/specialistes/${id}`)
         .then(r => setSpec((prev: any) => ({ ...prev, ...r.data, nom: prev?.nom })))
         .catch(() => {})
     }
