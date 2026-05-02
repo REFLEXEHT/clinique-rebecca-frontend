@@ -12,7 +12,7 @@ import { LogOut, Edit2, Save, X, Calendar, Clock, User, FileText, Star, ChevronR
 
 // ─── Types locaux ────────────────────────────────────────────────────────────
 type TypeActe = 'consultation' | 'geste' | 'observation' | 'hospitalisation' | 'chirurgie'
-type Onglet   = 'tableau' | 'rdv' | 'consultations' | 'profil' | 'demande-acces'
+type Onglet   = 'file-attente' | 'tableau' | 'rdv' | 'consultations' | 'profil' | 'demande-acces'
 
 interface ActeLocal {
   id: number
@@ -147,6 +147,8 @@ export default function MedecinDashboard() {
   const [actes,  setActes]  = useState<ActeLocal[]>([])
   const [showForm,     setShowForm]     = useState(false)
   const [dossierId,    setDossierId]    = useState<number|null>(null)
+  const [fileAttente,  setFileAttente]  = useState<any[]>([])
+  const [nbAttente,    setNbAttente]    = useState(0)
   const [synthese,     setSynthese]     = useState<Record<number,string>>({})
   const [loadSynth,    setLoadSynth]    = useState<number|null>(null)
   const [interactions, setInteractions] = useState('')
@@ -164,6 +166,24 @@ export default function MedecinDashboard() {
   useEffect(() => {
     if (!loading && (!isAuthenticated || user?.role !== 'medecin')) router.push('/login')
   }, [isAuthenticated, user, loading, router])
+
+  // Polling file d'attente every 30 seconds
+  useEffect(() => {
+    const chargerFile = () => {
+      api.get('/medecin/file-attente')
+        .then(r => {
+          const file = r.data || []
+          setFileAttente(file)
+          setNbAttente(file.length)
+        })
+        .catch(() => {})
+    }
+    if (isAuthenticated && user?.role === 'medecin') {
+      chargerFile()
+      const interval = setInterval(chargerFile, 30000) // refresh every 30s
+      return () => clearInterval(interval)
+    }
+  }, [isAuthenticated, user])
 
   useEffect(() => {
     if (!isAuthenticated || user?.role !== 'medecin') return
@@ -263,6 +283,68 @@ export default function MedecinDashboard() {
         {/* ══════════════════════════════════════════════════════════════
             TABLEAU DE BORD
         ══════════════════════════════════════════════════════════════ */}
+        {/* ── FILE D'ATTENTE ────────────────────────────────────── */}
+        {onglet === 'file-attente' && (
+          <div>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
+              <h2 style={{ fontWeight:900, fontSize:'1.2rem', margin:0 }}>
+                🏥 Patients en attente de consultation
+              </h2>
+              <button onClick={() => api.get('/medecin/file-attente').then(r => { setFileAttente(r.data||[]); setNbAttente((r.data||[]).length) })}
+                style={{ background:'none', border:'1px solid #e2e8f0', borderRadius:8, padding:'7px 14px', cursor:'pointer', fontWeight:600, fontSize:13, color:'#64748b' }}>
+                🔄 Actualiser
+              </button>
+            </div>
+            {fileAttente.length === 0 ? (
+              <div style={{ background:'white', borderRadius:16, padding:48, textAlign:'center', border:'1px solid #e2e8f0' }}>
+                <div style={{ fontSize:48, marginBottom:12 }}>✅</div>
+                <p style={{ color:'#16a34a', fontWeight:700, fontSize:15 }}>Aucun patient en attente</p>
+                <p style={{ color:'#94a3b8', fontSize:13 }}>La file se met à jour automatiquement toutes les 30 secondes</p>
+              </div>
+            ) : (
+              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                {fileAttente.map((f: any, i: number) => (
+                  <div key={f.id} style={{
+                    background:'white', borderRadius:14, padding:18,
+                    border: f.priorite === 1 ? '2px solid #dc2626' : '1px solid #e2e8f0',
+                    display:'flex', alignItems:'center', gap:14
+                  }}>
+                    {/* Numéro de position */}
+                    <div style={{ width:40, height:40, borderRadius:'50%', background: f.priorite===1?'#fef2f2':'#eff6ff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, fontSize:16, color: f.priorite===1?'#dc2626':'#1641C8', flexShrink:0 }}>
+                      {i+1}
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
+                        <span style={{ fontWeight:800, fontSize:15, color:'#0f172a' }}>{f.patient_numero}</span>
+                        {f.priorite === 1 && <span style={{ background:'#fef2f2', color:'#dc2626', borderRadius:50, padding:'2px 10px', fontSize:11, fontWeight:700 }}>🚨 URGENT</span>}
+                      </div>
+                      <div style={{ fontSize:12, color:'#64748b', marginTop:3 }}>
+                        Entré à {f.heure_entree ? new Date(f.heure_entree).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}) : '—'}
+                        {f.alerte_message && <span style={{ color:'#dc2626', marginLeft:8 }}>⚠️ {f.alerte_message}</span>}
+                      </div>
+                    </div>
+                    <button
+                      onClick={async () => {
+                        try {
+                          // Open dossier directly from file d'attente
+                          const r = await api.get(`/medecin/dossier/${f.dossier_id}`)
+                          setSelected(r.data.dossier)
+                          setDossierId(f.dossier_id)
+                          setOnglet('consultations')
+                        } catch (e: any) {
+                          toast.error(e?.response?.data?.detail || 'Erreur accès dossier')
+                        }
+                      }}
+                      style={{ background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', border:'none', borderRadius:10, padding:'10px 20px', fontWeight:700, cursor:'pointer', fontSize:14 }}>
+                      📋 Ouvrir dossier
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
         {onglet === 'tableau' && (
           <div>
             <div style={{ marginBottom: 24 }}>
@@ -507,6 +589,50 @@ export default function MedecinDashboard() {
         ══════════════════════════════════════════════════════════════ */}
         {onglet === 'consultations' && (
           <div>
+            {/* Recherche directe par ID patient (patient se présente sans RDV) */}
+            <div style={{ background:'#fffbeb', border:'1px solid #fcd34d', borderRadius:12, padding:'14px 18px', marginBottom:20, display:'flex', gap:12, alignItems:'center' }}>
+              <span style={{ fontSize:20 }}>🔍</span>
+              <div style={{ flex:1 }}>
+                <div style={{ fontWeight:700, fontSize:13, marginBottom:6 }}>Patient se présente avec son ID</div>
+                <div style={{ display:'flex', gap:8 }}>
+                  <input
+                    id="search-patient-id"
+                    placeholder="#RB-0042"
+                    style={{ flex:1, padding:'9px 14px', borderRadius:8, border:'1px solid #fcd34d', fontSize:14, fontFamily:'monospace', fontWeight:700 }}
+                    onKeyDown={async (e) => {
+                      if (e.key !== 'Enter') return
+                      const val = (e.target as HTMLInputElement).value.trim().toUpperCase()
+                      if (!val) return
+                      try {
+                        // Try to get active dossier for this patient
+                        const r = await api.get(`/medecin/dossier-par-patient/${val}`)
+                        if (r.data?.dossier) {
+                          setSelected(r.data.dossier)
+                          setDossierId(r.data.dossier.id)
+                          toast.success(`Dossier ouvert pour ${val}`)
+                        }
+                      } catch (err: any) {
+                        toast.error(err?.response?.data?.detail || `Aucun dossier actif pour ${val}`)
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={async () => {
+                      const input = document.getElementById('search-patient-id') as HTMLInputElement
+                      const val = input?.value?.trim().toUpperCase()
+                      if (!val) return
+                      try {
+                        const r = await api.get(`/medecin/dossier-par-patient/${val}`)
+                        if (r.data?.dossier) { setSelected(r.data.dossier); setDossierId(r.data.dossier.id); toast.success(`Dossier ouvert`) }
+                      } catch (err: any) { toast.error(err?.response?.data?.detail || 'Introuvable') }
+                    }}
+                    style={{ background:'#d97706', color:'white', border:'none', borderRadius:8, padding:'9px 18px', fontWeight:700, cursor:'pointer', fontSize:13 }}>
+                    Ouvrir
+                  </button>
+                </div>
+              </div>
+            </div>
+
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
               <div>
                 <h2 style={{ fontWeight: 900, fontSize: '1.3rem', color: '#0f172a', margin: 0 }}>Consultations & gestes effectués</h2>
