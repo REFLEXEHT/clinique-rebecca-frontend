@@ -12,7 +12,6 @@ import { api } from '@/lib/api'
 export default function SpecialistePage() {
   const params = useParams()
   const id = Number(params.id)
-  const [rdvOpen, setRdvOpen] = useState(false)
   // Get from single source of truth, try to enrich from API
   const baseDoc = MEDECINS.find(m => m.id === id)
   const [apiData, setApiData] = useState<any>(null)
@@ -54,7 +53,7 @@ export default function SpecialistePage() {
 
   if (!spec) return (
     <>
-      <Navbar onRdvClick={() => setRdvOpen(true)} />
+      <Navbar />
       <div className="min-h-screen flex items-center justify-center text-slate-400 pt-[70px]">
         Spécialiste introuvable
       </div>
@@ -63,8 +62,7 @@ export default function SpecialistePage() {
 
   return (
     <>
-      <Navbar onRdvClick={() => setRdvOpen(true)} />
-      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
+      <Navbar />
 
       {/* Header */}
       <div className="page-header">
