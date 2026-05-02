@@ -131,7 +131,7 @@ function ModalDocument({ doc, onClose, onPrint }: any) {
 export default function CaissierPage() {
   const { user, isAuthenticated, loading, logout } = useAuth()
   const router = useRouter()
-  const [onglet, setOnglet] = useState<'paiement'|'documents'|'depenses'|'nouveau'|'rapport'>('paiement')
+  const [onglet, setOnglet] = useState<'paiement'|'documents'|'depenses'|'nouveau'|'rapport'|'registre'>('paiement')
   const [searchPaiement, setSearchPaiement] = useState('')
   const [searchDoc, setSearchDoc] = useState('')
   const [patient, setPatient] = useState<any>(null)

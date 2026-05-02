@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import SignaturePad from '@/components/ui/SignaturePad'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
@@ -203,7 +204,7 @@ function renderDocument(type: string, data: any, user: any, onClose: () => void)
         </div>
         <div style={{ fontSize: 13, marginTop: 12 }}>En foi de quoi, ce certificat lui est délivré pour servir et valoir ce que de droit.</div>
         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 24 }}>
-          <div><div style={{ fontSize: 12, marginBottom: 36 }}>Signature du médecin</div><div style={{ borderBottom: '1px solid #374151', width: 160 }} /></div>
+          <SignaturePad label='Signature du médecin' onSign={(d) => setSignatures(s => ({...s, cert_medecin: d}))} width={240} height={110} />
         </div>
       </PrintModal>
     ),
@@ -381,14 +382,14 @@ function renderDocument(type: string, data: any, user: any, onClose: () => void)
           {ligne('certifie avoir informé le patient des risques')} {ligneVide(36)}
           {ligne('Date et heure de sortie')}
           <div style={{ fontSize: 12, color: '#64748b', margin: '10px 0', lineHeight: 1.6 }}>Ni ma responsabilité ni celle de l'établissement ne pourront être engagées suite à cette décision.</div>
-          <div style={{ marginTop: 14 }}><div style={{ fontSize: 12, marginBottom: 36 }}>Signature du médecin</div><div style={{ borderBottom: '1px solid #374151', width: 140 }} /></div>
+          <div style={{ marginTop: 14 }}><SignaturePad label='Signature du médecin' onSign={(d) => setSignatures(s => ({...s, sca_medecin: d}))} width={240} height={110} /></div>
         </div>
         <div style={{ background: '#fff7ed', borderRadius: 10, padding: 16 }}>
           <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 12 }}>PARTIE À REMPLIR PAR LE PATIENT</div>
           {ligne('Je soussigné(e)', data?.patient_nom)}
           <div style={{ fontSize: 12, color: '#64748b', margin: '10px 0', lineHeight: 1.6 }}>Je reconnais avoir été informé(e) des risques médicaux liés à ma sortie et maintiens ma décision en toute connaissance de cause.</div>
           {ligne('Date et heure')}
-          <div style={{ marginTop: 14 }}><div style={{ fontSize: 12, marginBottom: 36 }}>Signature du patient</div><div style={{ borderBottom: '1px solid #374151', width: 140 }} /></div>
+          <div style={{ marginTop: 14 }}><SignaturePad label='Signature du patient' onSign={(d) => setSignatures(s => ({...s, sca_patient: d}))} width={240} height={110} /></div>
         </div>
       </PrintModal>
     ),
@@ -642,6 +643,7 @@ export default function InfirmierDocuments() {
   const [patientData, setPatientData] = useState<any>(null)
   const [searchId, setSearchId] = useState('')
   const [modal, setModal] = useState<{ type: string; data: any } | null>(null)
+  const [signatures, setSignatures] = useState<Record<string, string | null>>({})
 
   if (!loading && !isAuthenticated) { router.push('/login'); return null }
 
