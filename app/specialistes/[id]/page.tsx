@@ -8,20 +8,6 @@ import Footer from '@/components/layout/Footer'
 import { MEDECINS, nomComplet } from '@/lib/medecins'
 import { api } from '@/lib/api'
 
-const SPECS_DATA: Record<number, Specialiste & { tags: string[]; bio: string; disponibilites: string; experience: string }> = {
-  1: { id:1, nom:'Dr. Michel Dubois', specialite:'Chirurgie générale', description:'Chirurgien senior', emoji:'🔬', categorie:'chirurgie', email:'m.dubois@cliniquerebecca.ht', telephone:'+509 3456-0001', actif:true, ordre:0, bio:'Chirurgien général spécialisé dans la chirurgie digestive et laparoscopique. Plus de 15 ans d\'expérience dans les interventions chirurgicales complexes, formé à l\'Hôpital Universitaire d\'État d\'Haïti et en France.', tags:['Chirurgie digestive','Laparoscopie','Urgences chirurgicales','Hernies'], disponibilites:'Lun–Ven 08h–17h · Sam 08h–12h', experience:'15 ans d\'expérience' },
-  2: { id:2, nom:'Dr. Anne-Marie Pierre', specialite:'Neurochirurgie', description:'Neurochirurgie pédiatrique', emoji:'🧠', categorie:'neurochirurgie', email:'am.pierre@cliniquerebecca.ht', telephone:'+509 3456-0002', actif:true, ordre:0, bio:'Experte en neurochirurgie pédiatrique et adulte, spécialisée dans le traitement des tumeurs cérébrales, des malformations vasculaires et de la pathologie de la colonne vertébrale.', tags:['Tumeurs cérébrales','Chirurgie de la colonne','Neurochirurgie pédiatrique'], disponibilites:'Mar–Jeu 08h–16h', experience:'12 ans d\'expérience' },
-  3: { id:3, nom:'Dr. Jean-Claude Étienne', specialite:'Neurologie', description:'Épilepsie, AVC', emoji:'🧬', categorie:'neurologie', email:'jc.etienne@cliniquerebecca.ht', telephone:'+509 3456-0003', actif:true, ordre:0, bio:'Neurologue expérimenté dans le diagnostic et le traitement de l\'épilepsie, des AVC et des pathologies démyélinisantes comme la sclérose en plaques.', tags:['Épilepsie','AVC','Sclérose en plaques'], disponibilites:'Lun–Ven 08h–17h', experience:'10 ans d\'expérience' },
-  4: { id:4, nom:'Dr. Sophie Lamour', specialite:'Orthopédie', description:'Traumatologie', emoji:'🦴', categorie:'orthopedie', email:'s.lamour@cliniquerebecca.ht', telephone:'+509 3456-0004', actif:true, ordre:0, bio:'Orthopédiste spécialisée en traumatologie et chirurgie prothétique. Prise en charge des fractures complexes, des arthroses sévères et remplacement articulaire.', tags:['Prothèse de hanche','Fractures complexes','Arthroscopie'], disponibilites:'Lun–Sam 08h–17h', experience:'13 ans d\'expérience' },
-  5: { id:5, nom:'Dr. Paul Désir', specialite:'Pédiatrie', description:'Néonatologie', emoji:'👶', categorie:'pediatrie', email:'p.desir@cliniquerebecca.ht', telephone:'+509 3456-0005', actif:true, ordre:0, bio:'Pédiatre dévoué spécialisé en néonatologie et pédiatrie générale. Suivi de croissance, vaccinations, maladies infectieuses de l\'enfant et maladies chroniques pédiatriques.', tags:['Néonatologie','Pédiatrie générale','Vaccinations','Maladies chroniques'], disponibilites:'Lun–Ven 08h–17h · Sam 08h–15h', experience:'11 ans d\'expérience' },
-  6: { id:6, nom:'Dr. Isabelle François', specialite:'Dermatologie', description:'Maladies de peau', emoji:'🌸', categorie:'dermatologie', email:'i.francois@cliniquerebecca.ht', telephone:'+509 3456-0006', actif:true, ordre:0, bio:'Dermatologue spécialisée dans les maladies inflammatoires de la peau, les infections cutanées, les pathologies pigmentaires et la dermatologie cosmétique.', tags:['Eczéma','Psoriasis','Acné','Dermatologie cosmétique'], disponibilites:'Lun–Ven 09h–17h', experience:'9 ans d\'expérience' },
-  7: { id:7, nom:'Dr. Henri Nazaire', specialite:'Urologie', description:'Prostate, système urinaire', emoji:'💊', categorie:'urologie', email:'h.nazaire@cliniquerebecca.ht', telephone:'+509 3456-0007', actif:true, ordre:0, bio:'Urologue expérimenté dans le traitement des pathologies de la prostate, des lithiases urinaires, des infections urinaires récidivantes et des troubles de la fertilité masculine.', tags:['Prostate','Lithiase urinaire','Fertilité masculine'], disponibilites:'Lun–Ven 08h–17h', experience:'14 ans d\'expérience' },
-  8: { id:8, nom:'Dr. Marie-Rose Cajuste', specialite:'ORL', description:'Oreille, nez, gorge', emoji:'👂', categorie:'orl', email:'mr.cajuste@cliniquerebecca.ht', telephone:'+509 3456-0008', actif:true, ordre:0, bio:'Spécialiste en oto-rhino-laryngologie. Prise en charge des pathologies de l\'oreille, du nez, des sinus, de la gorge et du larynx, avec ou sans chirurgie.', tags:['Sinusite','Troubles auditifs','Chirurgie ORL','Amygdales'], disponibilites:'Lun–Sam 07h–16h', experience:'8 ans d\'expérience' },
-  9: { id:9, nom:'Dr. Claudette Joseph', specialite:'Gynécologie-Obstétrique', description:'Suivi grossesse', emoji:'🌺', categorie:'gynecologie', email:'c.joseph@cliniquerebecca.ht', telephone:'+509 3456-0009', actif:true, ordre:0, bio:'Gynécologue-obstétricienne assurant le suivi de grossesse, les accouchements, et la santé reproductive de la femme tout au long de sa vie.', tags:['Suivi grossesse','Accouchement','Ménopause','Contraception'], disponibilites:'Lun–Sam 07h–17h', experience:'16 ans d\'expérience' },
-  10: { id:10, nom:'Dr. Patrick Dorival', specialite:'Chirurgie pédiatrique', description:'Chirurgie nourrissons', emoji:'🏥', categorie:'chir-ped', email:'p.dorival@cliniquerebecca.ht', telephone:'+509 3456-0010', actif:true, ordre:0, bio:'Chirurgien pédiatrique spécialisé dans les interventions chez les nourrissons et jeunes enfants, y compris les malformations congénitales.', tags:['Chirurgie néonatale','Hernies','Appendicite','Malformations'], disponibilites:'Lun–Ven 08h–16h', experience:'10 ans d\'expérience' },
-  11: { id:11, nom:'Dr. Réginald Louis', specialite:'Médecine interne', description:'Diabète, hypertension', emoji:'❤️', categorie:'medecine-interne', email:'r.louis@cliniquerebecca.ht', telephone:'+509 3456-0011', actif:true, ordre:0, bio:'Interniste expérimenté dans la prise en charge des maladies chroniques complexes. Diabète, hypertension, dyslipidémie, maladies auto-immunes et polyvasculaires.', tags:['Diabète','Hypertension','Maladies auto-immunes','Gériatrie'], disponibilites:'Lun–Sam 07h–17h', experience:'18 ans d\'expérience' },
-  12: { id:12, nom:'Dr. Nathalie Vincent', specialite:'Ophtalmologie', description:'Chirurgie oculaire', emoji:'👁️', categorie:'ophtalmologie', email:'n.vincent@cliniquerebecca.ht', telephone:'+509 3456-0012', actif:true, ordre:0, bio:'Ophtalmologue spécialisée en chirurgie de la cataracte, traitement du glaucome, pathologies rétiniennes et réfraction oculaire.', tags:['Cataracte','Glaucome','Rétine','Réfraction'], disponibilites:'Mar–Sam 08h–17h', experience:'12 ans d\'expérience' },
-}
 
 export default function SpecialistePage() {
   const params = useParams()
@@ -48,13 +34,21 @@ export default function SpecialistePage() {
     bio: apiData.description || baseDoc?.bio,
     telephone: apiData.telephone || baseDoc?.telephone,
   } : baseDoc
-  const [spec, setSpec] = useState(SPECS_DATA[id] || null)
+  const baseMedecin = MEDECINS.find(m => m.id === id) || null
+  const [spec, setSpec] = useState<any>(baseMedecin ? {
+    ...baseMedecin,
+    nom: nomComplet(baseMedecin),
+    tags: [],
+    bio: baseMedecin.bio || '',
+    experience: '',
+    disponibilites: baseMedecin.disponibilites,
+  } : null)
 
   useEffect(() => {
     if (id) {
       specialistesApi.getById(id)
-        .then(r => setSpec(prev => ({ ...SPECS_DATA[id], ...r.data, tags: SPECS_DATA[id]?.tags || [], bio: SPECS_DATA[id]?.bio || '' })))
-        .catch(() => setSpec(SPECS_DATA[id] || null))
+        .then(r => setSpec((prev: any) => ({ ...prev, ...r.data, nom: prev?.nom })))
+        .catch(() => {})
     }
   }, [id])
 
