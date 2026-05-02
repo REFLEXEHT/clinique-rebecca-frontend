@@ -153,6 +153,9 @@ export default function MedecinDashboard() {
   const [synthese,     setSynthese]     = useState<Record<number,string>>({})
   const [loadSynth,    setLoadSynth]    = useState<number|null>(null)
   const [interactions, setInteractions] = useState('')
+  const [maSignature,  setMaSignature]  = useState<string | null>(null)
+  const [signLoading,  setSignLoading]  = useState(false)
+  const [signSaved,    setSignSaved]    = useState(false)
   const [loadInter,    setLoadInter]    = useState(false)
   const [editProfil, setEditProfil] = useState(false)
   const [filtreActe, setFiltreActe] = useState<TypeActe | 'tous'>('tous')
@@ -890,9 +893,6 @@ export default function MedecinDashboard() {
 
 function DemandeAccesSection() {
   const [patientNumero, setPatientNumero] = React.useState('')
-  const [maSignature,  setMaSignature]  = React.useState<string | null>(null)
-  const [signLoading,  setSignLoading]  = React.useState(false)
-  const [signSaved,    setSignSaved]    = React.useState(false)
   const [motif,         setMotif]         = React.useState('')
   const [urgence,       setUrgence]       = React.useState(false)
   const [mesdemandes,   setMesDemandes]   = React.useState<any[]>([])
