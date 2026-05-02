@@ -108,37 +108,6 @@ export default function HomePage() {
       </section>
 
       {/* ── NOS SERVICES ─────────────────────────────────────────── */}
-      <section style={{ padding:'72px 5%', background:'#f8fafc' }}>
-        <div style={{ maxWidth:1100, margin:'0 auto' }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'flex-end', marginBottom:36 }}>
-            <div>
-              <div style={{ color:'#1641C8', fontWeight:700, fontSize:13, textTransform:'uppercase', letterSpacing:1, marginBottom:8 }}>
-                {t('home.nosServices')}
-              </div>
-              <h2 style={{ fontWeight:900, fontSize:'clamp(1.5rem,3vw,2rem)', color:'#0f172a', margin:0 }}>
-                {t('home.sousNos')}
-              </h2>
-            </div>
-            <Link href="/services" style={{ color:'#1641C8', fontWeight:700, fontSize:14, textDecoration:'none', display:'flex', alignItems:'center', gap:6 }}>
-              {t('home.voirTout')} <i className="fa-solid fa-arrow-right" style={{ fontSize:11 }} />
-            </Link>
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(5,1fr)', gap:14 }}>
-            {SERVICES_KEYS.map(s => (
-              <Link key={s.key} href={s.link} style={{ textDecoration:'none' }}>
-                <div style={{ background:'white', borderRadius:16, padding:'20px 16px', border:'1px solid #e2e8f0', textAlign:'center', cursor:'pointer', transition:'all 0.2s' }}
-                  onMouseEnter={e=>{const el=e.currentTarget as HTMLDivElement;el.style.transform='translateY(-4px)';el.style.boxShadow='0 8px 24px rgba(22,65,200,0.12)'}}
-                  onMouseLeave={e=>{const el=e.currentTarget as HTMLDivElement;el.style.transform='translateY(0)';el.style.boxShadow='none'}}>
-                  <div style={{ width:48, height:48, borderRadius:12, background:'#f1f5f9', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
-                    <i className={`fa-solid ${s.icon}`} style={{ color:'#1641C8', fontSize:20 }} />
-                  </div>
-                  <div style={{ fontWeight:700, color:'#0f172a', fontSize:13, lineHeight:1.3 }}>{t(s.key)}</div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* ── POURQUOI ── */}
       <PourquoiSection />
@@ -220,63 +189,58 @@ function PourquoiSection() {
   const txt = r[lang as 'fr'] || r.fr
 
   return (
-    <section style={{ padding:'72px 5%', background:'white' }}>
+    <section style={{ padding:'88px 5% 96px', background:'white' }}>
       <div style={{ maxWidth:1100, margin:'0 auto' }}>
         {/* Titre */}
-        <div style={{ textAlign:'center', marginBottom:48 }}>
-          <div style={{ color:'#1641C8', fontWeight:700, fontSize:13, textTransform:'uppercase', letterSpacing:1, marginBottom:8 }}>
-            {lang === 'en' ? 'Why choose us' : lang === 'es' ? 'Por qué elegirnos' : lang === 'zh' ? '为什么选择我们' : lang === 'ht' ? 'Poukwa chwazi nou' : 'Pourquoi nous choisir'}
+        <div style={{ textAlign:'center', marginBottom:60 }}>
+          <div style={{ color:'#1641C8', fontWeight:700, fontSize:14, textTransform:'uppercase', letterSpacing:3, marginBottom:14 }}>
+            {lang==='en'?'Why choose us':lang==='ht'?'Poukwa chwazi nou':lang==='es'?'Por qué elegirnos':lang==='zh'?'为什么选择我们':'Pourquoi nous choisir'}
           </div>
-          <h2 style={{ fontWeight:900, fontSize:'clamp(1.5rem,3vw,2rem)', color:'#0f172a', margin:0 }}>
-            {lang === 'en' ? 'What makes us different' : lang === 'es' ? 'Lo que nos hace diferentes' : lang === 'zh' ? '我们的与众不同' : lang === 'ht' ? 'Sa ki fè nou diferan' : 'Ce qui nous distingue'}
+          <h2 style={{ fontWeight:900, fontSize:'clamp(1.8rem,3.5vw,2.6rem)', color:'#0f172a', margin:0, lineHeight:1.2 }}>
+            {lang==='en'?'What sets us apart':lang==='ht'?'Sa ki fè nou diferan':lang==='es'?'Lo que nos distingue':lang==='zh'?'我们的特色':'Ce qui nous distingue'}
           </h2>
         </div>
 
-        {/* Layout: carrousel gauche + stats droite */}
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:40, alignItems:'center' }}>
-
-          {/* Carrousel messages catchy */}
-          <div>
-            <div style={{ background:'linear-gradient(135deg,#0f1e3d,#1641C8)', borderRadius:24, padding:40, minHeight:220, position:'relative', overflow:'hidden' }}>
-              {/* Cercles déco */}
-              <div style={{ position:'absolute', top:-40, right:-40, width:160, height:160, borderRadius:'50%', background:'rgba(255,255,255,0.05)' }} />
-              <div style={{ position:'absolute', bottom:-30, left:-30, width:120, height:120, borderRadius:'50%', background:'rgba(13,148,136,0.15)' }} />
-              {/* Contenu */}
-              <div style={{ position:'relative', zIndex:1 }}>
-                <div style={{ fontSize:48, marginBottom:16 }}>{r.icon}</div>
-                <h3 style={{ color:'white', fontWeight:900, fontSize:'1.4rem', margin:'0 0 12px', lineHeight:1.2 }}>{txt.titre}</h3>
-                <p style={{ color:'rgba(255,255,255,0.8)', fontSize:15, lineHeight:1.7, margin:'0 0 24px' }}>{txt.msg}</p>
-                {/* Indicateurs */}
-                <div style={{ display:'flex', gap:6 }}>
-                  {RAISONS.map((_,i) => (
-                    <button key={i} onClick={() => setIdx(i)} style={{
-                      width: i === idx ? 28 : 8, height:8, borderRadius:4, border:'none',
-                      background: i === idx ? 'white' : 'rgba(255,255,255,0.3)',
-                      cursor:'pointer', transition:'all 0.3s', padding:0
-                    }} />
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Stats chiffrées */}
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
-            {[
-              { n:'30+',    icon:'fa-user-doctor',   label:{ fr:'Médecins spécialistes', en:'Specialist doctors', ht:'Doktè espesyalis', es:'Médicos especialistas', zh:'专科医生' } },
-              { n:'165',    icon:'fa-flask-vial',    label:{ fr:'Analyses disponibles',  en:'Tests available',     ht:'Analiz disponib',    es:'Análisis disponibles',  zh:'可用检验' } },
-              { n:'1 200+', icon:'fa-star',          label:{ fr:'Patients satisfaits',   en:'Satisfied patients',  ht:'Pasyan satisfè',     es:'Pacientes satisfechos', zh:'满意患者' } },
-              { n:'6j/7',   icon:'fa-clock',         label:{ fr:'Jours d\'ouverture',    en:'Days open',           ht:'Jou ouvri',          es:'Días abiertos',         zh:'开放天数' } },
-            ].map((s,i) => (
-              <div key={i} style={{ background:'#f8fafc', borderRadius:18, padding:24, border:'1px solid #e2e8f0', textAlign:'center' }}>
-                <div style={{ width:44, height:44, borderRadius:12, background:'#eff6ff', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
-                  <i className={`fa-solid ${s.icon}`} style={{ color:'#1641C8', fontSize:18 }} />
-                </div>
-                <div style={{ fontWeight:900, fontSize:'1.8rem', color:'#0f172a', marginBottom:4 }}>{s.n}</div>
-                <div style={{ color:'#64748b', fontSize:13, lineHeight:1.3 }}>{(s.label as any)[lang] || s.label.fr}</div>
-              </div>
+        {/* Carrousel principal */}
+        <div style={{ display:'grid', gridTemplateColumns:'1fr 2fr', gap:32, alignItems:'center', marginBottom:48 }}>
+          {/* Navigation */}
+          <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+            {RAISONS.map((r, i) => (
+              <button key={i} onClick={() => setIdx(i)} style={{
+                display:'flex', alignItems:'center', gap:14, padding:'14px 18px',
+                borderRadius:14, border:'none', cursor:'pointer', textAlign:'left',
+                background: i===idx ? 'linear-gradient(135deg,#1641C8,#0d9488)' : '#f8fafc',
+                transition:'all 0.25s'
+              }}>
+                <span style={{ fontSize:26, flexShrink:0 }}>{r.icon}</span>
+                <span style={{ fontWeight:700, fontSize:14, color: i===idx?'white':'#374151' }}>
+                  {(r as any)[lang]?.titre || r.fr.titre}
+                </span>
+              </button>
             ))}
           </div>
+
+          {/* Contenu actif */}
+          <div style={{ background:'linear-gradient(135deg,#0f1e3d,#1641C8)', borderRadius:24, padding:'48px 44px', minHeight:280 }}>
+            <div style={{ fontSize:72, marginBottom:24 }}>{RAISONS[idx].icon}</div>
+            <h3 style={{ color:'white', fontWeight:900, fontSize:'clamp(1.4rem,2.5vw,2rem)', margin:'0 0 16px', lineHeight:1.2 }}>
+              {(RAISONS[idx] as any)[lang]?.titre || RAISONS[idx].fr.titre}
+            </h3>
+            <p style={{ color:'rgba(255,255,255,0.85)', fontSize:16, lineHeight:1.9, margin:0 }}>
+              {(RAISONS[idx] as any)[lang]?.msg || RAISONS[idx].fr.msg}
+            </p>
+          </div>
+        </div>
+
+        {/* Dots */}
+        <div style={{ display:'flex', justifyContent:'center', gap:8 }}>
+          {RAISONS.map((_,i) => (
+            <button key={i} onClick={() => setIdx(i)} style={{
+              width: i===idx?32:10, height:10, borderRadius:5,
+              background: i===idx?'#1641C8':'#e2e8f0',
+              border:'none', cursor:'pointer', padding:0, transition:'all 0.3s'
+            }}/>
+          ))}
         </div>
       </div>
     </section>
