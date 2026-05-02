@@ -493,7 +493,7 @@ function PagePharmacie() {
                 </span>
               </div>
               <p style={{color:'#475569',fontSize:13,lineHeight:1.7,margin:'0 0 10px'}}>{med.inst}</p>
-              {med.dispo&&<div style={{fontSize:11,color:'#94a3b8'}}>📅 Exp: {med.exp}</div>}
+              {med.dispo&&(med as any).exp&&<div style={{fontSize:11,color:'#94a3b8'}}>📅 Exp: {(med as any).exp}</div>}
               <div style={{display:'flex',gap:5,marginTop:16}}>
                 {allMeds.map((_,i)=>(
                   <button key={i} onClick={()=>setIdx(i)} style={{width:i===idx?24:6,height:6,borderRadius:3,background:i===idx?'#7c3aed':'#e2e8f0',border:'none',cursor:'pointer',transition:'all 0.3s',padding:0}}/>
