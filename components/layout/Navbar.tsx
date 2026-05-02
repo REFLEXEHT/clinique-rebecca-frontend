@@ -109,6 +109,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
   const [mobileSection, setMobileSection] = useState<string | null>(null)
   const [mounted, setMounted] = useState(false)
   const { user, isAuthenticated, logout } = useAuth()
+  const { lang, t } = useLang()
   const router = useRouter()
   const pathname = usePathname()
 
