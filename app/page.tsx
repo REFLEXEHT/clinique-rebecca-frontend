@@ -214,7 +214,7 @@ function PourquoiSection() {
               <button key={i} onClick={() => setIdx(i)} style={{
                 display:'flex', alignItems:'center', gap:14, padding:'14px 18px',
                 borderRadius:14, border:'none', cursor:'pointer', textAlign:'left',
-                background: i===idx ? 'linear-gradient(135deg,#1641C8,#0d9488)' : '#f8fafc',
+                background: i===idx ? 'linear-gradient(135deg,#0f1e3d,#1641C8,#0d9488)' : 'white',
                 transition:'all 0.25s'
               }}>
                 <span style={{ width:40, height:40, borderRadius:10, flexShrink:0, overflow:'hidden', border: i===idx?'2px solid rgba(255,255,255,0.4)':'2px solid #e2e8f0' }}>
@@ -228,7 +228,7 @@ function PourquoiSection() {
           </div>
 
           {/* Contenu actif */}
-          <div style={{ background:'linear-gradient(135deg,#0f1e3d,#1641C8)', borderRadius:24, padding:'48px 44px', minHeight:280 }}>
+          <div style={{ background:'linear-gradient(135deg,#0f1e3d 0%,#1641C8 60%,#0d9488 100%)', borderRadius:24, padding:'48px 44px', minHeight:280 }}>
             <div style={{ width:'100%', height:160, borderRadius:14, overflow:'hidden', marginBottom:20, position:'relative' }}>
                 <img src={RAISONS[idx].img} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', objectPosition:'center top' }}/>
                 <div style={{ position:'absolute', inset:0, background:'linear-gradient(to bottom, transparent 40%, rgba(10,20,60,0.6) 100%)' }}/>

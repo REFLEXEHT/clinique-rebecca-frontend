@@ -81,7 +81,7 @@ const MEDECINS_INFO: Record<string,any> = {
   'Dr Marie Kerline Pierre':  { email:'mk.pierre@cliniquerebecca.ht',     specialite:'Anesthésiologie',     emoji:'💉' },
   'Dr Wolf Charlie Cajuste':  { email:'wc.cajuste@cliniquerebecca.ht',    specialite:'Dentisterie',         emoji:'🦷' },
   'Mme Fredia Fleurival':     { email:'f.fleurival@cliniquerebecca.ht',   specialite:'Physiothérapie',      emoji:'🏥' },
-  'Dr Gilles Abraham':        { email:'g.abraham@cliniquerebecca.ht',     specialite:'Optométrie',          emoji:'👁️' },
+  'M. Gilles Abraham':        { email:'g.abraham@cliniquerebecca.ht',     specialite:'Optométrie',          emoji:'👁️' },
   'Mr Reginald Volcy':        { email:'r.volcy@cliniquerebecca.ht',       specialite:'Psychologie',         emoji:'🧠' },
   'Dr Jean Luc Mathurin':     { email:'jl.mathurin@cliniquerebecca.ht',   specialite:'Radiologie',          emoji:'🩻' },
 }
@@ -225,7 +225,10 @@ function PageCliniqueExterne() {
                             <div style={{color:'#0d9488',fontWeight:600,fontSize:12,marginTop:2}}>{info.specialite}</div>
                             {info.email&&<a href={`mailto:${info.email}`} style={{color:'#94a3b8',fontSize:11,display:'block',marginTop:3,textDecoration:'none'}}>✉️ {info.email}</a>}
                           </div>
-                          <Link href="/consultation" style={{background:'#eff6ff',color:'#1641C8',textDecoration:'none',borderRadius:8,padding:'6px 14px',fontWeight:700,fontSize:12}}>RDV</Link>
+                          <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
+                            <Link href={`/specialites?specialite=${encodeURIComponent(info.specialite||nom)}`} style={{background:'#f0fdf4',color:'#0d9488',textDecoration:'none',borderRadius:8,padding:'5px 10px',fontWeight:600,fontSize:11}}>👤 Profil</Link>
+                            <Link href="/consultation" style={{background:'#eff6ff',color:'#1641C8',textDecoration:'none',borderRadius:8,padding:'5px 10px',fontWeight:700,fontSize:11}}>RDV</Link>
+                          </div>
                         </div>
                       )
                     })}
@@ -579,7 +582,7 @@ const SERVICES_CONTENT: Record<string,{
   optometrie:{
     titre:'Optométrie',icon:'👁️',couleur:'#dc2626',gradient:'linear-gradient(135deg,#0f1e3d,#dc2626)',
     desc:'Examen complet de la vue et prescription de lunettes ou lentilles adaptées à vos besoins.',
-    medecin:{nom:'Dr Gilles Abraham',email:'g.abraham@cliniquerebecca.ht',specialite:'Optométriste',emoji:'👁️'},
+    medecin:{nom:'M. Gilles Abraham',email:'g.abraham@cliniquerebecca.ht',specialite:'Optométriste',emoji:'👁️'},
     items:[
       {titre:'Examen de la Vue Complet',desc:'Bilan visuel complet incluant acuité visuelle, réfraction, tension oculaire et fond d\'œil. Durée 30-45 min.'},
       {titre:'Réfraction & Prescription',desc:'Détermination précise de votre correction visuelle (myopie, hypermétropie, astigmatisme, presbytie).'},

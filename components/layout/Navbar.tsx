@@ -258,17 +258,17 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
             <>
               {pathname !== '/login' && (
               <Link href="/login" className="px-4 py-2 rounded-full border-[1.5px]
-                border-slate-200 text-slate-700 font-semibold text-[13.5px]
-                hover:border-[#1641C8] hover:text-[#1641C8] hover:bg-blue-50 transition-all">
+                border-[#0d9488] text-[#0d9488] font-semibold text-[13.5px]
+                hover:bg-[#0d9488] hover:text-white transition-all">
                 <i className="fa-regular fa-user mr-1.5" />{t('nav.connexion')}
               </Link>
               )}
               <button
                 onClick={onRdvClick}
-                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#1641C8]
+                className="flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-[#1641C8] to-[#0d9488]
                   text-white font-bold text-[13.5px] border-none cursor-pointer
-                  hover:bg-[#0f2fa3] hover:-translate-y-0.5 hover:shadow-lg
-                  hover:shadow-blue-200 transition-all">
+                  hover:opacity-90 hover:-translate-y-0.5 hover:shadow-lg
+                  hover:shadow-teal-200 transition-all">
                 <i className="fa-regular fa-calendar-check" />{t('nav.prendreRdv')}
               </button>
             </>

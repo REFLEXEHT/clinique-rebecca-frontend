@@ -1,3 +1,47 @@
+
+/* ── Clinique de la Rebecca — Design System ───────────────────────────── */
+:root {
+  --cr-blue:     #1641C8;
+  --cr-teal:     #0d9488;
+  --cr-dark:     #0f1e3d;
+  --cr-light:    #f8fafc;
+  --cr-text:     #0f172a;
+  --cr-muted:    #64748b;
+}
+
+/* Smooth scrolling */
+html { scroll-behavior: smooth; }
+
+/* Focus visible for accessibility */
+*:focus-visible { outline: 2px solid var(--cr-teal); outline-offset: 2px; }
+
+/* Button base */
+button { font-family: inherit; }
+
+/* Turquoise gradient utility */
+.btn-primary {
+  background: linear-gradient(135deg, var(--cr-blue), var(--cr-teal));
+  color: white; border: none; border-radius: 12px;
+  padding: 12px 24px; font-weight: 700; cursor: pointer;
+  transition: opacity 0.2s, transform 0.2s;
+}
+.btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
+
+/* Card hover effect */
+.card-hover {
+  transition: box-shadow 0.2s, transform 0.2s;
+}
+.card-hover:hover {
+  box-shadow: 0 8px 32px rgba(22,65,200,0.12);
+  transform: translateY(-2px);
+}
+
+/* Turquoise badge */
+.badge-teal {
+  background: #f0fdf4; color: #0d9488;
+  border-radius: 50px; padding: 3px 12px;
+  font-size: 12px; font-weight: 700;
+}
 /* app/globals.css */
 @tailwind base;
 @tailwind components;

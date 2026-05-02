@@ -36,7 +36,7 @@ const MEDECINS_FALLBACK = [
   { nom:'Dr Marie Kerline Pierre',  specialite:'Anesthésiologie / Réanimation', emoji:'💉' },
   { nom:'Dr Wolf Charlie Cajuste',  specialite:'Dentisterie',                   emoji:'🦷' },
   { nom:'Mme Fredia Fleurival',     specialite:'Physiothérapie',                emoji:'🏥' },
-  { nom:'Dr Gilles Abraham',        specialite:'Optométrie',                    emoji:'👁️' },
+  { nom:'M. Gilles Abraham',        specialite:'Optométrie',                    emoji:'👁️' },
   { nom:'Mr Reginald Volcy',        specialite:'Psychologie',                   emoji:'🧬' },
   { nom:'Dr Jean Luc Mathurin',     specialite:'Radiologie',                    emoji:'🩻' },
 ]
@@ -157,8 +157,10 @@ function SpecialitesContent() {
         {/* Grille médecins */}
         <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(280px,1fr))', gap:16 }}>
           {filtres.map((m, i) => (
-            <div key={i} style={{ background:'white', borderRadius:16, padding:20, border:'1px solid #e2e8f0', display:'flex', gap:14, alignItems:'flex-start' }}>
-              <div style={{ width:50, height:50, borderRadius:14, background:'linear-gradient(135deg,#1641C8,#0d9488)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
+            <div key={i} style={{ background:'white', borderRadius:16, padding:20, border:'1px solid #e2e8f0', display:'flex', gap:14, alignItems:'flex-start', transition:'box-shadow 0.2s', cursor:'default' }}
+              onMouseEnter={e=>(e.currentTarget as HTMLElement).style.boxShadow='0 4px 20px rgba(22,65,200,0.10)'}
+              onMouseLeave={e=>(e.currentTarget as HTMLElement).style.boxShadow='none'}>
+              <div style={{ width:54, height:54, borderRadius:14, background:'linear-gradient(135deg,#1641C8,#0d9488)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, flexShrink:0, boxShadow:'0 2px 8px rgba(13,148,136,0.3)' }}>
                 {m.emoji || '👨‍⚕️'}
               </div>
               <div style={{ flex:1, minWidth:0 }}>
