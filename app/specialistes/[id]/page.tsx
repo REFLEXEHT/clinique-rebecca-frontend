@@ -1,7 +1,7 @@
 'use client'
 // app/specialistes/[id]/page.tsx — Profil public spécialiste
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
+import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
@@ -11,6 +11,7 @@ import { api } from '@/lib/api'
 
 export default function SpecialistePage() {
   const params = useParams()
+  const router = useRouter()
   const id = Number(params.id)
   // Get from single source of truth, try to enrich from API
   const baseDoc = MEDECINS.find(m => m.id === id)
@@ -94,7 +95,7 @@ export default function SpecialistePage() {
                 ))}
               </div>
               <div className="flex gap-4">
-                <button onClick={() => setRdvOpen(true)} className="btn-primary">
+                <button onClick={() => router.push('/consultation')} className="btn-primary">
                   <i className="fa-regular fa-calendar-check"/> Prendre rendez-vous
                 </button>
                 <Link href="/consultation" className="btn-secondary">
@@ -151,7 +152,7 @@ export default function SpecialistePage() {
           <div className="space-y-4">
             <div className="card p-5 border-2 border-[#1641C8]/10">
               <h4 className="font-extrabold text-[14px] mb-4">Prendre rendez-vous</h4>
-              <button onClick={() => setRdvOpen(true)} className="btn-primary w-full justify-center mb-3">
+              <button onClick={() => router.push('/consultation')} className="btn-primary w-full justify-center mb-3">
                 <i className="fa-regular fa-calendar-check"/> En personne
               </button>
               <Link href="/consultation" className="btn-secondary w-full justify-center text-sm no-underline inline-flex">
