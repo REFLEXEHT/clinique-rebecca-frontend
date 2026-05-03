@@ -422,7 +422,7 @@ export default function MedecinDashboard() {
                               await api.post(`/rdv/confirmer/${r.id}`, {})
                               toast.success('RDV confirmé ✓')
                               const updated = await rdvApi.medecinList()
-                              setRdvAVenir(updated.data?.filter((x: any) => new Date(x.date_rdv) >= new Date()) || [])
+                              setRdvs(updated.data || [])
                             }} style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
                               ✓ Confirmer
                             </button>
