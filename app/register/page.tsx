@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -42,6 +42,11 @@ function FieldError({ msg }: { msg?: string }) {
 export default function RegisterPage() {
   const { login } = useAuth()
   const router = useRouter()
+
+  // Préchauffe le backend Render dès l'arrivée sur la page (évite le cold start au submit)
+  useEffect(() => {
+    fetch('/api/health').catch(() => {})
+  }, [])
   const [showPwd,   setShowPwd]   = useState(false)
   const [showConf,  setShowConf]  = useState(false)
   const [loading,   setLoading]   = useState(false)
@@ -86,8 +91,8 @@ export default function RegisterPage() {
     if (!navigator.onLine) {
       return '🌐 Pas de connexion internet. Vérifiez votre connexion et réessayez.'
     }
-    if (status === 500) {
-      return '🔧 Erreur serveur (500). Vérifiez votre connexion et réessayez dans quelques instants.'
+    if (status === 500 || status === 503) {
+      return '⏳ Le serveur met quelques secondes à démarrer. Veuillez réessayer dans 10 secondes.'
     }
     if (status === 503 || !status) {
       return '⏳ Le serveur est temporairement indisponible. Réessayez dans quelques instants.'

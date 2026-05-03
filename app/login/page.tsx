@@ -1,5 +1,5 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -39,6 +39,11 @@ const ROLE_LABELS: Record<string, Record<string,string>> = {
 
 export default function LoginPage() {
   const { login } = useAuth()
+
+  // Préchauffe le backend Render dès l'arrivée sur la page (évite le cold start)
+  useEffect(() => {
+    fetch('/api/health').catch(() => {})
+  }, [])
   const { t, lang } = useLang()
   const router = useRouter()
   const [showPwd,   setShowPwd]   = useState(false)

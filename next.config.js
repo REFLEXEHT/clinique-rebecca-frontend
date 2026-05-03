@@ -7,16 +7,15 @@ const nextConfig = {
     unoptimized: true,
   },
 
-  // Rewrite: /api/* → backend/* (plus fiable que catch-all sur Vercel)
-  // Exclut /api/ai qui est géré par la route Next.js locale
   async rewrites() {
     return {
-      beforeFiles: [
-        // La route /api/ai est gérée localement — ne pas la rediriger
-        // Toutes les autres routes /api/* vont vers le backend
+      // afterFiles: vérifie d'abord les routes Next.js (app/api/ai/route.ts),
+      // puis applique le rewrite si aucune route ne correspond.
+      // Ainsi /api/ai → route locale, /api/auth/register → backend
+      afterFiles: [
         {
-          source: '/api/:path((?!ai$|ai/).*)',
-          destination: `${BACKEND}/api/:path`,
+          source: '/api/:path*',
+          destination: `${BACKEND}/api/:path*`,
         },
       ],
     }
