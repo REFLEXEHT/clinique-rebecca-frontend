@@ -41,7 +41,12 @@ export default function ConsultationPage() {
         setStep('paiement_video')
       } else {
         setSuccess(true); reset()
-        toast.success('{lang==='en'?'Your request has been sent':lang==='ht'?'Demann ou te voye':lang==='es'?'Su solicitud ha sido enviada':lang==='zh'?'您的请求已发送':'Votre demande a été envoyée'} ! Nous vous contacterons pour confirmer.')
+        const toastMsg = lang==='en' ? 'Your request has been sent! We will contact you to confirm.'
+                        : lang==='ht' ? 'Demann ou te voye! Nou pral kontakte w pou konfime.'
+                        : lang==='es' ? 'Su solicitud ha sido enviada. Le contactaremos para confirmar.'
+                        : lang==='zh' ? '您的请求已发送！我们将联系您确认。'
+                        : 'Votre demande a été envoyée ! Nous vous contacterons pour confirmer.'
+        toast.success(toastMsg)
       }
     } catch { toast.error('Erreur lors de la soumission') }
     finally { setLoading(false) }
