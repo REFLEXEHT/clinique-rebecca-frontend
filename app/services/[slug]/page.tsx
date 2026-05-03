@@ -174,7 +174,6 @@ function PageCliniqueExterne() {
       'ORL':                 { en:'ENT',                ht:'ORL',              es:'ORL'                 },
       'Urologie':            { en:'Urology',            ht:'Iwoloji',          es:'Urología'            },
       'Anesthésiologie / Réanimation': { en:'Anesthesiology', ht:'Anestezoloji', es:'Anestesiología'   },
-      'Dermatologie':        { en:'Dermatology',        ht:'Dèmatoloji',       es:'Dermatología'        },
       'Radiologie':          { en:'Radiology',          ht:'Radyoloji',        es:'Radiología'          },
       'Psychologie':         { en:'Psychology',         ht:'Sikoloji',         es:'Psicología'          },
     }
