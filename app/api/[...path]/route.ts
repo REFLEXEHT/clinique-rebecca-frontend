@@ -1,52 +1,66 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND = process.env.BACKEND_URL || 'https://clinique-rebecca-api.onrender.com'
+const BACKEND = 'https://clinique-rebecca-api.onrender.com'
 
 async function proxy(req: NextRequest, method: string) {
-  const url = req.nextUrl
-  // Reconstruct the backend URL: /api/[...path] → backend/api/[...path]
-  const backendUrl = `${BACKEND}${url.pathname}${url.search}`
+  const backendUrl = `${BACKEND}${req.nextUrl.pathname}${req.nextUrl.search}`
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   }
+
   const auth = req.headers.get('authorization')
   if (auth) headers['Authorization'] = auth
 
-  const fetchOptions: RequestInit = { method, headers }
+  const fetchOptions: RequestInit = {
+    method,
+    headers,
+    // Important: don't follow redirects automatically
+    redirect: 'follow',
+  }
 
   if (['POST', 'PUT', 'PATCH'].includes(method)) {
     try {
       const body = await req.text()
       if (body) fetchOptions.body = body
-    } catch {}
+    } catch { /* empty body */ }
   }
 
   try {
-    const res = await fetch(backendUrl, fetchOptions)
-    const contentType = res.headers.get('content-type') || ''
+    const res = await fetch(backendUrl, {
+      ...fetchOptions,
+      signal: AbortSignal.timeout(25000), // 25s timeout
+    })
 
-    if (contentType.includes('application/json')) {
-      const data = await res.json()
+    let data: any
+    const ct = res.headers.get('content-type') || ''
+
+    if (ct.includes('application/json')) {
+      data = await res.json()
       return NextResponse.json(data, { status: res.status })
     } else {
       const text = await res.text()
       return new NextResponse(text, {
         status: res.status,
-        headers: { 'Content-Type': contentType },
+        headers: { 'Content-Type': ct || 'text/plain' },
       })
     }
-  } catch (e: any) {
-    console.error('Proxy error:', e.message)
+  } catch (error: any) {
+    console.error(`[Proxy] ${method} ${backendUrl} →`, error?.message)
     return NextResponse.json(
-      { detail: 'Erreur de connexion au serveur backend' },
+      {
+        detail: 'Erreur de connexion au serveur',
+        error: error?.message || 'timeout',
+        url: backendUrl,
+      },
       { status: 503 }
     )
   }
 }
 
-export async function GET(req: NextRequest)    { return proxy(req, 'GET') }
-export async function POST(req: NextRequest)   { return proxy(req, 'POST') }
-export async function PUT(req: NextRequest)    { return proxy(req, 'PUT') }
+export async function GET(req: NextRequest)    { return proxy(req, 'GET')    }
+export async function POST(req: NextRequest)   { return proxy(req, 'POST')   }
+export async function PUT(req: NextRequest)    { return proxy(req, 'PUT')    }
 export async function DELETE(req: NextRequest) { return proxy(req, 'DELETE') }
-export async function PATCH(req: NextRequest)  { return proxy(req, 'PATCH') }
+export async function PATCH(req: NextRequest)  { return proxy(req, 'PATCH')  }
