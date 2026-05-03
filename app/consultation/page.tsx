@@ -3,7 +3,6 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import RdvModal from '@/components/ui/RdvModal'
 import { rdvApi } from '@/lib/api'
 import toast from 'react-hot-toast'
 import { useLang } from '@/context/LangContext'
@@ -13,12 +12,10 @@ const SPECIALITES = ['Médecine générale','Cardiologie','Pédiatrie','Gynécol
 type FormData = { nom: string; telephone: string; email: string; specialite: string; date_rdv: string; type_rdv: 'presentiel'|'video'; motif: string; mode_paiement: string; reference_paiement?: string }
 
 export default function ConsultationPage() {
-  const [rdvOpen, setRdvOpen] = useState(false)
   const [typeChoisi, setTypeChoisi] = useState<'presentiel'|'video'|null>(null)
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [step, setStep] = useState<'form'|'paiement_video'|'attente_confirmation'>('form')
-  const [rdvCreated, setRdvCreated] = useState<any>(null)
   const { register, handleSubmit, reset, formState: { errors } } = useForm<FormData>()
 
   const onSubmit = async (data: FormData) => {
@@ -49,8 +46,7 @@ export default function ConsultationPage() {
 
   if (success) return (
     <>
-      <Navbar onRdvClick={() => setRdvOpen(true)} />
-      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
+      <Navbar />
       <div style={{ minHeight:'80vh', display:'flex', alignItems:'center', justifyContent:'center', background:'#f8fafc', paddingTop:110 }}>
         <div style={{ background:'white', borderRadius:24, padding:56, textAlign:'center', maxWidth:480, boxShadow:'0 8px 40px rgba(0,0,0,0.08)', border:'1px solid #e2e8f0' }}>
           <div style={{ width:80, height:80, borderRadius:'50%', background:'#dcfce7', display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 24px' }}>
@@ -70,8 +66,7 @@ export default function ConsultationPage() {
 
   return (
     <>
-      <Navbar onRdvClick={() => setRdvOpen(true)} />
-      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
+      <Navbar />
 
       {/* ── EN-TÊTE ───────────────────────────────────────────────────── */}
       <div style={{ background:'linear-gradient(135deg,#0f1e3d,#1641C8 60%,#0d9488)', paddingTop:110, paddingBottom:56, padding:'110px 5% 56px' }}>
