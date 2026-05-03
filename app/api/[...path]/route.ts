@@ -1,9 +1,14 @@
+export const runtime = 'nodejs'
+export const dynamic = 'force-dynamic'
+
 import { NextRequest, NextResponse } from 'next/server'
 
-// URL du backend dans une variable d'environnement (non exposée côté client)
+// URL du backend côté serveur uniquement
 const BACKEND = process.env.BACKEND_API_URL || 'https://clinique-rebecca-api.onrender.com'
 
 async function proxy(req: NextRequest, method: string) {
+  // Strip le préfixe /api pour éviter la duplication si le backend n'a pas de préfixe
+  // Ex: /api/auth/register → /api/auth/register (conservé si backend a /api)
   const backendUrl = `${BACKEND}${req.nextUrl.pathname}${req.nextUrl.search}`
 
   const headers: Record<string, string> = {
@@ -30,7 +35,7 @@ async function proxy(req: NextRequest, method: string) {
   try {
     const res = await fetch(backendUrl, {
       ...fetchOptions,
-      signal: AbortSignal.timeout(25000), // 25s timeout
+      signal: AbortSignal.timeout(25000),
     })
 
     const ct = res.headers.get('content-type') || ''
@@ -40,13 +45,13 @@ async function proxy(req: NextRequest, method: string) {
       return NextResponse.json(data, { status: res.status })
     } else {
       const text = await res.text()
+      console.error(`[Proxy] Non-JSON response from backend (${res.status}):`, text.slice(0, 200))
       return new NextResponse(text, {
         status: res.status,
         headers: { 'Content-Type': ct || 'text/plain' },
       })
     }
   } catch (error: any) {
-    // Ne jamais exposer l'URL interne du backend dans les réponses d'erreur
     console.error(`[Proxy] ${method} ${backendUrl} ->`, error?.message)
     return NextResponse.json(
       {
