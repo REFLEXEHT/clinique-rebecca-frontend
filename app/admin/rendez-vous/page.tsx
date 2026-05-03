@@ -6,10 +6,13 @@ import { rdvApi } from '@/lib/api'
 import { RendezVous, StatutRDV } from '@/types'
 
 const STATUTS: Record<StatutRDV, { label: string; cls: string }> = {
-  confirme:   { label: 'Confirmé',   cls: 'badge-green'  },
-  en_attente: { label: 'En attente', cls: 'badge-yellow' },
-  annule:     { label: 'Annulé',     cls: 'badge-red'    },
-  termine:    { label: 'Terminé',    cls: 'badge-gray'   },
+  en_attente:           { label: 'En attente',          cls: 'badge-yellow' },
+  paiement_requis:      { label: 'Paiement requis',      cls: 'badge-purple' },
+  paiement_effectue:    { label: 'Payé',                 cls: 'badge-teal'   },
+  confirme:             { label: 'Confirmé',             cls: 'badge-green'  },
+  propose_autre_moment: { label: 'Autre moment proposé', cls: 'badge-orange' },
+  annule:               { label: 'Annulé',               cls: 'badge-red'    },
+  termine:              { label: 'Terminé',               cls: 'badge-gray'   },
 }
 
 export default function AdminRdv() {
