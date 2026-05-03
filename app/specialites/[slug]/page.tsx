@@ -1,105 +1,84 @@
 'use client'
-// app/specialites/[slug]/page.tsx
 import { useEffect, useState } from 'react'
-import { useParams } from 'next/navigation'
-import Link from 'next/link'
+import { useParams, useRouter } from 'next/navigation'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
-import RdvModal from '@/components/ui/RdvModal'
 import { api } from '@/lib/api'
-import { Specialiste } from '@/types'
-
-const SPEC_META: Record<string, { label: string; icon: string; desc: string }> = {
-  chirurgie: { label: 'Chirurgie générale', icon: 'fa-scalpel', desc: 'Chirurgiens experts en interventions complexes' },
-  neurochirurgie: { label: 'Neurochirurgie', icon: 'fa-brain', desc: 'Spécialistes en neurochirurgie adulte et pédiatrique' },
-  neurologie: { label: 'Neurologie', icon: 'fa-brain', desc: 'Traitement des maladies du système nerveux' },
-  orthopedie: { label: 'Orthopédie', icon: 'fa-bone', desc: 'Traumatologie et chirurgie osseuse' },
-  pediatrie: { label: 'Pédiatrie', icon: 'fa-child', desc: 'Soins dédiés aux enfants de la naissance à 18 ans' },
-  dermatologie: { label: 'Dermatologie', icon: 'fa-hand-dots', desc: 'Maladies de peau et dermatologie cosmétique' },
-  urologie: { label: 'Urologie', icon: 'fa-kidneys', desc: 'Affections du système urinaire et reproducteur masculin' },
-  orl: { label: 'ORL', icon: 'fa-ear-listen', desc: 'Oreille, nez, gorge et chirurgie cervicale' },
-  gynecologie: { label: 'Gynécologie', icon: 'fa-venus', desc: 'Santé féminine et suivi de grossesse' },
-  'chir-ped': { label: 'Chirurgie pédiatrique', icon: 'fa-child-reaching', desc: 'Chirurgie spécialisée pour nourrissons et enfants' },
-  'medecine-interne': { label: 'Médecine interne', icon: 'fa-heart-pulse', desc: 'Maladies chroniques et pathologies complexes' },
-  ophtalmologie: { label: 'Ophtalmologie', icon: 'fa-eye', desc: 'Chirurgie oculaire et maladies de l\'œil' },
-}
-
-// Données de fallback si l'API n'est pas disponible
-const SPECS_STATIC: Record<string, Specialiste[]> = {
-  chirurgie: [{ id:1, nom:'Dr. Michel Dubois', specialite:'Chirurgie générale', description:'Chirurgien senior, 15 ans d\'expérience. Spécialisé en chirurgie digestive et laparoscopie.', emoji:'🔬', categorie:'chirurgie', email:'m.dubois@cliniquerebecca.ht', telephone:'+509 3456-0001', actif:true, ordre:0 }],
-  gynecologie: [{ id:9, nom:'Dr. Claudette Joseph', specialite:'Gynécologie', description:'Gynécologue-obstétricienne. Suivi grossesse et santé féminine.', emoji:'🌺', categorie:'gynecologie', email:'c.joseph@cliniquerebecca.ht', telephone:'+509 3456-0009', actif:true, ordre:0 }],
-  pediatrie: [{ id:5, nom:'Dr. Paul Désir', specialite:'Pédiatrie', description:'Pédiatre spécialisé en néonatologie et pédiatrie générale.', emoji:'👶', categorie:'pediatrie', email:'p.desir@cliniquerebecca.ht', telephone:'+509 3456-0005', actif:true, ordre:0 }],
-}
+import Link from 'next/link'
 
 export default function SpecialitePage() {
-  const params = useParams()
-  const slug = params.slug as string
-  const [rdvOpen, setRdvOpen] = useState(false)
-  const [selectedSpec, setSelectedSpec] = useState('')
-  const [specs, setSpecs] = useState<Specialiste[]>([])
+  const params  = useParams()
+  const router  = useRouter()
+  const slug    = (params.slug as string) || ''
+  const [specs, setSpecs]     = useState<any[]>([])
   const [loading, setLoading] = useState(true)
-
-  const meta = SPEC_META[slug] || { label: slug, icon: 'fa-user-doctor', desc: '' }
 
   useEffect(() => {
     setLoading(true)
-    api.list(slug)
-      .then(r => setSpecs(r.data))
-      .catch(() => setSpecs(SPECS_STATIC[slug] || []))
+    // Map slug to specialite name for the API
+    const slugToSpec: Record<string,string> = {
+      chirurgie: 'Chirurgie Générale', neurochirurgie: 'Neurochirurgie',
+      neurologie: 'Neurologie', orthopedie: 'Orthopédie',
+      pediatrie: 'Pédiatrie', dermatologie: 'Dermatologie',
+      urologie: 'Urologie', orl: 'ORL', gynecologie: 'Gynécologie',
+      'chir-ped': 'Chirurgie Pédiatrique', 'medecine-interne': 'Médecine interne',
+      ophtalmologie: 'Ophtalmologie',
+    }
+    const specialite = slugToSpec[slug] || slug
+    api.get(`/specialistes?specialite=${encodeURIComponent(specialite)}`)
+      .then(r => setSpecs(r.data || []))
+      .catch(() => setSpecs([]))
       .finally(() => setLoading(false))
   }, [slug])
 
   return (
     <>
-      <Navbar onRdvClick={() => setRdvOpen(true)} />
-      <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} defaultSpec={selectedSpec || meta.label} />
-
-      <div className="page-header">
-        <div className="breadcrumb">
-          <Link href="/">Accueil</Link> /
-          <Link href="/specialites">Spécialités</Link> /
-          <span>{meta.label}</span>
+      <Navbar />
+      <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+        <div style={{ background: 'linear-gradient(135deg,#0f1e3d,#1641C8,#0d9488)', padding: '56px 20px 40px', textAlign: 'center' }}>
+          <h1 style={{ color: 'white', fontWeight: 900, fontSize: '2rem', margin: '0 0 12px' }}>
+            Nos spécialistes
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.7)', margin: 0 }}>
+            {loading ? 'Chargement...' : `${specs.length} spécialiste${specs.length > 1 ? 's' : ''} disponible${specs.length > 1 ? 's' : ''}`}
+          </p>
         </div>
-        <h1>{meta.label}</h1>
-        <p>{meta.desc}</p>
-      </div>
-
-      <div className="py-14 px-[5%]">
-        {loading ? (
-          <div className="grid grid-cols-4 gap-5">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-64 bg-slate-100 rounded-2xl animate-pulse" />
-            ))}
-          </div>
-        ) : specs.length === 0 ? (
-          <div className="text-center py-20 text-slate-400">
-            <i className="fa-solid fa-user-doctor text-5xl mb-4 block opacity-20" />
-            <p className="text-lg font-medium">Aucun spécialiste disponible pour cette spécialité.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-4 gap-5">
-            {specs.map(s => (
-              <Link key={s.id} href={`/specialistes/${s.id}`}
-                className="spec-card no-underline">
-                <div className="spec-card-photo text-5xl">{s.emoji}</div>
-                <div className="p-4">
-                  <h4 className="font-extrabold text-[14.5px] text-slate-900 mb-0.5">{s.nom}</h4>
-                  <div className="text-[#1641C8] text-[12px] font-bold mb-1.5">{s.specialite}</div>
-                  {s.description && (
-                    <p className="text-slate-400 text-xs leading-[1.5] mb-3 line-clamp-2">{s.description}</p>
-                  )}
-                  <button
-                    onClick={(e) => { e.preventDefault(); setSelectedSpec(s.specialite); setRdvOpen(true) }}
-                    className="w-full py-2 rounded-full bg-blue-50 text-[#1641C8]
-                      text-xs font-bold hover:bg-[#1641C8] hover:text-white
-                      transition-all border-none cursor-pointer">
-                    Prendre RDV
-                  </button>
-                </div>
+        <div style={{ maxWidth: 900, margin: '0 auto', padding: '32px 20px' }}>
+          {loading ? (
+            <div style={{ textAlign: 'center', padding: 48, color: '#64748b' }}>⏳ Chargement...</div>
+          ) : specs.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: 48 }}>
+              <p style={{ color: '#64748b', marginBottom: 16 }}>Aucun spécialiste trouvé pour cette catégorie.</p>
+              <Link href="/specialites" style={{ background: 'linear-gradient(135deg,#1641C8,#0d9488)', color: 'white', textDecoration: 'none', borderRadius: 10, padding: '10px 24px', fontWeight: 700 }}>
+                Voir tous les spécialistes →
               </Link>
-            ))}
-          </div>
-        )}
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 16 }}>
+              {specs.map((m: any) => (
+                <div key={m.id} style={{ background: 'white', borderRadius: 14, padding: 18, border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 12 }}>
+                    <div style={{ width: 48, height: 48, borderRadius: 12, background: 'linear-gradient(135deg,#1641C8,#0d9488)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22 }}>
+                      {m.emoji || '👨‍⚕️'}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 14 }}>{m.nom}</div>
+                      <div style={{ color: '#0d9488', fontSize: 12 }}>{m.specialite}</div>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <Link href={`/specialistes/${m.id}`} style={{ flex: 1, textAlign: 'center', background: '#f0fdf4', color: '#0d9488', textDecoration: 'none', borderRadius: 8, padding: '7px 10px', fontWeight: 600, fontSize: 12 }}>
+                      👤 Profil
+                    </Link>
+                    <Link href="/consultation" style={{ flex: 1, textAlign: 'center', background: 'linear-gradient(135deg,#1641C8,#0d9488)', color: 'white', textDecoration: 'none', borderRadius: 8, padding: '7px 10px', fontWeight: 700, fontSize: 12 }}>
+                      Prendre RDV
+                    </Link>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
       <Footer />
     </>
