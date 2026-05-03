@@ -2,23 +2,29 @@
 
 ## Corrections appliquées
 
-### Bug critique (page blanche)
-- `app/layout.tsx` contenait le code du layout admin — remplacé par le layout racine correct avec `<html>`, `<body>`, `AuthProvider` et `Toaster`
-- `app/page.tsx` contenait le code d'une page spécialités — remplacé par l'import de `HomeContent`
+### Bug critique : Erreur 500 sur /register
+- `telephone` envoyé comme `null` au lieu de `""` (chaîne vide rejetée par le backend FastAPI)
+- Proxy route masque l'URL interne du backend dans les réponses d'erreur
+
+### Bug critique : Boucle infinie sur /admin après connexion
+- `app/admin/login/page.tsx` utilisait `useAuthStore` (clé localStorage `token`)
+- `app/admin/layout.tsx` utilisait `useAuth`/`AuthContext` (clé localStorage `rb_token`)
+- Ces deux systèmes étaient incompatibles → l'admin restait déconnecté même après login
+- **Fix** : `admin/login` migré vers `useAuth` (AuthContext) comme tout le reste
 
 ### Sécurité
 - Token JWT : vérification d'expiration côté client avant utilisation
 - Redirection 401 protégée (évite boucle si déjà sur /login)
-- En-têtes de sécurité ajoutés (X-Frame-Options, X-Content-Type-Options, etc.)
-
-### Performance
-- Police Inter chargée via `next/font/google` (optimisation automatique Next.js)
-- Font Awesome chargé depuis CDN avec `crossOrigin`
+- En-têtes de sécurité HTTP ajoutés dans `next.config.js` (X-Frame-Options, HSTS, etc.)
+- URL interne du backend masquée dans les messages d'erreur du proxy
+- `lib/store.ts` (zustand) déprécié — évite le split-brain d'authentification
+- Variable `BACKEND_API_URL` côté serveur uniquement (ne commence pas par `NEXT_PUBLIC_`)
 
 ## Variables d'environnement Vercel
-| Variable | Valeur |
-|----------|--------|
-| `NEXT_PUBLIC_API_URL` | `https://clinique-rebecca-api.onrender.com` |
+| Variable | Valeur | Visibilité |
+|----------|--------|-----------|
+| `NEXT_PUBLIC_API_URL` | `https://clinique-rebecca-api.onrender.com` | Client (dev local seulement) |
+| `BACKEND_API_URL` | `https://clinique-rebecca-api.onrender.com` | Serveur uniquement |
 
 ## Commandes
 ```bash

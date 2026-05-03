@@ -4,21 +4,17 @@ import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { authApi } from '@/lib/api'
-import { useAuthStore } from '@/lib/store'
+import { useAuth } from '@/context/AuthContext'
 
 interface FormData { email: string; password: string }
 
 export default function AdminLogin() {
   const router = useRouter()
-  const { login, isAuthenticated, init } = useAuthStore()
+  const { login, isAuthenticated } = useAuth()
   const [loading, setLoading] = useState(false)
   const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
     defaultValues: { email: 'admin@cliniquerebecca.ht', password: '' },
   })
-
-  useEffect(() => {
-    init()
-  }, [])
 
   useEffect(() => {
     if (isAuthenticated) router.push('/admin/dashboard')

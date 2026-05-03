@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 
-const BACKEND = 'https://clinique-rebecca-api.onrender.com'
+// URL du backend dans une variable d'environnement (non exposée côté client)
+const BACKEND = process.env.BACKEND_API_URL || 'https://clinique-rebecca-api.onrender.com'
 
 async function proxy(req: NextRequest, method: string) {
   const backendUrl = `${BACKEND}${req.nextUrl.pathname}${req.nextUrl.search}`
@@ -16,7 +17,6 @@ async function proxy(req: NextRequest, method: string) {
   const fetchOptions: RequestInit = {
     method,
     headers,
-    // Important: don't follow redirects automatically
     redirect: 'follow',
   }
 
@@ -33,11 +33,10 @@ async function proxy(req: NextRequest, method: string) {
       signal: AbortSignal.timeout(25000), // 25s timeout
     })
 
-    let data: any
     const ct = res.headers.get('content-type') || ''
 
     if (ct.includes('application/json')) {
-      data = await res.json()
+      const data = await res.json()
       return NextResponse.json(data, { status: res.status })
     } else {
       const text = await res.text()
@@ -47,12 +46,12 @@ async function proxy(req: NextRequest, method: string) {
       })
     }
   } catch (error: any) {
-    console.error(`[Proxy] ${method} ${backendUrl} →`, error?.message)
+    // Ne jamais exposer l'URL interne du backend dans les réponses d'erreur
+    console.error(`[Proxy] ${method} ${backendUrl} ->`, error?.message)
     return NextResponse.json(
       {
         detail: 'Erreur de connexion au serveur',
-        error: error?.message || 'timeout',
-        url: backendUrl,
+        error: error?.name === 'TimeoutError' ? 'timeout' : 'connection_error',
       },
       { status: 503 }
     )

@@ -126,7 +126,7 @@ export default function RegisterPage() {
         email:     data.email.trim().toLowerCase(),
         password:  data.password,
         nom:       data.nom.trim(),
-        telephone: data.telephone?.trim() || '',
+        telephone: data.telephone?.trim() || null,
         role:      'patient',
       })
 
