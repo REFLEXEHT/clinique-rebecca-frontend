@@ -207,7 +207,7 @@ export default function LoginPage() {
 
               <div style={{ textAlign:'right', marginBottom:8, marginTop:-4 }}>
                 <Link href="/forgot-password" style={{ color:'#1641C8', fontSize:12, fontWeight:600, textDecoration:'none' }}>
-                  Mot de passe oublié ?
+                  {lang==='en'?'Forgot password?':lang==='ht'?'Bliye modpas?':lang==='es'?'¿Olvidó su contraseña?':lang==='zh'?'忘记密码？':'Mot de passe oublié ?'}
                 </Link>
               </div>
 

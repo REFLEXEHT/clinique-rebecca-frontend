@@ -10,32 +10,32 @@ import { LOGO_SRC } from '@/lib/images'
 
 // Services avec traductions
 const SERVICES_DATA = [
-  { fr:'Clinique Externe',   en:'Outpatient Clinic',    ht:'Klinik Ekstèn',       es:'Clínica Externa',     icon:'fa-stethoscope',    href:'/services/clinique-externe'  },
-  { fr:'Laboratoire',        en:'Laboratory',           ht:'Laboratwa',            es:'Laboratorio',         icon:'fa-flask-vial',     href:'/services/laboratoire'       },
-  { fr:'Pharmacie',          en:'Pharmacy',             ht:'Famasi',               es:'Farmacia',            icon:'fa-pills',          href:'/services/pharmacie'         },
-  { fr:'Dentisterie',        en:'Dentistry',            ht:'Dantistri',            es:'Odontología',         icon:'fa-tooth',          href:'/services/dentisterie'       },
-  { fr:'Physiothérapie',     en:'Physical Therapy',     ht:'Fizeyoterapi',         es:'Fisioterapia',        icon:'fa-person-walking', href:'/services/physiotherapie'    },
-  { fr:'Optométrie',         en:'Optometry',            ht:'Optometri',            es:'Optometría',          icon:'fa-glasses',        href:'/services/optometrie'        },
-  { fr:'Maternité',          en:'Maternity',            ht:'Maternite',            es:'Maternidad',          icon:'fa-baby',           href:'/services/maternite'         },
-  { fr:'Salle SOP',          en:'Operating Room (SOP)', ht:'Sal Operasyon',        es:'Quirófano (SOP)',     icon:'fa-scalpel',        href:'/services/salle-sop'         },
-  { fr:'Gestes Médicaux',    en:'Medical Procedures',   ht:'Jès Medikal',          es:'Procedimientos Med.', icon:'fa-syringe',        href:'/services/gestes-medicaux'   },
-  { fr:'Hospitalisation',    en:'Hospitalization',      ht:'Ospitalizasyon',       es:'Hospitalización',     icon:'fa-bed-pulse',      href:'/services/hospitalisation'   },
+  { fr:'Clinique Externe',   en:'Outpatient Clinic',    ht:'Klinik Ekstèn',    es:'Clínica Externa',     zh:'门诊部',   icon:'fa-stethoscope',    href:'/services/clinique-externe'  },
+  { fr:'Laboratoire',        en:'Laboratory',           ht:'Laboratwa',         es:'Laboratorio',         zh:'实验室',   icon:'fa-flask-vial',     href:'/services/laboratoire'       },
+  { fr:'Pharmacie',          en:'Pharmacy',             ht:'Famasi',            es:'Farmacia',            zh:'药房',     icon:'fa-pills',          href:'/services/pharmacie'         },
+  { fr:'Dentisterie',        en:'Dentistry',            ht:'Dantistri',         es:'Odontología',         zh:'牙科',     icon:'fa-tooth',          href:'/services/dentisterie'       },
+  { fr:'Physiothérapie',     en:'Physical Therapy',     ht:'Fizeyoterapi',      es:'Fisioterapia',        zh:'理疗科',   icon:'fa-person-walking', href:'/services/physiotherapie'    },
+  { fr:'Optométrie',         en:'Optometry',            ht:'Optometri',         es:'Optometría',          zh:'视光科',   icon:'fa-glasses',        href:'/services/optometrie'        },
+  { fr:'Maternité',          en:'Maternity',            ht:'Maternite',         es:'Maternidad',          zh:'产科',     icon:'fa-baby',           href:'/services/maternite'         },
+  { fr:'Salle SOP',          en:'Operating Room',       ht:'Sal Operasyon',     es:'Quirófano (SOP)',     zh:'手术室',   icon:'fa-scalpel',        href:'/services/salle-sop'         },
+  { fr:'Gestes Médicaux',    en:'Medical Procedures',   ht:'Jès Medikal',       es:'Procedimientos',      zh:'医疗操作', icon:'fa-syringe',        href:'/services/gestes-medicaux'   },
+  { fr:'Hospitalisation',    en:'Hospitalization',      ht:'Ospitalizasyon',    es:'Hospitalización',     zh:'住院部',   icon:'fa-bed-pulse',      href:'/services/hospitalisation'   },
 ]
 
 // Spécialités avec traductions
 const SPECIALITES_DATA = [
-  { fr:'Chirurgie Générale',    en:'General Surgery',      ht:'Chiriji Jeneral',   es:'Cirugía General',     icon:'fa-scalpel',        slug:'Chirurgie Générale'       },
-  { fr:'Neurochirurgie',        en:'Neurosurgery',         ht:'Newochiriiji',       es:'Neurocirugía',        icon:'fa-brain',          slug:'Neurochirurgie'           },
-  { fr:'Neurologie',            en:'Neurology',            ht:'Newoloji',           es:'Neurología',          icon:'fa-brain',          slug:'Neurologie'               },
-  { fr:'Orthopédie',            en:'Orthopedics',          ht:'Òtopedi',            es:'Ortopedia',           icon:'fa-bone',           slug:'Orthopédie'               },
-  { fr:'Pédiatrie',             en:'Pediatrics',           ht:'Pediatri',           es:'Pediatría',           icon:'fa-child',          slug:'Pédiatrie'                },
-  { fr:'Dermatologie',          en:'Dermatology',          ht:'Dèmatoloji',         es:'Dermatología',        icon:'fa-hand-dots',      slug:'Dermatologie'             },
-  { fr:'Urologie',              en:'Urology',              ht:'Iwoloji',            es:'Urología',            icon:'fa-kidneys',        slug:'Urologie'                 },
-  { fr:'ORL',                   en:'ENT',                  ht:'ORL',                es:'ORL',                 icon:'fa-ear-listen',     slug:'ORL'                      },
-  { fr:'Gynécologie',           en:'Gynecology',           ht:'Jinekologi',         es:'Ginecología',         icon:'fa-venus',          slug:'Gynécologie'              },
-  { fr:'Chirurgie Pédiatrique', en:'Pediatric Surgery',    ht:'Chiriji Pediatrik',  es:'Cirugía Pediátrica',  icon:'fa-child-reaching', slug:'Chirurgie Pédiatrique'    },
-  { fr:'Médecine interne',      en:'Internal Medicine',    ht:'Medsin Entèn',       es:'Medicina Interna',    icon:'fa-heart-pulse',    slug:'Médecine interne'         },
-  { fr:'Optométrie',            en:'Optometry',            ht:'Optometri',          es:'Optometría',          icon:'fa-glasses',        slug:'Optométrie'               },
+  { fr:'Chirurgie Générale',    en:'General Surgery',      ht:'Chiriji Jeneral',   es:'Cirugía General',    zh:'普通外科', icon:'fa-scalpel',        slug:'Chirurgie Générale'       },
+  { fr:'Neurochirurgie',        en:'Neurosurgery',         ht:'Newochiriiji',       es:'Neurocirugía',       zh:'神经外科', icon:'fa-brain',          slug:'Neurochirurgie'           },
+  { fr:'Neurologie',            en:'Neurology',            ht:'Newoloji',           es:'Neurología',         zh:'神经科',   icon:'fa-brain',          slug:'Neurologie'               },
+  { fr:'Orthopédie',            en:'Orthopedics',          ht:'Òtopedi',            es:'Ortopedia',          zh:'骨科',     icon:'fa-bone',           slug:'Orthopédie'               },
+  { fr:'Pédiatrie',             en:'Pediatrics',           ht:'Pediatri',           es:'Pediatría',          zh:'儿科',     icon:'fa-child',          slug:'Pédiatrie'                },
+  { fr:'Dermatologie',          en:'Dermatology',          ht:'Dèmatoloji',         es:'Dermatología',       zh:'皮肤科',   icon:'fa-hand-dots',      slug:'Dermatologie'             },
+  { fr:'Urologie',              en:'Urology',              ht:'Iwoloji',            es:'Urología',           zh:'泌尿科',   icon:'fa-kidneys',        slug:'Urologie'                 },
+  { fr:'ORL',                   en:'ENT',                  ht:'ORL',                es:'ORL',                zh:'耳鼻喉科', icon:'fa-ear-listen',     slug:'ORL'                      },
+  { fr:'Gynécologie',           en:'Gynecology',           ht:'Jinekologi',         es:'Ginecología',        zh:'妇科',     icon:'fa-venus',          slug:'Gynécologie'              },
+  { fr:'Chirurgie Pédiatrique', en:'Pediatric Surgery',    ht:'Chiriji Pediatrik',  es:'Cirugía Pediátrica', zh:'小儿外科', icon:'fa-child-reaching', slug:'Chirurgie Pédiatrique'    },
+  { fr:'Médecine interne',      en:'Internal Medicine',    ht:'Medsin Entèn',       es:'Medicina Interna',   zh:'内科',     icon:'fa-heart-pulse',    slug:'Médecine interne'         },
+  { fr:'Optométrie',            en:'Optometry',            ht:'Optometri',          es:'Optometría',         zh:'视光科',   icon:'fa-glasses',        slug:'Optométrie'               },
 ]
 
 interface NavbarProps {
@@ -204,7 +204,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                 </Link>
                 {SERVICES_DATA.map((s) => (
                   <Link key={s.href} href={s.href}>
-                    <i className={`fa-solid ${s.icon}`} />{(lang === 'en' ? s.en : lang === 'ht' ? s.ht : lang === 'es' ? s.es : s.fr)}
+                    <i className={`fa-solid ${s.icon}`} />{(lang === 'en' ? s.en : lang === 'ht' ? s.ht : lang === 'es' ? s.es : lang === 'zh' ? s.zh : s.fr)}
                   </Link>
                 ))}
               </div>
@@ -223,7 +223,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                 </Link>
                 {SPECIALITES_DATA.map((s) => (
                   <Link key={s.slug} href={`/specialites?specialite=${encodeURIComponent(s.slug)}`}>
-                    <i className={`fa-solid ${s.icon}`} />{(lang === 'en' ? s.en : lang === 'ht' ? s.ht : lang === 'es' ? s.es : s.fr)}
+                    <i className={`fa-solid ${s.icon}`} />{(lang === 'en' ? s.en : lang === 'ht' ? s.ht : lang === 'es' ? s.es : lang === 'zh' ? s.zh : s.fr)}
                   </Link>
                 ))}
               </div>
@@ -324,7 +324,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                         font-medium text-[14px] hover:bg-blue-50 hover:text-[#1641C8] transition-all"
                       onClick={() => setMobileOpen(false)}>
                       <i className={`fa-solid ${s.icon} w-4 text-center text-[#1641C8] text-xs`} />
-                      {(lang === 'en' ? s.en : lang === 'ht' ? s.ht : lang === 'es' ? s.es : s.fr)}
+                      {(lang === 'en' ? s.en : lang === 'ht' ? s.ht : lang === 'es' ? s.es : lang === 'zh' ? s.zh : s.fr)}
                     </Link>
                   ))}
                 </div>
@@ -350,7 +350,7 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                         font-medium text-[14px] hover:bg-blue-50 hover:text-[#1641C8] transition-all"
                       onClick={() => setMobileOpen(false)}>
                       <i className={`fa-solid ${s.icon} w-4 text-center text-[#1641C8] text-xs`} />
-                      {(lang === 'en' ? s.en : lang === 'ht' ? s.ht : lang === 'es' ? s.es : s.fr)}
+                      {(lang === 'en' ? s.en : lang === 'ht' ? s.ht : lang === 'es' ? s.es : lang === 'zh' ? s.zh : s.fr)}
                     </Link>
                   ))}
                 </div>

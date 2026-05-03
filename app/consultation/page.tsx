@@ -6,6 +6,7 @@ import Footer from '@/components/layout/Footer'
 import RdvModal from '@/components/ui/RdvModal'
 import { rdvApi } from '@/lib/api'
 import toast from 'react-hot-toast'
+import { useLang } from '@/context/LangContext'
 
 const SPECIALITES = ['Médecine générale','Cardiologie','Pédiatrie','Gynécologie','Dermatologie','Neurologie','ORL','Orthopédie','Ophtalmologie','Chirurgie générale','Endocrinologie','Médecine interne']
 
@@ -40,7 +41,7 @@ export default function ConsultationPage() {
         setStep('paiement_video')
       } else {
         setSuccess(true); reset()
-        toast.success('Votre demande a été envoyée ! Nous vous contacterons pour confirmer.')
+        toast.success('{lang==='en'?'Your request has been sent':lang==='ht'?'Demann ou te voye':lang==='es'?'Su solicitud ha sido enviada':lang==='zh'?'您的请求已发送':'Votre demande a été envoyée'} ! Nous vous contacterons pour confirmer.')
       }
     } catch { toast.error('Erreur lors de la soumission') }
     finally { setLoading(false) }
@@ -60,7 +61,7 @@ export default function ConsultationPage() {
           <button onClick={() => { setSuccess(false); setTypeChoisi(null) }} style={{
             background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', border:'none',
             borderRadius:12, padding:'12px 28px', fontWeight:700, cursor:'pointer'
-          }}>Prendre un autre RDV</button>
+          }}>{lang==='en'?'Book another appointment':lang==='ht'?'Pran yon lòt randevou':lang==='es'?'Reservar otra cita':lang==='zh'?'再次预约':'Prendre un autre RDV'}</button>
         </div>
       </div>
       <Footer />
@@ -77,14 +78,14 @@ export default function ConsultationPage() {
         <div style={{ maxWidth:720, margin:'0 auto', textAlign:'center' }}>
           <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(13,148,136,0.2)', border:'1px solid rgba(13,148,136,0.4)', borderRadius:50, padding:'6px 16px', marginBottom:20 }}>
             <i className="fa-solid fa-calendar-check" style={{ color:'#5eead4', fontSize:13 }} />
-            <span style={{ color:'#5eead4', fontSize:13, fontWeight:600 }}>Réservation en ligne · Rapide et simple</span>
+            <span style={{ color:'#5eead4', fontSize:13, fontWeight:600 }}>{lang==='en'?'Online booking · Fast and easy':lang==='ht'?'Rezèvasyon anliy · Rapid ak senp':lang==='es'?'Reserva online · Rápido y fácil':lang==='zh'?'在线预约 · 快速简单':'Réservation en ligne · Rapide et simple'}</span>
           </div>
           <h1 style={{ fontSize:'clamp(1.8rem,3.5vw,2.8rem)', fontWeight:900, color:'white', lineHeight:1.2, marginBottom:16 }}>
-            Prenez soin de vous,<br />
-            <em style={{ fontStyle:'italic', color:'#5eead4', fontFamily:'Georgia,serif' }}>à votre rythme</em>
+            {lang==='en'?'Take care of yourself,':lang==='ht'?'Pran swen tèt ou,':lang==='es'?'Cuídese,':lang==='zh'?'照顾好自己，':'Prenez soin de vous,'}<br />
+            <em style={{ fontStyle:'italic', color:'#5eead4', fontFamily:'Georgia,serif' }}>{lang==='en'?'at your own pace':lang==='ht'?'nan ritmou ou':lang==='es'?'a su ritmo':lang==='zh'?'按照自己的节奏':'à votre rythme'}</em>
           </h1>
           <p style={{ color:'rgba(255,255,255,0.75)', fontSize:'1rem', lineHeight:1.7 }}>
-            Consultez en cabinet ou depuis chez vous par vidéo. Une équipe bienveillante vous attend.
+            {lang==='en'?'Consult in person or from home via video. A caring team awaits you.':lang==='ht'?'Konsulte nan kabinèt oswa depi lakay ou pa videyo.':lang==='es'?'Consulte en el consultorio o desde casa por vídeo.':lang==='zh'?'在诊室或视频问诊，专业团队等候您。':'Consultez en cabinet ou depuis chez vous par vidéo. Une équipe bienveillante vous attend.'}
           </p>
         </div>
       </div>
@@ -95,8 +96,8 @@ export default function ConsultationPage() {
           {/* ── CHOIX DU TYPE ────────────────────────────────────────── */}
           {!typeChoisi && (
             <>
-              <h2 style={{ textAlign:'center', fontWeight:900, color:'#0f172a', fontSize:'1.6rem', marginBottom:8 }}>Comment souhaitez-vous consulter ?</h2>
-              <p style={{ textAlign:'center', color:'#64748b', marginBottom:40 }}>Choisissez le mode qui vous convient le mieux</p>
+              <h2 style={{ textAlign:'center', fontWeight:900, color:'#0f172a', fontSize:'1.6rem', marginBottom:8 }}>{lang==='en'?'How would you like to consult?':lang==='ht'?'Kijan ou vle konsulte?':lang==='es'?'¿Cómo desea consultar?':lang==='zh'?'您希望如何就诊？':'Comment souhaitez-vous consulter ?'}</h2>
+              <p style={{ textAlign:'center', color:'#64748b', marginBottom:40 }}>{lang==='en'?'Choose the mode that suits you best':lang==='ht'?'Chwazi mòd ki pi bon pou ou':lang==='es'?'Elija el modo que más le convenga':lang==='zh'?'请选择最适合您的方式':'Choisissez le mode qui vous convient le mieux'}</p>
               <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:24, maxWidth:700, margin:'0 auto' }}>
                 {[
                   { type:'presentiel' as const, icon:'fa-hospital', emoji:'🏥', titre:'En cabinet', desc:'Venez nous rencontrer à la clinique. Rencontrez votre médecin en personne pour un suivi complet.', avantages:['Examen physique complet','Résultats immédiats','Contact humain direct'] },
@@ -147,8 +148,8 @@ export default function ConsultationPage() {
 
                 <form onSubmit={handleSubmit(onSubmit)}>
                   {[
-                    { name:'nom' as const, label:'Nom complet *', type:'text', placeholder:'Marie Dupont' },
-                    { name:'telephone' as const, label:'Téléphone *', type:'tel', placeholder:'+509 xxxx xxxx' },
+                    { name:'nom' as const, label:'{lang==='en'?'Full name':lang==='ht'?'Non konplè':lang==='es'?'Nombre completo':lang==='zh'?'姓名':'Nom complet'} *', type:'text', placeholder:'Marie Dupont' },
+                    { name:'telephone' as const, label:'{lang==='en'?'Phone':lang==='ht'?'Telefòn':lang==='es'?'Teléfono':lang==='zh'?'电话':'Téléphone'} *', type:'tel', placeholder:'+509 xxxx xxxx' },
                     { name:'email' as const, label:'Email', type:'email', placeholder:'email@exemple.com' },
                   ].map(f => (
                     <div key={f.name} style={{ marginBottom:18 }}>
@@ -161,19 +162,19 @@ export default function ConsultationPage() {
                   <div style={{ marginBottom:18 }}>
                     <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:14, marginBottom:6 }}>Spécialité souhaitée *</label>
                     <select {...register('specialite', { required:true })} style={{ width:'100%', padding:'12px 14px', borderRadius:10, border:'1px solid #d1d5db', fontSize:15, background:'white', boxSizing:'border-box' }}>
-                      <option value="">Choisir une spécialité</option>
+                      <option value="">{lang==='en'?'Choose a specialty':lang==='ht'?'Chwazi yon espesyalite':lang==='es'?'Elegir especialidad':lang==='zh'?'选择专科':'Choisir une spécialité'}</option>
                       {SPECIALITES.map(s => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </div>
 
                   <div style={{ marginBottom:18 }}>
-                    <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:14, marginBottom:6 }}>Date souhaitée *</label>
+                    <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:14, marginBottom:6 }}>{lang==='en'?'Preferred date':lang==='ht'?'Dat souete':lang==='es'?'Fecha deseada':lang==='zh'?'期望日期':'Date souhaitée'} *</label>
                     <input {...register('date_rdv', { required:true })} type="datetime-local" min={new Date().toISOString().slice(0,16)}
                       style={{ width:'100%', padding:'12px 14px', borderRadius:10, border:'1px solid #d1d5db', fontSize:15, boxSizing:'border-box' }} />
                   </div>
 
                   <div style={{ marginBottom:18 }}>
-                    <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:14, marginBottom:6 }}>Motif de consultation</label>
+                    <label style={{ display:'block', fontWeight:600, color:'#374151', fontSize:14, marginBottom:6 }}>{lang==='en'?'Reason for consultation':lang==='ht'?'Rezon konsiltasyon':lang==='es'?'Motivo de consulta':lang==='zh'?'就诊原因':'Motif de consultation'}</label>
                     <textarea {...register('motif')} placeholder="Décrivez brièvement votre motif de consultation..." rows={3}
                       style={{ width:'100%', padding:'12px 14px', borderRadius:10, border:'1px solid #d1d5db', fontSize:15, resize:'vertical', boxSizing:'border-box' }} />
                   </div>
@@ -181,7 +182,7 @@ export default function ConsultationPage() {
                   {/* Paiement */}
                   <div style={{ background:'#f0f9ff', borderRadius:12, padding:16, marginBottom:24, border:'1px solid #bae6fd' }}>
                     <div style={{ fontWeight:700, color:'#0369a1', fontSize:14, marginBottom:12 }}>
-                      <i className="fa-solid fa-credit-card" style={{ marginRight:8 }} />Mode de paiement
+                      <i className="fa-solid fa-credit-card" style={{ marginRight:8 }} />{lang==='en'?'Payment method':lang==='ht'?'Mòd peman':lang==='es'?'Método de pago':lang==='zh'?'付款方式':'Mode de paiement'}
                     </div>
                     <div style={{ display:'flex', gap:10, flexWrap:'wrap' }}>
                       {['especes','moncash','natcash','carte'].map(m => (
@@ -199,7 +200,7 @@ export default function ConsultationPage() {
                     color:'white', border:'none', borderRadius:12, padding:'14px 0',
                     fontWeight:700, fontSize:'1rem', cursor:loading?'not-allowed':'pointer', opacity:loading?0.7:1
                   }}>
-                    {loading ? 'Envoi en cours...' : <><i className="fa-solid fa-calendar-check" style={{ marginRight:8 }} />Confirmer ma demande</>}
+                    {loading ? '{lang==='en'?'Sending...':lang==='ht'?'Ap voye...':lang==='es'?'Enviando...':lang==='zh'?'发送中...':'Envoi en cours...'}' : <><i className="fa-solid fa-calendar-check" style={{ marginRight:8 }} />Confirmer ma demande</>}
                   </button>
                 </form>
               </div>
