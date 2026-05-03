@@ -140,8 +140,8 @@ function SpecialitesContent() {
 
         {filtres.length === 0 && (
           <div style={{ textAlign:'center', padding:48, color:'#94a3b8' }}>
-            <p>Aucun résultat</p>
-            <button onClick={() => { setSearch(''); setSpecFiltre('Tous') }} style={{ background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', border:'none', borderRadius:10, padding:'10px 20px', cursor:'pointer', fontWeight:600 }}>Réinitialiser</button>
+            <p>{lang==='en'?'No results':lang==='ht'?'Pa gen rezilta':lang==='es'?'Sin resultados':'Aucun résultat'}</p>
+            <button onClick={() => { setSearch(''); setSpecFiltre('Tous') }} style={{ background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', border:'none', borderRadius:10, padding:'10px 20px', cursor:'pointer', fontWeight:600 }}>{lang==='en'?'Reset':lang==='ht'?'Reyajiste':lang==='es'?'Restablecer':'Réinitialiser'}</button>
           </div>
         )}
 

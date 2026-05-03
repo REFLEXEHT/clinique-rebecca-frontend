@@ -6,11 +6,14 @@ import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { MEDECINS, nomComplet } from '@/lib/medecins'
+import { useLang } from '@/context/LangContext'
+import { tradSpecialite } from '@/lib/specialite-translations'
 import { api } from '@/lib/api'
 
 
 export default function SpecialistePage() {
   const params = useParams()
+  const { lang } = useLang()
   const router = useRouter()
   const id = Number(params.id)
   // Get from single source of truth, try to enrich from API
@@ -96,7 +99,7 @@ export default function SpecialistePage() {
               </div>
               <div className="flex gap-4">
                 <button onClick={() => router.push('/consultation')} className="btn-primary">
-                  <i className="fa-regular fa-calendar-check"/> Prendre rendez-vous
+                  <i className="fa-regular fa-calendar-check"/> {lang==='en'?'Book appointment':lang==='ht'?'Pran randevou':lang==='es'?'Reservar cita':'Prendre rendez-vous'}
                 </button>
                 <Link href="/consultation" className="btn-secondary">
                   <i className="fa-solid fa-video"/> Consultation vidéo
@@ -151,7 +154,7 @@ export default function SpecialistePage() {
           {/* Sidebar : contact + RDV */}
           <div className="space-y-4">
             <div className="card p-5 border-2 border-[#1641C8]/10">
-              <h4 className="font-extrabold text-[14px] mb-4">Prendre rendez-vous</h4>
+              <h4 className="font-extrabold text-[14px] mb-4">{lang==='en'?'Book appointment':lang==='ht'?'Pran randevou':lang==='es'?'Reservar cita':'Prendre rendez-vous'}</h4>
               <button onClick={() => router.push('/consultation')} className="btn-primary w-full justify-center mb-3">
                 <i className="fa-regular fa-calendar-check"/> En personne
               </button>
@@ -175,7 +178,7 @@ export default function SpecialistePage() {
 
             {/* Témoignages */}
             <div className="card p-5">
-              <h4 className="font-extrabold text-[14px] mb-3">Avis patients</h4>
+              <h4 className="font-extrabold text-[14px] mb-3">{lang==='en'?'Patient reviews':lang==='ht'?'Avis pasyan':lang==='es'?'Opiniones de pacientes':'Avis patients'}</h4>
               {[
                 { n:'M.T.', note:'★★★★★', txt:'Médecin très professionnel et à l\'écoute.' },
                 { n:'P.J.', note:'★★★★★', txt:'Excellent suivi, je recommande vivement.' },

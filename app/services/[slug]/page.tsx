@@ -381,7 +381,7 @@ function PageLaboratoire() {
                   style={{flex:1,padding:'11px 14px',borderRadius:10,border:'1px solid #d1d5db',fontSize:14,outline:'none'}}/>
                 <button onClick={chercher} style={{background:'#16a34a',color:'white',border:'none',borderRadius:10,padding:'11px 18px',fontWeight:700,cursor:'pointer',fontSize:13}}>Vérifier</button>
               </div>
-              {result==='dispo'&&<div style={{background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:10,padding:'12px 16px',display:'flex',gap:10}}><span style={{fontSize:20}}>✅</span><div><div style={{fontWeight:700,color:'#16a34a'}}>Disponible</div><div style={{fontSize:12,color:'#64748b'}}>Cet examen est disponible dans notre laboratoire.</div></div></div>}
+              {result==='dispo'&&<div style={{background:'#f0fdf4',border:'1px solid #bbf7d0',borderRadius:10,padding:'12px 16px',display:'flex',gap:10}}><span style={{fontSize:20}}>✅</span><div><div style={{fontWeight:700,color:'#16a34a'}}>Disponible</div><div style={{fontSize:12,color:'#64748b'}}>{lang==='en'?'This test is available in our laboratory.':lang==='ht'?'Egzamen sa a disponib nan laboratwa nou an.':lang==='es'?'Este análisis está disponible en nuestro laboratorio.':'Cet examen est disponible dans notre laboratoire.'}</div></div></div>}
               {result==='non'&&<div style={{background:'#fef2f2',border:'1px solid #fca5a5',borderRadius:10,padding:'12px 16px',display:'flex',gap:10}}><span style={{fontSize:20}}>❌</span><div><div style={{fontWeight:700,color:'#dc2626'}}>Non disponible</div><div style={{fontSize:12,color:'#64748b'}}>Appelez le {CLINIQUE_TEL} pour confirmer.</div></div></div>}
             </div>
           </div>

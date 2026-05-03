@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
+import { useLang } from '@/context/LangContext'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
@@ -20,6 +21,7 @@ const STATUT_RDV: Record<string, { label: string; color: string; bg: string }> =
 
 export default function PatientDashboard() {
   const { user, isAuthenticated, loading, logout } = useAuth()
+  const { lang } = useLang()
   const router = useRouter()
   const [onglet, setOnglet] = useState<Onglet>('accueil')
   const [data,   setData]   = useState<any>(null)
@@ -76,12 +78,22 @@ export default function PatientDashboard() {
     </div>
   )
 
+  const T = {
+    accueil:    { fr:'Mon espace',      en:'My space',        ht:'Espas mwen',      es:'Mi espacio'     },
+    rdv:        { fr:'RDV',             en:'Appointments',    ht:'Randevou',         es:'Citas'          },
+    meds:       { fr:'Mes médicaments', en:'My medications',  ht:'Medikaman mwen',   es:'Mis medicamentos'},
+    results:    { fr:'Mes résultats',   en:'My results',      ht:'Rezilta mwen',     es:'Mis resultados' },
+    avis:       { fr:'Mon avis',        en:'My review',       ht:'Avis mwen',        es:'Mi opinión'     },
+  } as const
+  type TLang = 'fr'|'en'|'ht'|'es'
+  const tl = (k: keyof typeof T) => T[k][(lang as TLang) in T[k] ? lang as TLang : 'fr']
+  
   const NAV = [
-    { k: 'accueil',      icon: '🏠', label: 'Mon espace' },
-    { k: 'rdv',          icon: '📅', label: `RDV${data?.rdv_a_venir?.length ? ` (${data.rdv_a_venir.length})` : ''}` },
-    { k: 'prescriptions',icon: '💊', label: 'Mes médicaments' },
-    { k: 'resultats',    icon: '🔬', label: 'Mes résultats' },
-    { k: 'avis',         icon: '⭐', label: 'Mon avis' },
+    { k: 'accueil',      icon: '🏠', label: tl('accueil') },
+    { k: 'rdv',          icon: '📅', label: `${tl('rdv')}${data?.rdv_a_venir?.length ? ` (${data.rdv_a_venir.length})` : ''}` },
+    { k: 'prescriptions',icon: '💊', label: tl('meds') },
+    { k: 'resultats',    icon: '🔬', label: tl('results') },
+    { k: 'avis',         icon: '⭐', label: tl('avis') },
   ] as const
 
   return (
@@ -101,7 +113,7 @@ export default function PatientDashboard() {
           </div>
         </div>
         <Link href="/consultation" style={{ background: 'rgba(255,255,255,0.15)', color: 'white', textDecoration: 'none', borderRadius: 8, padding: '7px 14px', fontWeight: 700, fontSize: 12, border: '1px solid rgba(255,255,255,0.2)' }}>
-          + Prendre RDV
+          {lang==='en'?'+ Book':lang==='ht'?'+ Rezève':lang==='es'?'+ Reservar':'+ Prendre RDV'}
         </Link>
         <button onClick={() => { logout(); router.push('/') }} style={{ background: 'none', border: 'none', color: 'rgba(255,255,255,0.5)', cursor: 'pointer', padding: '6px 10px' }}>
           <LogOut size={16} />
@@ -129,11 +141,11 @@ export default function PatientDashboard() {
           <div>
             {/* Carte identité patient */}
             <div style={{ background: 'linear-gradient(135deg,#0f1e3d,#1641C8)', borderRadius: 16, padding: 20, marginBottom: 16, color: 'white' }}>
-              <div style={{ fontSize: 10, opacity: 0.6, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>Votre numéro patient</div>
+              <div style={{ fontSize: 10, opacity: 0.6, textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>{lang==='en'?'Your patient ID':lang==='ht'?'Nimewo pasyan ou':lang==='es'?'Su número de paciente':'Votre numéro patient'}</div>
               <div style={{ fontFamily: 'monospace', fontWeight: 900, fontSize: '2rem', letterSpacing: 2, marginBottom: 10 }}>
                 {data?.numero_patient || '—'}
               </div>
-              <div style={{ fontSize: 13, opacity: 0.8 }}>Présentez ce numéro à l'accueil et à l'infirmière.</div>
+              <div style={{ fontSize: 13, opacity: 0.8 }}>{lang==='en'?'Present this number at reception and to the nurse.':lang==='ht'?'Prezante nimewo sa a nan resepsyon ak enfimyè a.':lang==='es'?'Presente este número en recepción y a la enfermera.':"Présentez ce numéro à l'accueil et à l'infirmière."}</div>
             </div>
 
             {/* Stats */}
@@ -217,7 +229,7 @@ export default function PatientDashboard() {
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
               <h2 style={{ fontWeight: 900, fontSize: '1.2rem', margin: 0 }}>📅 Mes rendez-vous</h2>
               <Link href="/consultation" style={{ background: 'linear-gradient(135deg,#1641C8,#0d9488)', color: 'white', textDecoration: 'none', borderRadius: 10, padding: '8px 16px', fontWeight: 700, fontSize: 12 }}>
-                + Nouveau
+                {lang==='en'?'+ New':lang==='ht'?'+ Nouvo':lang==='es'?'+ Nuevo':'+ Nouveau'}
               </Link>
             </div>
 
@@ -286,7 +298,7 @@ export default function PatientDashboard() {
         {/* ── RÉSULTATS LABO ──────────────────────────────────────── */}
         {onglet === 'resultats' && (
           <div>
-            <h2 style={{ fontWeight: 900, fontSize: '1.2rem', margin: '0 0 6px' }}>🔬 Résultats de laboratoire</h2>
+            <h2 style={{ fontWeight: 900, fontSize: '1.2rem', margin: '0 0 6px' }}>{lang==='en'?'🔬 Lab Results':lang==='ht'?'🔬 Rezilta Labo':lang==='es'?'🔬 Resultados de laboratorio':'🔬 Résultats de laboratoire'}</h2>
             <p style={{ color: '#64748b', fontSize: 13, marginBottom: 16 }}>
               Vos valeurs brutes. L'interprétation médicale doit être faite par votre médecin.
             </p>
