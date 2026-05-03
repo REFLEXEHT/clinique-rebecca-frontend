@@ -896,10 +896,10 @@ function DemandeAccesSection() {
   const [patientNumero, setPatientNumero] = React.useState('')
   const [motif,         setMotif]         = React.useState('')
   const [urgence,       setUrgence]       = React.useState(false)
-  const [mesdemandes,   setMesDemandes]   = React.useState<any[]>([])
+  const [mesDemandes,   setMesDemandes]   = React.useState<any[]>([])
   const [loading,       setLoading]       = React.useState(false)
-  const [recherche,     setRecherche]     = React.useState('')
   const [dossierAcces,  setDossierAcces]  = React.useState<any>(null)
+  const [recherche,     setRecherche]     = React.useState('')
 
   React.useEffect(() => {
     import('@/lib/api').then(({ api }) => {
@@ -915,100 +915,52 @@ function DemandeAccesSection() {
       await api.post('/medecin/demande-acces-dossier', { patient_numero: patientNumero.trim(), motif, urgence })
       alert("Demande envoyée à l'administrateur. Vous serez notifié de la décision.")
       setPatientNumero(''); setMotif(''); setUrgence(false)
-      api.get('/medecin/mes-demandes-acces').then(r => setMesDemandes(r.data || [])).catch(() => {})
-    } catch (e: any) { alert(e?.response?.data?.detail || 'Erreur') }
-    finally { setLoading(false) }
-  }
-
-  const verifierAcces = async () => {
-    if (!recherche.trim()) return
-    try {
-      const { api } = await import('@/lib/api')
-      const r = await api.get(`/medecin/acces-autorise/${recherche.trim()}`)
-      setDossierAcces(r.data)
-    } catch (e: any) { alert(e?.response?.data?.detail || 'Accès non autorisé — soumettez une demande ci-dessous') }
-  }
-
-  const STATUT: Record<string, any> = {
-    en_attente: { label: 'En attente admin', bg: '#fef3c7', color: '#d97706' },
-    approuve:   { label: 'Approuvé ✓',       bg: '#f0fdf4', color: '#16a34a' },
-    refuse:     { label: 'Refusé',            bg: '#fef2f2', color: '#dc2626' },
-    expire:     { label: 'Expiré',            bg: '#f1f5f9', color: '#64748b' },
+    } catch (e: any) {
+      alert(e?.response?.data?.detail || 'Erreur lors de la demande')
+    } finally { setLoading(false) }
   }
 
   return (
-    <div style={{ maxWidth: 700 }}>
-      <h2 style={{ fontWeight: 900, fontSize: '1.3rem', color: '#0f172a', marginBottom: 6 }}>Accès à un dossier patient</h2>
-      <p style={{ color: '#64748b', fontSize: 14, marginBottom: 24 }}>Consultez un dossier autorisé ou soumettez une demande d'accès à l'administrateur.</p>
-
-      {/* Vérifier accès existant */}
-      <div style={{ background: 'white', borderRadius: 16, padding: 22, border: '1px solid #e2e8f0', marginBottom: 20 }}>
-        <h3 style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 14 }}>🔍 Consulter un dossier autorisé</h3>
-        <div style={{ display: 'flex', gap: 10 }}>
-          <input value={recherche} onChange={e => setRecherche(e.target.value)}
-            placeholder="Numéro patient ex: #RB-0042"
-            style={{ flex: 1, padding: '11px 14px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, fontFamily: 'monospace' }} />
-          <button onClick={verifierAcces} style={{ background: 'linear-gradient(135deg,#1641C8,#0d9488)', color: 'white', border: 'none', borderRadius: 10, padding: '11px 20px', fontWeight: 700, cursor: 'pointer' }}>
-            Accéder
-          </button>
-        </div>
-        {dossierAcces && (
-          <div style={{ marginTop: 16, background: '#f0fdf4', borderRadius: 10, padding: 16 }}>
-            <div style={{ color: '#16a34a', fontWeight: 700, marginBottom: 8 }}>
-              ✓ Accès autorisé — expire dans {dossierAcces.duree_restante_h}h
-            </div>
-            <div style={{ fontSize: 13, color: '#374151' }}>
-              Patient : <strong>{dossierAcces.patient?.nom} {dossierAcces.patient?.prenom}</strong> · {dossierAcces.dossiers?.length} dossier(s)
-            </div>
-          </div>
-        )}
+    <div style={{ maxWidth: 640 }}>
+      <h2 style={{ fontWeight: 900, fontSize: '1.1rem', marginBottom: 16 }}>🔐 Demande d'accès dossier</h2>
+      <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 12, padding: '12px 16px', marginBottom: 20, fontSize: 13, color: '#92400e' }}>
+        ⚠️ Pour les dossiers hors file d'attente (second avis, urgence), une demande explicite est requise.
       </div>
-
-      {/* Formulaire demande */}
-      <div style={{ background: 'white', borderRadius: 16, padding: 22, border: '1px solid #e2e8f0', marginBottom: 20 }}>
-        <h3 style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 14 }}>📋 Soumettre une demande d'accès</h3>
-        <div style={{ marginBottom: 14 }}>
-          <label style={{ display: 'block', fontWeight: 600, fontSize: 13, color: '#374151', marginBottom: 6 }}>Numéro patient *</label>
-          <input value={patientNumero} onChange={e => setPatientNumero(e.target.value)} placeholder="#RB-0042"
-            style={{ width: '100%', padding: '11px 14px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, fontFamily: 'monospace', boxSizing: 'border-box' as const }} />
-        </div>
-        <div style={{ marginBottom: 14 }}>
-          <label style={{ display: 'block', fontWeight: 600, fontSize: 13, color: '#374151', marginBottom: 6 }}>Motif de la demande * <span style={{ color: '#94a3b8', fontWeight: 400 }}>(obligatoire — journalisé)</span></label>
-          <textarea value={motif} onChange={e => setMotif(e.target.value)} rows={3}
-            placeholder="Expliquez pourquoi vous avez besoin d'accéder à ce dossier..."
-            style={{ width: '100%', padding: '11px 14px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, resize: 'vertical', boxSizing: 'border-box' as const }} />
-        </div>
-        <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', marginBottom: 18 }}>
-          <input type="checkbox" checked={urgence} onChange={e => setUrgence(e.target.checked)} style={{ width: 16, height: 16 }} />
-          <span style={{ fontWeight: 600, fontSize: 13, color: urgence ? '#dc2626' : '#374151' }}>🚨 Cas urgent (traitement prioritaire)</span>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
+        <input value={patientNumero} onChange={e => setPatientNumero(e.target.value)} placeholder="#RB-0042"
+          style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 14, fontFamily: 'monospace' }} />
+        <textarea value={motif} onChange={e => setMotif(e.target.value)} rows={3} placeholder="Motif de la demande d'accès..."
+          style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 14, resize: 'vertical' }} />
+        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
+          <input type="checkbox" checked={urgence} onChange={e => setUrgence(e.target.checked)} />
+          Urgence médicale
         </label>
-        <button onClick={soumettre} disabled={loading} style={{
-          background: urgence ? 'linear-gradient(135deg,#dc2626,#b91c1c)' : 'linear-gradient(135deg,#1641C8,#0d9488)',
-          color: 'white', border: 'none', borderRadius: 12, padding: '12px 24px', fontWeight: 700, cursor: 'pointer', fontSize: 14
-        }}>
-          {loading ? 'Envoi...' : urgence ? '🚨 Envoyer demande urgente' : "Envoyer la demande à l'admin"}
+        <button onClick={soumettre} disabled={loading} style={{ background: '#1641C8', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 700, cursor: 'pointer' }}>
+          {loading ? 'Envoi...' : 'Soumettre la demande'}
         </button>
       </div>
-
-      {/* Mes demandes */}
-      {mesdemandes.length > 0 && (
-        <div style={{ background: 'white', borderRadius: 16, padding: 22, border: '1px solid #e2e8f0' }}>
-          <h3 style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 14 }}>Mes demandes récentes</h3>
-          {mesdemandes.slice(0, 5).map((d: any) => {
-            const s = STATUT[d.statut] || STATUT.en_attente
-            return (
-              <div key={d.id} style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 0', borderBottom: '1px solid #f1f5f9' }}>
-                <span style={{ fontFamily: 'monospace', color: '#1641C8', fontWeight: 700, fontSize: 13 }}>{d.patient_numero}</span>
-                <span style={{ flex: 1, color: '#64748b', fontSize: 12, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{d.motif}</span>
-                <span style={{ background: s.bg, color: s.color, borderRadius: 50, padding: '3px 10px', fontSize: 11, fontWeight: 700, whiteSpace: 'nowrap' }}>{s.label}</span>
-                {d.acces_expire_at && d.statut === 'approuve' && (
-                  <span style={{ color: '#94a3b8', fontSize: 11 }}>Exp: {new Date(d.acces_expire_at).toLocaleString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
-                )}
+      {dossierAcces && (
+        <div style={{ background: '#f0fdf4', borderRadius: 10, padding: 14, border: '1px solid #86efac', fontSize: 13 }}>
+          ✓ Accès autorisé — expire dans {dossierAcces.duree_restante_h}h<br/>
+          Patient : <strong>{dossierAcces.patient?.nom}</strong> · {dossierAcces.dossiers?.length} dossier(s)
+        </div>
+      )}
+      {mesDemandes.length > 0 && (
+        <div style={{ marginTop: 20 }}>
+          <h3 style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>Mes demandes récentes</h3>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {mesDemandes.slice(0, 5).map((d: any, i: number) => (
+              <div key={i} style={{ background: 'white', borderRadius: 8, padding: '10px 14px', border: '1px solid #e2e8f0', fontSize: 12, display: 'flex', justifyContent: 'space-between' }}>
+                <span style={{ fontFamily: 'monospace' }}>{d.patient_numero}</span>
+                <span style={{ color: d.statut === 'approuve' ? '#16a34a' : d.statut === 'refuse' ? '#dc2626' : '#d97706', fontWeight: 700 }}>
+                  {d.statut === 'approuve' ? '✓ Approuvé' : d.statut === 'refuse' ? '✕ Refusé' : '⏳ En attente'}
+                </span>
               </div>
-            )
-          })}
+            ))}
+          </div>
         </div>
       )}
     </div>
   )
 }
+

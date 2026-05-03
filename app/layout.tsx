@@ -34,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,700;1,700&display=swap" rel="stylesheet" />
       </head>
       <body className={inter.className} suppressHydrationWarning>
-        <Providers children={children} />
+        <Providers>{children}</Providers>
       </body>
     </html>
   )

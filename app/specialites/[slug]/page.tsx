@@ -6,7 +6,7 @@ import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import RdvModal from '@/components/ui/RdvModal'
-import { specialistesApi } from '@/lib/api'
+import { api } from '@/lib/api'
 import { Specialiste } from '@/types'
 
 const SPEC_META: Record<string, { label: string; icon: string; desc: string }> = {
@@ -43,7 +43,7 @@ export default function SpecialitePage() {
 
   useEffect(() => {
     setLoading(true)
-    specialistesApi.list(slug)
+    api.list(slug)
       .then(r => setSpecs(r.data))
       .catch(() => setSpecs(SPECS_STATIC[slug] || []))
       .finally(() => setLoading(false))

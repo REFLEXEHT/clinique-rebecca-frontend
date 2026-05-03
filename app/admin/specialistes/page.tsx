@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { specialistesApi } from '@/lib/api'
+import { api } from '@/lib/api'
 import { Specialiste } from '@/types'
 import { Trash2, Edit2, Save, X, Plus, User } from 'lucide-react'
 
@@ -56,13 +56,13 @@ export default function AdminSpecialistes() {
   })
   const selectedEmoji = watch('emoji')
 
-  const load = () => specialistesApi.list().then(r => setSpecs(r.data || [])).catch(() => {})
+  const load = () => api.get('/specialistes').then(r => setSpecs(r.data || [])).catch(() => {})
   useEffect(() => { load() }, [])
 
   const onAdd = async (data: FormData) => {
     setLoading(true)
     try {
-      await specialistesApi.create({
+      await api.post('/specialistes', {
         ...data,
         description: data.description || `Consultation : ${data.prix_consultation?.toLocaleString()} HTG | RDV : ${data.prix_rdv?.toLocaleString()} HTG`,
       })
@@ -86,7 +86,7 @@ export default function AdminSpecialistes() {
   const onSaveEdit = async () => {
     if (!editingId) return
     try {
-      await specialistesApi.update(editingId, {
+      await api.put(`/specialistes/${editingId}`, {
         ...editData,
         description: editData.description || `Consultation : ${editData.prix_consultation?.toLocaleString()} HTG | RDV : ${editData.prix_rdv?.toLocaleString()} HTG`,
       })
@@ -97,7 +97,7 @@ export default function AdminSpecialistes() {
 
   const onDelete = async (s: SpecialisteExt) => {
     if (!confirm(`Supprimer ${s.nom} définitivement ?`)) return
-    try { await specialistesApi.delete(s.id); toast.success('Supprimé'); load() }
+    try { await api.delete(`/specialistes/${s.id}`); toast.success('Supprimé'); load() }
     catch { toast.error('Erreur') }
   }
 

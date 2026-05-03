@@ -59,7 +59,7 @@ function PrintModal({ title, couleur, onClose, children }: any) {
 }
 
 // ── Rendus des documents ────────────────────────────────────────────────────
-function renderDocument(type: string, data: any, user: any, onClose: () => void, signatures: Record<string,string|null>, setSignatures: (fn: any) => void) {
+function renderDocument(type: string, data: any, user: any, onClose: () => void, signatures: Record<string,string|null>, setSignatures: (fn: any) => void): any {
   const couleur = DOCUMENTS.find(d => d.type === type)?.couleur || '#1641C8'
 
   const baseInfo = (
@@ -90,7 +90,7 @@ function renderDocument(type: string, data: any, user: any, onClose: () => void,
     </div>
   )
 
-  const docs: Record<string, JSX.Element> = {
+  const docs: Record<string, any> = {
 
     premiere_consultation: (
       <PrintModal title="Feuille de 1ère Consultation" couleur={couleur} onClose={onClose}>
