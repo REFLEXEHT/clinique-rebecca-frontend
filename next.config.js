@@ -4,15 +4,7 @@ const nextConfig = {
     formats: ['image/avif', 'image/webp'],
     unoptimized: true,
   },
-  async rewrites() {
-    const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'https://clinique-rebecca-api.onrender.com'
-    const base = backendUrl.replace(/\/api\/?$/, '')
-    return [
-      {
-        source: '/api/:path*',
-        destination: `${base}/api/:path*`,
-      },
-    ]
-  },
+  // Proxy géré par app/api/[...path]/route.ts
+  // Le rewrite n'est plus nécessaire
 }
 module.exports = nextConfig
