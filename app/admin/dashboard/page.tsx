@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
-import { api } from '@/lib/api'
+import { api, aiApi } from '@/lib/api'
 import Link from 'next/link'
 import { LogOut, Users, FileText, AlertTriangle, TrendingUp, Shield, Clock } from 'lucide-react'
 
@@ -40,24 +40,16 @@ export default function AdminDashboard() {
     if (!analytics) return
     setLoadAI(true)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514', max_tokens: 800,
-          messages: [{
-            role: 'user',
-            content: `Tu es un assistant analytique pour une clinique médicale à Haïti. Génère un rapport de direction concis basé sur ces données: ${JSON.stringify(analytics)}. 
+      const data = await aiApi.chat([{
+        role: 'user',
+        content: `Tu es un assistant analytique pour une clinique médicale à Haïti. Génère un rapport de direction concis basé sur ces données: ${JSON.stringify(analytics)}. 
 Inclure: 
 1. Résumé exécutif (2 phrases)
 2. Points d'attention critiques (si alertes accès suspects, comptes en attente)
 3. Performance des services les plus demandés
 4. Recommandations concrètes (3 max)
 Format: texte structuré, 300 mots max, ton professionnel.`
-          }]
-        })
-      })
-      const data = await res.json()
+      }], { max_tokens: 800 })
       setAiReport(data.content?.[0]?.text || '')
     } catch { setAiReport('Erreur génération rapport') }
     finally { setLoadAI(false) }

@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
-import { api } from '@/lib/api'
+import { api, aiApi } from '@/lib/api'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import { LogOut, Printer, Search, Plus, TrendingUp, ArrowDownCircle, Eye } from 'lucide-react'
@@ -266,20 +266,13 @@ export default function CaissierPage() {
   const genererRapport = async () => {
     setLoadRapport(true)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({
-          model:'claude-sonnet-4-20250514', max_tokens:600,
-          messages:[{role:'user',content:`Rapport comptable journalier — Clinique de la Rebecca.
+      const data = await aiApi.chat([{role:'user',content:`Rapport comptable journalier — Clinique de la Rebecca.
 Encaissements: ${totalJour} HTG en ${paiements.length} transactions.
 Services: ${[...new Set(paiements.map((p:any)=>p.service?.split(' ')[0]||'Autre'))].join(', ')}.
 Décaissements: ${totalDepenses} HTG en ${depenses.length} dépenses.
 Catégories dépenses: ${depenses.map((d:any)=>d.categorie).join(', ')}.
 Solde net: ${totalJour - totalDepenses} HTG.
-Génère un rapport comptable structuré avec: résumé financier, recettes par catégorie, dépenses par catégorie, solde net, recommandations. Max 300 mots.`}]
-        })
-      })
-      const data = await res.json()
+Génère un rapport comptable structuré avec: résumé financier, recettes par catégorie, dépenses par catégorie, solde net, recommandations. Max 300 mots.`}], { max_tokens: 600 })
       setRapport(data.content?.[0]?.text || '')
     } catch { setRapport('Erreur') }
     finally { setLoadRapport(false) }

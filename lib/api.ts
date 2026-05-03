@@ -121,3 +121,18 @@ export const statsApi = {
   recettesParJour: (jours: number) => api.get('/admin/stats/recettes-par-jour', { params: { jours } }),
   specialites: () => api.get('/admin/stats/specialites'),
 }
+
+// ── IA (route serveur sécurisée — clé API jamais exposée côté client) ────
+export const aiApi = {
+  chat: (messages: { role: string; content: string }[], options?: { model?: string; max_tokens?: number; system?: string }) =>
+    fetch('/api/ai', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        messages,
+        model: options?.model || 'claude-sonnet-4-20250514',
+        max_tokens: options?.max_tokens || 800,
+        ...(options?.system ? { system: options.system } : {}),
+      }),
+    }).then(r => r.json()),
+}

@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useLang } from '@/context/LangContext'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { api } from '@/lib/api'
+import { api, aiApi } from '@/lib/api'
 import { LogOut, Calendar, Pill, FlaskConical, Star, ChevronDown, ChevronUp } from 'lucide-react'
 
 type Onglet = 'accueil' | 'rdv' | 'prescriptions' | 'resultats' | 'avis'
@@ -45,24 +45,14 @@ export default function PatientDashboard() {
     if (synth[visite.id]) return
     setLoadSy(visite.id)
     try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 120,
-          messages: [{
-            role: 'user',
-            content: `En 1 phrase simple et rassurante (max 20 mots), résume ce que représente une visite en ${visite.specialite || 'consultation médicale'} dans une clinique. Pas de diagnostic. Commence par "Vous avez consulté..."`
-          }]
-        })
-      })
-      const j = await res.json()
+      const j = await aiApi.chat([{
+        role: 'user',
+        content: `En 1 phrase simple et rassurante (max 20 mots), résume ce que représente une visite en ${visite.specialite || 'consultation médicale'} dans une clinique. Pas de diagnostic. Commence par "Vous avez consulté..."`
+      }], { max_tokens: 120 })
       setSynth(prev => ({ ...prev, [visite.id]: j.content?.[0]?.text || '' }))
     } catch { /**/ }
     finally { setLoadSy(null) }
   }
-
   const soumettreAvis = async (visite_id: number) => {
     if (!noteVisite) return
     try {

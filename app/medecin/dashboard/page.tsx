@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
-import { rdvApi, actesApi, api } from '@/lib/api'
+import { rdvApi, actesApi, api, aiApi } from '@/lib/api'
 import SignaturePad from '@/components/ui/SignaturePad'
 import { RendezVous } from '@/types'
 import { LogOut, Edit2, Save, X, Calendar, Clock, User, FileText, Star, ChevronRight, Video, ExternalLink } from 'lucide-react'
@@ -86,14 +86,7 @@ function RecommandationPanel({ dossierId }: { dossierId: number | null }) {
     setLoading(true)
     try {
       const r = await api.post(`/medecin/recommander-avec-resume/${dossierId}`, { specialiste_cible: specialiste, motif })
-      const resIA = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514', max_tokens: 250,
-          messages: [{ role: 'user', content: `Résumé LIMITÉ pour ${specialiste} (150 mots max). Motif: "${motif}". Inclure uniquement: raison de consultation, points pertinents pour cette spécialité. NE PAS inclure le dossier complet.` }]
-        })
-      })
-      const iaData = await resIA.json()
+      const iaData = await aiApi.chat([{ role: 'user', content: `Résumé LIMITÉ pour ${specialiste} (150 mots max). Motif: "${motif}". Inclure uniquement: raison de consultation, points pertinents pour cette spécialité. NE PAS inclure le dossier complet.` }], { max_tokens: 250 })
       setResumeIA(iaData.content?.[0]?.text || '')
       setSent(true)
     } catch (e: any) { alert(e?.response?.data?.detail || 'Erreur') }

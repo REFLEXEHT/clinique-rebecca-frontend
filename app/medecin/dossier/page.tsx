@@ -3,11 +3,11 @@
 // ── IA: Synthèse automatique + interactions médicamenteuses ──────────────
 async function genererSyntheseIA(dossier: any): Promise<string> {
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const data = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', max_tokens: 600,
+        max_tokens: 600,
         messages: [{
           role: 'user',
           content: `Tu es un assistant médical clinique. Génère une synthèse clinique structurée et concise pour un médecin. Données du dossier: ${JSON.stringify(dossier)}. 
@@ -18,8 +18,7 @@ Format:
 Ton: professionnel, médical, précis. Maximum 250 mots.`
         }]
       })
-    })
-    const data = await res.json()
+    }).then(r => r.json())
     return data.content?.[0]?.text || ''
   } catch { return '' }
 }
@@ -27,11 +26,11 @@ Ton: professionnel, médical, précis. Maximum 250 mots.`
 async function verifierInteractions(medicaments: string): Promise<string> {
   if (!medicaments) return ''
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const data = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514', max_tokens: 400,
+        max_tokens: 400,
         messages: [{
           role: 'user',
           content: `Tu es un pharmacologue clinique. Analyse ces médicaments et signale les interactions potentielles importantes: "${medicaments}". 
@@ -39,8 +38,7 @@ Si aucune interaction majeure: réponds "Aucune interaction majeure détectée."
 Sinon: liste les interactions par ordre de gravité (⚠️ modérée, 🔴 sévère). Sois concis, max 150 mots.`
         }]
       })
-    })
-    const data = await res.json()
+    }).then(r => r.json())
     return data.content?.[0]?.text || ''
   } catch { return '' }
 }
