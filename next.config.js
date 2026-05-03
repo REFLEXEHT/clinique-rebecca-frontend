@@ -1,4 +1,5 @@
 /** @type {import('next').NextConfig} */
+// Proxy: app/api/[...path]/route.ts → clinique-rebecca-api.onrender.com
 const nextConfig = {
   images: {
     formats: ['image/avif', 'image/webp'],
