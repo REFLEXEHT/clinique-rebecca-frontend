@@ -8,32 +8,34 @@ import { useAuth } from '@/context/AuthContext'
 import { useLang } from '@/context/LangContext'
 import { LOGO_SRC } from '@/lib/images'
 
-const SERVICES = [
-  { label: 'Clinique Externe',   icon: 'fa-stethoscope',    href: '/services/clinique-externe' },
-  { label: 'Laboratoire',        icon: 'fa-flask-vial',     href: '/services/laboratoire'      },
-  { label: 'Pharmacie',          icon: 'fa-pills',          href: '/services/pharmacie'        },
-  { label: 'Dentisterie',        icon: 'fa-tooth',          href: '/services/dentisterie'      },
-  { label: 'Physiothérapie',     icon: 'fa-person-walking', href: '/services/physiotherapie'   },
-  { label: 'Optométrie',         icon: 'fa-glasses',        href: '/services/optometrie'       },
-  { label: 'Maternité',          icon: 'fa-baby',           href: '/services/maternite'        },
-  { label: 'Salle SOP',          icon: 'fa-scalpel',        href: '/services/salle-sop'        },
-  { label: 'Gestes Médicaux',    icon: 'fa-syringe',        href: '/services/gestes-medicaux'  },
-  { label: 'Hospitalisation',    icon: 'fa-bed-pulse',      href: '/services/hospitalisation'  },
+// Services avec traductions
+const SERVICES_DATA = [
+  { fr:'Clinique Externe',   en:'Outpatient Clinic',    ht:'Klinik Ekstèn',       es:'Clínica Externa',     icon:'fa-stethoscope',    href:'/services/clinique-externe'  },
+  { fr:'Laboratoire',        en:'Laboratory',           ht:'Laboratwa',            es:'Laboratorio',         icon:'fa-flask-vial',     href:'/services/laboratoire'       },
+  { fr:'Pharmacie',          en:'Pharmacy',             ht:'Famasi',               es:'Farmacia',            icon:'fa-pills',          href:'/services/pharmacie'         },
+  { fr:'Dentisterie',        en:'Dentistry',            ht:'Dantistri',            es:'Odontología',         icon:'fa-tooth',          href:'/services/dentisterie'       },
+  { fr:'Physiothérapie',     en:'Physical Therapy',     ht:'Fizeyoterapi',         es:'Fisioterapia',        icon:'fa-person-walking', href:'/services/physiotherapie'    },
+  { fr:'Optométrie',         en:'Optometry',            ht:'Optometri',            es:'Optometría',          icon:'fa-glasses',        href:'/services/optometrie'        },
+  { fr:'Maternité',          en:'Maternity',            ht:'Maternite',            es:'Maternidad',          icon:'fa-baby',           href:'/services/maternite'         },
+  { fr:'Salle SOP',          en:'Operating Room (SOP)', ht:'Sal Operasyon',        es:'Quirófano (SOP)',     icon:'fa-scalpel',        href:'/services/salle-sop'         },
+  { fr:'Gestes Médicaux',    en:'Medical Procedures',   ht:'Jès Medikal',          es:'Procedimientos Med.', icon:'fa-syringe',        href:'/services/gestes-medicaux'   },
+  { fr:'Hospitalisation',    en:'Hospitalization',      ht:'Ospitalizasyon',       es:'Hospitalización',     icon:'fa-bed-pulse',      href:'/services/hospitalisation'   },
 ]
 
-const SPECIALITES = [
-  { label: 'Chirurgie générale', icon: 'fa-scalpel', slug: 'chirurgie' },
-  { label: 'Neurochirurgie', icon: 'fa-brain', slug: 'neurochirurgie' },
-  { label: 'Neurologie', icon: 'fa-brain', slug: 'neurologie' },
-  { label: 'Orthopédie', icon: 'fa-bone', slug: 'orthopedie' },
-  { label: 'Pédiatrie', icon: 'fa-child', slug: 'pediatrie' },
-  { label: 'Dermatologie', icon: 'fa-hand-dots', slug: 'dermatologie' },
-  { label: 'Urologie', icon: 'fa-kidneys', slug: 'urologie' },
-  { label: 'ORL', icon: 'fa-ear-listen', slug: 'orl' },
-  { label: 'Gynécologie', icon: 'fa-venus', slug: 'gynecologie' },
-  { label: 'Chirurgie pédiatrique', icon: 'fa-child-reaching', slug: 'chir-ped' },
-  { label: 'Médecine interne', icon: 'fa-heart-pulse', slug: 'medecine-interne' },
-  { label: 'Ophtalmologie', icon: 'fa-eye', slug: 'ophtalmologie' },
+// Spécialités avec traductions
+const SPECIALITES_DATA = [
+  { fr:'Chirurgie Générale',    en:'General Surgery',      ht:'Chiriji Jeneral',   es:'Cirugía General',     icon:'fa-scalpel',        slug:'Chirurgie Générale'       },
+  { fr:'Neurochirurgie',        en:'Neurosurgery',         ht:'Newochiriiji',       es:'Neurocirugía',        icon:'fa-brain',          slug:'Neurochirurgie'           },
+  { fr:'Neurologie',            en:'Neurology',            ht:'Newoloji',           es:'Neurología',          icon:'fa-brain',          slug:'Neurologie'               },
+  { fr:'Orthopédie',            en:'Orthopedics',          ht:'Òtopedi',            es:'Ortopedia',           icon:'fa-bone',           slug:'Orthopédie'               },
+  { fr:'Pédiatrie',             en:'Pediatrics',           ht:'Pediatri',           es:'Pediatría',           icon:'fa-child',          slug:'Pédiatrie'                },
+  { fr:'Dermatologie',          en:'Dermatology',          ht:'Dèmatoloji',         es:'Dermatología',        icon:'fa-hand-dots',      slug:'Dermatologie'             },
+  { fr:'Urologie',              en:'Urology',              ht:'Iwoloji',            es:'Urología',            icon:'fa-kidneys',        slug:'Urologie'                 },
+  { fr:'ORL',                   en:'ENT',                  ht:'ORL',                es:'ORL',                 icon:'fa-ear-listen',     slug:'ORL'                      },
+  { fr:'Gynécologie',           en:'Gynecology',           ht:'Jinekologi',         es:'Ginecología',         icon:'fa-venus',          slug:'Gynécologie'              },
+  { fr:'Chirurgie Pédiatrique', en:'Pediatric Surgery',    ht:'Chiriji Pediatrik',  es:'Cirugía Pediátrica',  icon:'fa-child-reaching', slug:'Chirurgie Pédiatrique'    },
+  { fr:'Médecine interne',      en:'Internal Medicine',    ht:'Medsin Entèn',       es:'Medicina Interna',    icon:'fa-heart-pulse',    slug:'Médecine interne'         },
+  { fr:'Optométrie',            en:'Optometry',            ht:'Optometri',          es:'Optometría',          icon:'fa-glasses',        slug:'Optométrie'               },
 ]
 
 interface NavbarProps {
@@ -200,9 +202,9 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                 <Link href="/services" style={{fontWeight:700,color:'#1641C8'}}>
                   {lang === 'en' ? '→ All services' : lang === 'ht' ? '→ Tout sèvis' : lang === 'es' ? '→ Todos los servicios' : lang === 'zh' ? '→ 所有服务' : '→ Voir tous les services'}
                 </Link>
-                {SERVICES.map((s) => (
+                {SERVICES_DATA.map((s) => (
                   <Link key={s.href} href={s.href}>
-                    <i className={`fa-solid ${s.icon}`} />{s.label}
+                    <i className={`fa-solid ${s.icon}`} />{(lang === 'en' ? s.en : lang === 'ht' ? s.ht : lang === 'es' ? s.es : s.fr)}
                   </Link>
                 ))}
               </div>
@@ -219,9 +221,9 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
                 <Link href="/specialites" style={{fontWeight:700,color:'#1641C8'}}>
                   {lang === 'en' ? '→ All specialists' : lang === 'ht' ? '→ Tout espesyalis' : lang === 'es' ? '→ Todos los especialistas' : lang === 'zh' ? '→ 所有专科' : '→ Voir tous les spécialistes'}
                 </Link>
-                {SPECIALITES.map((s) => (
-                  <Link key={s.slug} href={`/specialites?specialite=${encodeURIComponent(s.label)}`}>
-                    <i className={`fa-solid ${s.icon}`} />{s.label}
+                {SPECIALITES_DATA.map((s) => (
+                  <Link key={s.slug} href={`/specialites?specialite=${encodeURIComponent(s.slug)}`}>
+                    <i className={`fa-solid ${s.icon}`} />{(lang === 'en' ? s.en : lang === 'ht' ? s.ht : lang === 'es' ? s.es : s.fr)}
                   </Link>
                 ))}
               </div>
@@ -316,13 +318,13 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
               </button>
               {mobileSection === 'services' && (
                 <div className="ml-8 space-y-1 pb-1">
-                  {SERVICES.map(s => (
+                  {SERVICES_DATA.map(s => (
                     <Link key={s.href} href={s.href}
                       className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600
                         font-medium text-[14px] hover:bg-blue-50 hover:text-[#1641C8] transition-all"
                       onClick={() => setMobileOpen(false)}>
                       <i className={`fa-solid ${s.icon} w-4 text-center text-[#1641C8] text-xs`} />
-                      {s.label}
+                      {(lang === 'en' ? s.en : lang === 'ht' ? s.ht : lang === 'es' ? s.es : s.fr)}
                     </Link>
                   ))}
                 </div>
@@ -342,13 +344,13 @@ export default function Navbar({ onRdvClick, variant = 'public' }: NavbarProps) 
               </button>
               {mobileSection === 'specs' && (
                 <div className="ml-8 space-y-1 pb-1">
-                  {SPECIALITES.map(s => (
-                    <Link key={s.slug} href="/specialites"
+                  {SPECIALITES_DATA.map(s => (
+                    <Link key={s.slug} href={`/specialites?specialite=${encodeURIComponent(s.slug)}`}
                       className="flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-slate-600
                         font-medium text-[14px] hover:bg-blue-50 hover:text-[#1641C8] transition-all"
                       onClick={() => setMobileOpen(false)}>
                       <i className={`fa-solid ${s.icon} w-4 text-center text-[#1641C8] text-xs`} />
-                      {s.label}
+                      {(lang === 'en' ? s.en : lang === 'ht' ? s.ht : lang === 'es' ? s.es : s.fr)}
                     </Link>
                   ))}
                 </div>
