@@ -7,6 +7,7 @@ import Footer from '@/components/layout/Footer'
 import { useLang } from '@/context/LangContext'
 import { useAuth } from '@/context/AuthContext'
 import { MEDECINS, nomComplet } from '@/lib/medecins'
+import { tradSpecialite, TOUS } from '@/lib/specialite-translations'
 
 const SPECIALITES_LIST = ['Tous', ...Array.from(new Set(MEDECINS.map(m => m.specialite))).sort()]
 
@@ -92,7 +93,7 @@ function SpecialitesContent() {
               boxShadow: specFiltre===s ? '0 4px 12px rgba(22,65,200,0.3)' : '0 1px 4px rgba(0,0,0,0.08)',
               transition:'all 0.2s'
             }}>
-              {s === 'Tous' ? (lang==='en'?'All':lang==='es'?'Todos':lang==='zh'?'全部':lang==='ht'?'Tout':'Tous') : s}
+              {s === 'Tous' ? (TOUS[lang as keyof typeof TOUS] || 'Tous') : tradSpecialite(s, lang)}
             </button>
           ))}
         </div>
@@ -120,8 +121,12 @@ function SpecialitesContent() {
               </div>
               <div style={{ flex:1, minWidth:0 }}>
                 <div style={{ fontWeight:800, fontSize:14, color:'#0f172a', marginBottom:2 }}>{nomComplet(m)}</div>
-                <div style={{ color:'#0d9488', fontSize:12, fontWeight:600, marginBottom:4 }}>{m.specialite}</div>
-                <div style={{ color:'#94a3b8', fontSize:11, marginBottom:10 }}>🕐 {m.disponibilites}</div>
+                <div style={{ color:'#0d9488', fontSize:12, fontWeight:600, marginBottom:4 }}>{tradSpecialite(m.specialite, lang)}</div>
+                <div style={{ color:'#94a3b8', fontSize:11, marginBottom:10 }}>🕐 {
+                  lang==='en' ? m.disponibilites.replace('Lun','Mon').replace('Sam','Sat').replace('Ven','Fri').replace('07h','7am').replace('17h','5pm') :
+                  lang==='es' ? m.disponibilites.replace('Lun','Lun').replace('Sam','Sáb') :
+                  m.disponibilites
+                }</div>
                 <div style={{ display:'flex', gap:6 }}>
                   <Link href={`/specialistes/${m.id}`} style={{ background:'#f0fdf4', color:'#0d9488', textDecoration:'none', borderRadius:8, padding:'5px 10px', fontWeight:600, fontSize:11, border:'1px solid #a7f3d0' }}>
                     👤 Profil

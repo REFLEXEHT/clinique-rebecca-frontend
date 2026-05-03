@@ -1,10 +1,12 @@
 'use client'
 import { useParams, useRouter } from 'next/navigation'
+import { useLang } from '@/context/LangContext'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
 import { MEDECINS, nomComplet } from '@/lib/medecins'
+import { tradSpecialite } from '@/lib/specialite-translations'
 
 const CLINIQUE_TEL = '(509) 4858-5757'
 
@@ -157,6 +159,27 @@ function SidebarCTA({couleur}:{couleur:string}) {
 // CLINIQUE EXTERNE
 // ══════════════════════════════════════════════════════════════════════════
 function PageCliniqueExterne() {
+  const { lang } = useLang()
+  const tradBranch = (fr: string) => {
+    const map: Record<string, Record<string, string>> = {
+      'Médecine interne':    { en:'Internal Medicine',  ht:'Medsin Entèn',    es:'Medicina Interna'    },
+      'Gynécologie':         { en:'Gynecology',         ht:'Jinekologi',       es:'Ginecología'         },
+      'Pédiatrie':           { en:'Pediatrics',         ht:'Pediatri',         es:'Pediatría'           },
+      'Neurologie':          { en:'Neurology',          ht:'Newoloji',         es:'Neurología'          },
+      'Neurochirurgie':      { en:'Neurosurgery',       ht:'Newochiriiji',     es:'Neurocirugía'        },
+      'Orthopédie':          { en:'Orthopedics',        ht:'Òtopedi',          es:'Ortopedia'           },
+      'Chirurgie Générale':  { en:'General Surgery',    ht:'Chiriji Jeneral',  es:'Cirugía General'     },
+      'Chirurgie Pédiatrique':{ en:'Pediatric Surgery', ht:'Chiriji Pediatrik',es:'Cirugía Pediátrica'  },
+      'Dermatologie':        { en:'Dermatology',        ht:'Dèmatoloji',       es:'Dermatología'        },
+      'ORL':                 { en:'ENT',                ht:'ORL',              es:'ORL'                 },
+      'Urologie':            { en:'Urology',            ht:'Iwoloji',          es:'Urología'            },
+      'Anesthésiologie / Réanimation': { en:'Anesthesiology', ht:'Anestezoloji', es:'Anestesiología'   },
+      'Dermatologie':        { en:'Dermatology',        ht:'Dèmatoloji',       es:'Dermatología'        },
+      'Radiologie':          { en:'Radiology',          ht:'Radyoloji',        es:'Radiología'          },
+      'Psychologie':         { en:'Psychology',         ht:'Sikoloji',         es:'Psicología'          },
+    }
+    return map[fr]?.[lang] || fr
+  }
   const [branche, setBranche] = useState<string|null>(null)
   const [medecinsList, setMedecinsList] = useState<any[]>([])
 
@@ -181,7 +204,10 @@ function PageCliniqueExterne() {
     <div style={{minHeight:'100vh',background:'#f8fafc'}}>
       <Navbar variant="public"/>
       <Hero titre="Clinique Externe" icon="🩺" gradient="linear-gradient(135deg,#0f1e3d,#1641C8)"
-        desc="15 spécialités médicales — cliquez sur une branche pour voir les médecins et les cas traités"/>
+        desc={lang==='en' ? '15 medical specialties — click a branch to see doctors and treated cases' :
+           lang==='ht' ? '15 espesyalite medikal — klike sou yon branch pou wè doktè yo' :
+           lang==='es' ? '15 especialidades médicas — haga clic en una rama para ver los médicos' :
+           '15 spécialités médicales — cliquez sur une branche pour voir les médecins et les cas traités'}/>
       <div style={{maxWidth:1000,margin:'0 auto',padding:'36px 20px'}}>
         {!branche ? (
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))',gap:14}}>
@@ -194,8 +220,8 @@ function PageCliniqueExterne() {
                 onMouseLeave={e=>{(e.currentTarget as HTMLElement).style.borderColor='#e2e8f0';(e.currentTarget as HTMLElement).style.boxShadow='none'}}>
                 <span style={{fontSize:26,flexShrink:0}}>{b.icon}</span>
                 <div>
-                  <div style={{fontWeight:700,color:'#0f172a',fontSize:14}}>{b.label}</div>
-                  <div style={{color:'#64748b',fontSize:12,marginTop:2}}>{b.medecins.length} médecin{b.medecins.length>1?'s':''}</div>
+                  <div style={{fontWeight:700,color:'#0f172a',fontSize:14}}>{tradBranch(b.label)}</div>
+                  <div style={{color:'#64748b',fontSize:12,marginTop:2}}>{b.medecins.length} {lang==='en'?'specialist':lang==='ht'?'espesyalis':lang==='es'?'especialista':'médecin'}{b.medecins.length>1?'s':''}</div>
                 </div>
               </button>
             ))}
@@ -203,16 +229,16 @@ function PageCliniqueExterne() {
         ) : (
           <>
             <button onClick={()=>setBranche(null)} style={{background:'none',border:'none',cursor:'pointer',color:'#1641C8',fontWeight:700,fontSize:14,display:'flex',alignItems:'center',gap:6,marginBottom:24,padding:0}}>
-              ← Toutes les spécialités
+              {lang==='en'?'← All specialties':lang==='ht'?'← Tout espesyalite':lang==='es'?'← Todas las especialidades':'← Toutes les spécialités'}
             </button>
             <div style={{display:'grid',gridTemplateColumns:'2fr 1fr',gap:24}}>
               <div>
-                <h2 style={{fontWeight:900,fontSize:'1.3rem',color:'#0f172a',marginBottom:8}}>{b?.icon} {b?.label}</h2>
+                <h2 style={{fontWeight:900,fontSize:'1.3rem',color:'#0f172a',marginBottom:8}}>{b?.icon} {tradBranch(b?.label||'')}</h2>
                 <p style={{color:'#64748b',fontSize:14,marginBottom:20,lineHeight:1.7}}>{b?.desc}</p>
-                <p style={{color:'#94a3b8',fontSize:13,marginBottom:16}}>Contact : <a href={`mailto:${b?.email}`} style={{color:'#1641C8'}}>{b?.email}</a> · {CLINIQUE_TEL}</p>
+                <p style={{color:'#94a3b8',fontSize:13,marginBottom:16}}>{lang==='en'?'Contact':'Contact'} : <a href={`mailto:${b?.email}`} style={{color:'#1641C8'}}>{b?.email}</a> · {CLINIQUE_TEL}</p>
                 {!b||!getMedecinsForBranche(b).length ? (
                   <div style={{background:'white',borderRadius:14,padding:24,border:'1px solid #e2e8f0'}}>
-                    <p style={{color:'#64748b'}}>Disponible sur demande — appelez le {CLINIQUE_TEL}</p>
+                    <p style={{color:'#64748b'}}>{lang==='en'?`Available on request — call ${CLINIQUE_TEL}`:lang==='ht'?`Disponib sou demann — rele ${CLINIQUE_TEL}`:lang==='es'?`Disponible bajo solicitud — llame al ${CLINIQUE_TEL}`:`Disponible sur demande — appelez le ${CLINIQUE_TEL}`}</p>
                   </div>
                 ) : (
                   <div style={{display:'flex',flexDirection:'column',gap:12}}>
@@ -227,7 +253,7 @@ function PageCliniqueExterne() {
                             {info.email&&<a href={`mailto:${info.email}`} style={{color:'#94a3b8',fontSize:11,display:'block',marginTop:3,textDecoration:'none'}}>✉️ {info.email}</a>}
                           </div>
                           <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
-                            <Link href={`/specialites?specialite=${encodeURIComponent(info.specialite||nom)}`} style={{background:'#f0fdf4',color:'#0d9488',textDecoration:'none',borderRadius:8,padding:'5px 10px',fontWeight:600,fontSize:11}}>👤 Profil</Link>
+                            <Link href={`/specialites?specialite=${encodeURIComponent(info.specialite||nom)}`} style={{background:'#f0fdf4',color:'#0d9488',textDecoration:'none',borderRadius:8,padding:'5px 10px',fontWeight:600,fontSize:11}}>{lang==='en'?'👤 Profile':lang==='ht'?'👤 Pwofil':lang==='es'?'👤 Perfil':'👤 Profil'}</Link>
                             <Link href="/consultation" style={{background:'#eff6ff',color:'#1641C8',textDecoration:'none',borderRadius:8,padding:'5px 10px',fontWeight:700,fontSize:11}}>RDV</Link>
                           </div>
                         </div>
@@ -250,6 +276,7 @@ function PageCliniqueExterne() {
 // LABORATOIRE
 // ══════════════════════════════════════════════════════════════════════════
 function PageLaboratoire() {
+  const { lang } = useLang()
   // Fetch real exam list from backend - fallback to static list
   const [examensFromDB, setExamensFromDB] = useState<{titre:string;desc:string}[]>([])
   useEffect(() => {
@@ -328,7 +355,10 @@ function PageLaboratoire() {
     <div style={{minHeight:'100vh',background:'#f8fafc'}}>
       <Navbar variant="public"/>
       <Hero titre="Laboratoire" icon="🔬" gradient="linear-gradient(135deg,#0f1e3d,#16a34a)"
-        desc={`${allExamens.length > 42 ? allExamens.length : 165}+ analyses biologiques disponibles · Lun–Sam 07h–17h · Dim 07h–15h · Prélèvement sans RDV`}/>
+        desc={lang==='en' ? `${allExamens.length > 42 ? allExamens.length : 165}+ biological analyses · Mon–Sat 7am–5pm · Sun 7am–3pm · Walk-in sampling` :
+             lang==='ht' ? `${allExamens.length > 42 ? allExamens.length : 165}+ analiz byolojik · Lun–Sam 07h–17h · Dim 07h–15h · San randevou` :
+             lang==='es' ? `${allExamens.length > 42 ? allExamens.length : 165}+ análisis biológicos · Lun–Sáb 07h–17h · Dom 07h–15h · Sin cita previa` :
+             `${allExamens.length > 42 ? allExamens.length : 165}+ analyses biologiques disponibles · Lun–Sam 07h–17h · Dim 07h–15h · Prélèvement sans RDV`}/>
       <div style={{maxWidth:1000,margin:'0 auto',padding:'36px 20px'}}>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:24}}>
           <div>
@@ -371,6 +401,7 @@ function PageLaboratoire() {
 // PHARMACIE
 // ══════════════════════════════════════════════════════════════════════════
 function PagePharmacie() {
+  const { lang } = useLang()
   const [medsFromDB, setMedsFromDB] = useState<typeof MEDICAMENTS>([])
   useEffect(() => {
     fetch('https://clinique-rebecca-api.onrender.com/api/pharmacie/medicaments')
