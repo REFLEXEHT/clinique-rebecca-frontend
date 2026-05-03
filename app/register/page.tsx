@@ -87,7 +87,7 @@ export default function RegisterPage() {
       return '🌐 Pas de connexion internet. Vérifiez votre connexion et réessayez.'
     }
     if (status === 500) {
-      return '🔧 Erreur serveur. Notre équipe technique a été notifiée. Réessayez dans quelques minutes.'
+      return '🔧 Erreur serveur (500). Vérifiez votre connexion et réessayez dans quelques instants.'
     }
     if (status === 503 || !status) {
       return '⏳ Le serveur est temporairement indisponible. Réessayez dans quelques instants.'
