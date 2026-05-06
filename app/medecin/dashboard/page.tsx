@@ -8,12 +8,13 @@ import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { rdvApi, actesApi, api, aiApi } from '@/lib/api'
 import SignaturePad from '@/components/ui/SignaturePad'
+import VerificationPaiement from '@/components/ui/VerificationPaiement'
 import { RendezVous } from '@/types'
 import { LogOut, Edit2, Save, X, Calendar, Clock, User, FileText, Star, ChevronRight, Video, ExternalLink } from 'lucide-react'
 
 // ─── Types locaux ────────────────────────────────────────────────────────────
 type TypeActe = 'consultation' | 'geste' | 'observation' | 'hospitalisation' | 'chirurgie'
-type Onglet   = 'file-attente' | 'tableau' | 'rdv' | 'consultations' | 'profil' | 'demande-acces'
+type Onglet   = 'file-attente' | 'tableau' | 'rdv' | 'consultations' | 'profil' | 'demande-acces' | 'paiement'
 
 interface ActeLocal {
   id: number
@@ -258,6 +259,7 @@ export default function MedecinDashboard() {
             { key: 'consultations', icon: 'fa-file-medical',   label: 'Mes consultations' },
             { key: 'profil',        icon: 'fa-id-card',        label: 'Mon profil' },
             { key: 'demande-acces', icon: 'fa-key',             label: 'Accès dossier' },
+            { key: 'paiement',      icon: 'fa-credit-card',    label: 'Vérif. paiement' },
           ] as const).map(t => (
             <button key={t.key} onClick={() => setOnglet(t.key)} style={{
               display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px',
@@ -881,6 +883,16 @@ export default function MedecinDashboard() {
           <DemandeAccesSection />
         )}
 
+        {/* ── VÉRIFICATION PAIEMENT ──────────────────────────────── */}
+        {onglet === 'paiement' && (
+          <div style={{ maxWidth: 600, padding: '0 0 24px' }}>
+            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginBottom: 16 }}>
+              Vérifiez si un patient a réglé son paiement à la caisse avant ou après la consultation.
+            </p>
+            <VerificationPaiement />
+          </div>
+        )}
+
     </div>
   )
 }
@@ -952,8 +964,8 @@ function DemandeAccesSection() {
             ))}
           </div>
         </div>
-      )}
-    </div>
+        )}
+      </div>
   )
 }
 

@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { api } from '@/lib/api'
+import VerificationPaiement from '@/components/ui/VerificationPaiement'
 import { LogOut, Search, Activity, Clock, AlertTriangle, CheckCircle, Printer } from 'lucide-react'
 
 interface Dossier {
@@ -22,7 +23,7 @@ export default function InfirmierDashboard() {
   const [submitting, setSubmitting] = useState(false)
   // Search by patient ID
   const [searchId,   setSearchId]   = useState('')
-  const [onglet,     setOnglet]     = useState<'queue'|'attente'|'alertes'|'recherche'>('queue')
+  const [onglet,     setOnglet]     = useState<'queue'|'attente'|'alertes'|'recherche'|'paiement'>('queue')
   const [queue,      setQueue]      = useState<any[]>([])
   const [alertesPrescriptions, setAlertesPrescriptions] = useState<any[]>([])
   const [selectedRdv, setSelectedRdv] = useState<any>(null)
@@ -131,6 +132,7 @@ export default function InfirmierDashboard() {
               {k:'attente' as const, label:'Dossiers', icon:'⏳'},
               {k:'alertes' as const, label:`Alertes (${alertesPrescriptions.length})`, icon:'🔔'},
               {k:'recherche' as const, label:'Recherche', icon:'🔍'},
+              {k:'paiement' as const, label:'Vérif. paiement', icon:'💳'},
             ] as const).map(t => (
               <button key={t.k} onClick={() => setOnglet(t.k)} style={{
                 padding:'8px 12px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:600,
@@ -258,6 +260,16 @@ export default function InfirmierDashboard() {
         {/* ── ONGLET RECHERCHE PAR ID ────────────────────────────────── */}
         {onglet === 'recherche' && (
           <SearchByIdPanel />
+        )}
+
+        {/* ── ONGLET VÉRIFICATION PAIEMENT ──────────────────────────── */}
+        {onglet === 'paiement' && (
+          <div style={{maxWidth:600}}>
+            <p style={{color:'#64748b',fontSize:13,marginBottom:16}}>
+              Entrez le ticket, le numéro #RB-XXXX, le téléphone ou le nom du patient pour vérifier si son paiement a été reçu à la caisse aujourd'hui.
+            </p>
+            <VerificationPaiement />
+          </div>
         )}
 
         {/* ── ONGLET FILE D'ATTENTE + SIGNES VITAUX ─────────────────── */}
