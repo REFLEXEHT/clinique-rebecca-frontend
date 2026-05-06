@@ -254,7 +254,12 @@ export default function AdminTarifs() {
                   </div>
                 </td>
                 <td style={{ padding:'10px 14px', textAlign:'right', fontFamily:'monospace', whiteSpace:'nowrap' as const }}>
-                  {g.prix_usd_min ? (
+                  {g.prix_usd_bareme === 0 && g.prix_htg_ref ? (
+                    <div>
+                      <div style={{ color:'#d97706', fontWeight: 700 }}>{g.prix_htg_ref.toLocaleString('fr-FR')} HTG</div>
+                      <div style={{ color:'#94a3b8', fontSize: 10 }}>barème HTG — USD à définir</div>
+                    </div>
+                  ) : g.prix_usd_min ? (
                     <span style={{ color:'#64748b' }}>${g.prix_usd_min} – ${g.prix_usd_max || g.prix_usd_bareme}</span>
                   ) : (
                     <span style={{ fontWeight: 700, color:'#0f172a' }}>${g.prix_usd_bareme}</span>
@@ -279,8 +284,17 @@ export default function AdminTarifs() {
                     </span>
                   )}
                 </td>
-                <td style={{ padding:'10px 14px', textAlign:'right', fontFamily:'monospace', color:'#0d9488', fontWeight: 700, whiteSpace:'nowrap' as const }}>
-                  {Math.round(g.prix_usd * taux_htg).toLocaleString('fr-FR')} HTG
+                <td style={{ padding:'10px 14px', textAlign:'right', fontFamily:'monospace', whiteSpace:'nowrap' as const }}>
+                  {g.prix_usd > 0 ? (
+                    <span style={{ color:'#0d9488', fontWeight: 700 }}>
+                      {Math.round((g.prix_clinique_usd || g.prix_usd) * taux_htg).toLocaleString('fr-FR')} HTG
+                    </span>
+                  ) : g.prix_htg_ref ? (
+                    <span style={{ color:'#d97706', fontWeight: 700 }}>
+                      {g.prix_htg_ref.toLocaleString('fr-FR')} HTG
+                      <span style={{ color:'#94a3b8', fontSize: 10, marginLeft: 4 }}>(ref.)</span>
+                    </span>
+                  ) : <span style={{ color:'#94a3b8' }}>—</span>}
                 </td>
                 <td style={{ padding:'10px 14px', textAlign:'center' }}>
                   {g.source_bareme && (
