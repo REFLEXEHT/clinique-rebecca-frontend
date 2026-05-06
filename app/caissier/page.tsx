@@ -154,7 +154,9 @@ export default function CaissierPage() {
   })
   const [formNouv, setFormNouv] = useState({
     nom:'', prenom:'', age:'', adresse:'', telephone:'', email:'',
-    contact_urgence:'', type_visite:'premiere' as 'premiere'|'rdv'
+    contact_urgence:'', type_visite:'premiere' as 'premiere'|'rdv',
+    service: SERVICES_TARIFS[0].nom, montant: SERVICES_TARIFS[0].prix,
+    mode_paiement: 'especes', priorite: 'normal'
   })
   const [registre,   setRegistre] = useState<any[]>([])
 
@@ -253,15 +255,48 @@ export default function CaissierPage() {
     } catch (e: any) { toast.error(e?.response?.data?.detail||'Erreur') }
   }
 
-  const creerPatient = async () => {
+  const [queueResult, setQueueResult] = useState<any>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<any[]>([])
+
+  const enregistrerVisite = async () => {
     if (!formNouv.nom || !formNouv.prenom) { toast.error('Nom et prénom requis'); return }
+    if (!formNouv.telephone) { toast.error('Téléphone requis'); return }
     try {
-      const r = await api.post('/caissier/nouveau-patient', {...formNouv, is_premiere_visite: formNouv.type_visite==='premiere'})
-      setPatient(r.data.patient)
-      toast.success(`Patient créé — ID: ${r.data.patient?.numero}`)
-      setOnglet('paiement')
+      const r = await api.post('/caissier/enregistrer-visite', {
+        ...formNouv,
+        service: formNouv.service,
+        montant: formNouv.montant,
+        mode_paiement: formNouv.mode_paiement,
+        priorite: formNouv.priorite,
+      })
+      setQueueResult(r.data)
+      toast.success(`✓ Patient ${r.data.patient?.numero} — Ticket #${r.data.ticket} envoyé à l'infirmière`)
+      setFormNouv({ nom:'', prenom:'', age:'', adresse:'', telephone:'', email:'',
+        contact_urgence:'', type_visite:'premiere', service: SERVICES_TARIFS[0].nom,
+        montant: SERVICES_TARIFS[0].prix, mode_paiement:'especes', priorite:'normal' })
     } catch (e: any) { toast.error(e?.response?.data?.detail||'Erreur') }
   }
+
+  const retrouverDernierPatient = async () => {
+    try {
+      const r = await api.get('/caissier/dernier-patient')
+      if (r.data.patient) {
+        setQueueResult({ patient: r.data.patient, ticket: '—', service: '—', montant: 0 })
+        toast.success(`Dernier patient: ${r.data.patient.prenom} ${r.data.patient.nom} — ${r.data.patient.numero}`)
+      } else toast("Aucun patient enregistré aujourd'hui")
+    } catch { toast.error('Erreur') }
+  }
+
+  const rechercherPatient = async () => {
+    if (searchQuery.length < 2) return
+    try {
+      const r = await api.get(`/caissier/recherche-patient?q=${encodeURIComponent(searchQuery)}`)
+      setSearchResults(r.data.patients || [])
+    } catch { toast.error('Erreur recherche') }
+  }
+
+  const creerPatient = enregistrerVisite
 
   const genererRapport = async () => {
     setLoadRapport(true)
@@ -583,46 +618,140 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
 
         {/* ── NOUVEAU PATIENT ────────────────────────────────────── */}
         {onglet==='nouveau' && (
-          <div style={{background:'white',borderRadius:16,padding:24,border:'1px solid #e2e8f0',maxWidth:700}}>
-            <h2 style={{fontWeight:800,fontSize:'1.1rem',color:'#0f172a',marginBottom:6}}>👤 Créer un nouveau dossier patient</h2>
-            <p style={{color:'#64748b',fontSize:13,marginBottom:20}}>Un ID unique (#RB-XXXX) sera attribué automatiquement.</p>
-            <div style={{display:'flex',gap:10,marginBottom:20}}>
-              {[{k:'premiere',l:'🆕 1ère consultation'},{k:'rdv',l:'📅 Rendez-vous'}].map(t=>(
-                <button key={t.k} type="button" onClick={()=>setFormNouv(p=>({...p,type_visite:t.k as any}))} style={{
-                  flex:1,padding:'11px',borderRadius:10,border:`2px solid ${formNouv.type_visite===t.k?'#1641C8':'#e2e8f0'}`,
-                  background:formNouv.type_visite===t.k?'#eff6ff':'white',fontWeight:700,fontSize:13,cursor:'pointer',
-                  color:formNouv.type_visite===t.k?'#1641C8':'#64748b'
-                }}>{t.l}</button>
-              ))}
-            </div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-              {[
-                {k:'prenom',l:'Prénom *',ph:'Jean'},
-                {k:'nom',l:'NOM *',ph:'PIERRE'},
-                {k:'age',l:'Âge',ph:'35 ans'},
-                {k:'telephone',l:'Téléphone *',ph:'+509 3890-1234'},
-                {k:'adresse',l:'Adresse',ph:'Pétion-Ville'},
-                {k:'email',l:'Email',ph:'jean@email.com'},
-              ].map(f=>(
-                <div key={f.k}>
-                  <label style={{display:'block',fontWeight:600,fontSize:13,color:'#374151',marginBottom:5}}>{f.l}</label>
-                  <input value={(formNouv as any)[f.k]} onChange={e=>setFormNouv(p=>({...p,[f.k]:e.target.value}))}
-                    placeholder={f.ph}
-                    style={{width:'100%',padding:'10px 12px',borderRadius:8,border:'1px solid #d1d5db',fontSize:14,boxSizing:'border-box' as const}}/>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20,alignItems:'start'}}>
+            {/* Formulaire */}
+            <div style={{background:'white',borderRadius:16,padding:24,border:'1px solid #e2e8f0'}}>
+              <h2 style={{fontWeight:800,fontSize:'1.05rem',color:'#0f172a',marginBottom:4}}>👤 Enregistrer un patient</h2>
+              <p style={{color:'#64748b',fontSize:12,marginBottom:16}}>ID (#RB-XXXX) attribué automatiquement. Le ticket est envoyé à l'infirmière.</p>
+
+              {/* Urgence */}
+              <div style={{display:'flex',gap:8,marginBottom:14}}>
+                {[{k:'normal',l:'Normal',c:'#1641C8'},{k:'urgent',l:'🚨 Urgent',c:'#dc2626'}].map(p=>(
+                  <button key={p.k} type="button" onClick={()=>setFormNouv(f=>({...f,priorite:p.k}))} style={{
+                    flex:1,padding:'8px',borderRadius:8,border:`2px solid ${formNouv.priorite===p.k?p.c:'#e2e8f0'}`,
+                    background:formNouv.priorite===p.k?`${p.c}15`:'white',fontWeight:700,fontSize:13,cursor:'pointer',color:formNouv.priorite===p.k?p.c:'#94a3b8'
+                  }}>{p.l}</button>
+                ))}
+              </div>
+
+              {/* Infos patient */}
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:14}}>
+                {[
+                  {k:'prenom',l:'Prénom *',ph:'Jean'},
+                  {k:'nom',l:'NOM *',ph:'PIERRE'},
+                  {k:'telephone',l:'Téléphone *',ph:'36186469'},
+                  {k:'age',l:'Âge',ph:'35'},
+                  {k:'adresse',l:'Adresse',ph:'Pétion-Ville'},
+                  {k:'email',l:'Email',ph:'jean@email.com'},
+                ].map(f=>(
+                  <div key={f.k}>
+                    <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:4}}>{f.l}</label>
+                    <input value={(formNouv as any)[f.k]} onChange={e=>setFormNouv(p=>({...p,[f.k]:e.target.value}))}
+                      placeholder={f.ph}
+                      style={{width:'100%',padding:'9px 11px',borderRadius:8,border:'1px solid #d1d5db',fontSize:13,boxSizing:'border-box' as const}}/>
+                  </div>
+                ))}
+                <div style={{gridColumn:'1/-1'}}>
+                  <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:4}}>Urgence — personne à contacter</label>
+                  <input value={formNouv.contact_urgence} onChange={e=>setFormNouv(p=>({...p,contact_urgence:e.target.value}))}
+                    placeholder="Nom — Téléphone" style={{width:'100%',padding:'9px 11px',borderRadius:8,border:'1px solid #d1d5db',fontSize:13,boxSizing:'border-box' as const}}/>
                 </div>
-              ))}
-              <div style={{gridColumn:'1/-1'}}>
-                <label style={{display:'block',fontWeight:600,fontSize:13,color:'#374151',marginBottom:5}}>Personne à contacter en urgence</label>
-                <input value={formNouv.contact_urgence} onChange={e=>setFormNouv(p=>({...p,contact_urgence:e.target.value}))}
-                  placeholder="Nom — Téléphone"
-                  style={{width:'100%',padding:'10px 12px',borderRadius:8,border:'1px solid #d1d5db',fontSize:14,boxSizing:'border-box' as const}}/>
+              </div>
+
+              {/* Service */}
+              <div style={{marginBottom:10}}>
+                <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:4}}>Service *</label>
+                <select value={formNouv.service} onChange={e=>{
+                  const t=SERVICES_TARIFS.find(x=>x.nom===e.target.value)
+                  setFormNouv(p=>({...p,service:e.target.value,montant:t?.prix||0}))
+                }} style={{width:'100%',padding:'9px 11px',borderRadius:8,border:'1px solid #d1d5db',fontSize:13,background:'white'}}>
+                  {['Clinique Externe','Dentisterie','Physiothérapie','Optométrie','Laboratoire','Pharmacie','Observation','Hospitalisation','Maternité','SOP','Gestes'].map(cat => (
+                    <optgroup key={cat} label={cat}>
+                      {SERVICES_TARIFS.filter(s=>s.cat===cat).map(s=>(
+                        <option key={s.nom} value={s.nom}>{s.nom} {s.prix>0?`(${s.prix.toLocaleString()} HTG)`:''}</option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+
+              {/* Montant */}
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
+                <div>
+                  <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:4}}>Montant (HTG)</label>
+                  <input type="number" value={formNouv.montant||''} onChange={e=>setFormNouv(p=>({...p,montant:parseInt(e.target.value)||0}))}
+                    style={{width:'100%',padding:'9px 11px',borderRadius:8,border:'1px solid #d1d5db',fontSize:14,fontWeight:700,boxSizing:'border-box' as const}}/>
+                </div>
+                <div>
+                  <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:4}}>Mode paiement</label>
+                  <select value={formNouv.mode_paiement} onChange={e=>setFormNouv(p=>({...p,mode_paiement:e.target.value}))}
+                    style={{width:'100%',padding:'9px 11px',borderRadius:8,border:'1px solid #d1d5db',fontSize:13,background:'white'}}>
+                    {['especes','moncash','natcash','carte'].map(m=><option key={m} value={m}>{m}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <button onClick={enregistrerVisite} disabled={!formNouv.nom||!formNouv.prenom||!formNouv.telephone} style={{
+                width:'100%',background:'linear-gradient(135deg,#1641C8,#0d9488)',
+                color:'white',border:'none',borderRadius:12,padding:'13px',fontWeight:700,cursor:'pointer',fontSize:14,
+                opacity:(!formNouv.nom||!formNouv.prenom||!formNouv.telephone)?0.5:1,marginTop:4
+              }}>✓ Enregistrer &amp; Envoyer à l'infirmière</button>
+
+              <div style={{marginTop:10,textAlign:'center'}}>
+                <button onClick={retrouverDernierPatient} style={{background:'none',border:'none',color:'#94a3b8',fontSize:12,cursor:'pointer',textDecoration:'underline'}}>
+                  Retrouver le dernier patient enregistré
+                </button>
               </div>
             </div>
-            <button onClick={creerPatient} disabled={!formNouv.nom||!formNouv.prenom} style={{
-              marginTop:20,width:'100%',background:'linear-gradient(135deg,#1641C8,#0d9488)',
-              color:'white',border:'none',borderRadius:12,padding:'13px',fontWeight:700,cursor:'pointer',fontSize:15,
-              opacity:(!formNouv.nom||!formNouv.prenom)?0.5:1
-            }}>✓ Créer le dossier patient</button>
+
+            {/* Résultat + recherche */}
+            <div style={{display:'flex',flexDirection:'column',gap:16}}>
+              {/* Ticket généré */}
+              {queueResult && (
+                <div style={{background:'linear-gradient(135deg,#0f172a,#1641C8)',borderRadius:16,padding:24,color:'white'}}>
+                  <div style={{fontSize:11,opacity:0.6,marginBottom:4,textTransform:'uppercase',letterSpacing:1}}>Ticket patient</div>
+                  <div style={{fontSize:32,fontWeight:900,fontFamily:'monospace',letterSpacing:2,marginBottom:8}}>
+                    #{queueResult.ticket}
+                  </div>
+                  <div style={{fontSize:20,fontWeight:800,marginBottom:2}}>{queueResult.patient?.numero}</div>
+                  <div style={{fontSize:15,opacity:0.8,marginBottom:12}}>{queueResult.patient?.nom}</div>
+                  <div style={{background:'rgba(255,255,255,0.1)',borderRadius:8,padding:'8px 12px',fontSize:13}}>
+                    <div>📋 Service: <strong>{queueResult.service}</strong></div>
+                    {queueResult.montant>0 && <div>💰 Payé: <strong>{queueResult.montant?.toLocaleString()} HTG</strong></div>}
+                  </div>
+                  <div style={{marginTop:12,fontSize:12,opacity:0.6}}>
+                    ✅ Ticket envoyé à l'infirmière · Signes vitaux en cours
+                  </div>
+                </div>
+              )}
+
+              {/* Recherche patient */}
+              <div style={{background:'white',borderRadius:16,padding:20,border:'1px solid #e2e8f0'}}>
+                <h3 style={{fontWeight:700,fontSize:13,margin:'0 0 12px',color:'#374151'}}>🔍 Rechercher un patient existant</h3>
+                <div style={{display:'flex',gap:8,marginBottom:12}}>
+                  <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}
+                    onKeyDown={e=>e.key==='Enter'&&rechercherPatient()}
+                    placeholder="Nom, téléphone ou #RB-XXXX"
+                    style={{flex:1,padding:'9px 12px',borderRadius:8,border:'1px solid #d1d5db',fontSize:13}}/>
+                  <button onClick={rechercherPatient} style={{background:'#1641C8',color:'white',border:'none',borderRadius:8,padding:'9px 14px',fontWeight:700,cursor:'pointer',fontSize:13}}>
+                    Chercher
+                  </button>
+                </div>
+                {searchResults.map((p:any)=>(
+                  <div key={p.id} style={{display:'flex',justifyContent:'space-between',padding:'8px 10px',borderRadius:8,background:'#f8fafc',marginBottom:6,fontSize:13,cursor:'pointer'}}
+                    onClick={()=>{setPatient(p);setOnglet('paiement');toast.success(`Patient sélectionné: ${p.nom}`)}}>
+                    <div>
+                      <div style={{fontWeight:700}}>{p.prenom} {p.nom}</div>
+                      <div style={{color:'#64748b',fontSize:12}}>{p.telephone}</div>
+                    </div>
+                    <div style={{fontFamily:'monospace',color:'#1641C8',fontWeight:700,alignSelf:'center'}}>{p.numero}</div>
+                  </div>
+                ))}
+                {searchResults.length===0 && searchQuery.length>1 && (
+                  <p style={{color:'#94a3b8',fontSize:12,textAlign:'center'}}>Aucun résultat</p>
+                )}
+              </div>
+            </div>
           </div>
         )}
 

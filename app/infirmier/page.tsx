@@ -22,7 +22,11 @@ export default function InfirmierDashboard() {
   const [submitting, setSubmitting] = useState(false)
   // Search by patient ID
   const [searchId,   setSearchId]   = useState('')
-  const [onglet,     setOnglet]     = useState<'attente'|'recherche'>('attente')
+  const [onglet,     setOnglet]     = useState<'queue'|'attente'|'alertes'|'recherche'>('queue')
+  const [queue,      setQueue]      = useState<any[]>([])
+  const [alertesPrescriptions, setAlertesPrescriptions] = useState<any[]>([])
+  const [selectedRdv, setSelectedRdv] = useState<any>(null)
+  const [svRdv,      setSvRdv]      = useState({tension:'',pouls:'',temperature:'',poids:'',spo2:''})
 
   useEffect(() => {
     if (!loading && (!isAuthenticated || !['infirmier','admin'].includes(user?.role || ''))) {
@@ -32,9 +36,15 @@ export default function InfirmierDashboard() {
 
   useEffect(() => {
     if (!isAuthenticated) return
-    api.get('/infirmier/dossiers-en-attente')
-      .then(r => setDossiers(r.data || []))
-      .catch(() => {})
+    api.get('/infirmier/dossiers-en-attente').then(r => setDossiers(r.data || [])).catch(() => {})
+    api.get('/infirmier/queue').then(r => setQueue(r.data?.patients || [])).catch(() => {})
+    api.get('/infirmier/alertes-prescriptions').then(r => setAlertesPrescriptions(r.data?.alertes || [])).catch(() => {})
+    // Rafraîchir la queue toutes les 30 secondes
+    const interval = setInterval(() => {
+      api.get('/infirmier/queue').then(r => setQueue(r.data?.patients || [])).catch(() => {})
+      api.get('/infirmier/alertes-prescriptions').then(r => setAlertesPrescriptions(r.data?.alertes || [])).catch(() => {})
+    }, 30000)
+    return () => clearInterval(interval)
   }, [isAuthenticated])
 
   const detectAlertes = (vals: Record<string, string>) => {
@@ -116,9 +126,14 @@ export default function InfirmierDashboard() {
           </div>
           {/* Onglets */}
           <div style={{ display:'flex', background:'#f1f5f9', borderRadius:10, padding:3, gap:2 }}>
-            {[{k:'attente' as const, label:'File d\'attente', icon:'⏳'},{k:'recherche' as const, label:'Recherche patient', icon:'🔍'}].map(t => (
+            {([
+              {k:'queue' as const, label:`Queue (${queue.length})`, icon:'🏥'},
+              {k:'attente' as const, label:'Dossiers', icon:'⏳'},
+              {k:'alertes' as const, label:`Alertes (${alertesPrescriptions.length})`, icon:'🔔'},
+              {k:'recherche' as const, label:'Recherche', icon:'🔍'},
+            ] as const).map(t => (
               <button key={t.k} onClick={() => setOnglet(t.k)} style={{
-                padding:'8px 14px', borderRadius:8, border:'none', cursor:'pointer', fontSize:13, fontWeight:600,
+                padding:'8px 12px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:600,
                 background: onglet === t.k ? 'white' : 'transparent',
                 color: onglet === t.k ? '#0f172a' : '#64748b',
                 boxShadow: onglet === t.k ? '0 1px 4px rgba(0,0,0,0.1)' : 'none'
@@ -126,6 +141,119 @@ export default function InfirmierDashboard() {
             ))}
           </div>
         </div>
+
+        {/* ── ONGLET QUEUE CAISSE (temps réel) ─────────────────────── */}
+        {onglet === 'queue' && (
+          <div>
+            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+              <div style={{fontSize:13,color:'#64748b'}}>{queue.length} patient(s) en attente · Actualisation auto 30s</div>
+              <button onClick={()=>api.get('/infirmier/queue').then(r=>setQueue(r.data?.patients||[]))}
+                style={{background:'#0d9488',color:'white',border:'none',borderRadius:8,padding:'7px 14px',fontWeight:700,cursor:'pointer',fontSize:13}}>
+                🔄 Actualiser
+              </button>
+            </div>
+            {queue.length === 0 ? (
+              <div style={{background:'white',borderRadius:16,padding:40,textAlign:'center',border:'1px solid #e2e8f0'}}>
+                <div style={{fontSize:40,marginBottom:12}}>✅</div>
+                <div style={{fontWeight:700,color:'#16a34a',fontSize:15}}>Aucun patient en attente</div>
+                <div style={{color:'#64748b',fontSize:13,marginTop:4}}>La caisse n'a pas encore enregistré de patients aujourd'hui</div>
+              </div>
+            ) : (
+              <div style={{display:'flex',flexDirection:'column',gap:12}}>
+                {queue.map((p:any)=>(
+                  <div key={p.rdv_id} style={{background:'white',borderRadius:14,padding:16,border:`2px solid ${p.priorite==='urgent'?'#ef4444':'#e2e8f0'}`,display:'flex',justifyContent:'space-between',alignItems:'center',gap:16}}>
+                    <div style={{display:'flex',alignItems:'center',gap:14}}>
+                      <div style={{background:p.priorite==='urgent'?'#fef2f2':'#f0fdfa',borderRadius:10,padding:'8px 12px',textAlign:'center',minWidth:64}}>
+                        <div style={{fontFamily:'monospace',fontWeight:900,fontSize:16,color:p.priorite==='urgent'?'#dc2626':'#0d9488'}}>#{p.ticket}</div>
+                        <div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>{p.priorite==='urgent'?'🚨 URGENT':'Normal'}</div>
+                      </div>
+                      <div>
+                        <div style={{fontWeight:700,fontSize:15}}>{p.patient_nom}</div>
+                        <div style={{color:'#0d9488',fontSize:13,fontWeight:600}}>{p.service}</div>
+                        <div style={{color:'#94a3b8',fontSize:12}}>{p.patient_telephone} · {new Date(p.heure).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
+                      </div>
+                    </div>
+                    <button onClick={()=>setSelectedRdv(p)} style={{background:'linear-gradient(135deg,#0d9488,#0f766e)',color:'white',border:'none',borderRadius:10,padding:'9px 18px',fontWeight:700,cursor:'pointer',fontSize:13,flexShrink:0}}>
+                      ➜ Signes vitaux
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Modal signes vitaux via queue */}
+            {selectedRdv && (
+              <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.5)',zIndex:100,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
+                <div style={{background:'white',borderRadius:16,padding:24,width:'100%',maxWidth:500}}>
+                  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+                    <div>
+                      <div style={{fontWeight:800,fontSize:15}}>Signes vitaux — {selectedRdv.patient_nom}</div>
+                      <div style={{color:'#0d9488',fontSize:13}}>#{selectedRdv.ticket} · {selectedRdv.service}</div>
+                    </div>
+                    <button onClick={()=>setSelectedRdv(null)} style={{background:'#f1f5f9',border:'none',borderRadius:8,padding:'6px 12px',cursor:'pointer'}}>✕</button>
+                  </div>
+                  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:16}}>
+                    {[
+                      {k:'tension',l:'Tension (mmHg)',ph:'120/80'},
+                      {k:'pouls',l:'Pouls (bpm)',ph:'72'},
+                      {k:'temperature',l:'Température (°C)',ph:'37.0'},
+                      {k:'poids',l:'Poids (kg)',ph:'70'},
+                      {k:'spo2',l:'SpO2 (%)',ph:'98'},
+                    ].map(f=>(
+                      <div key={f.k} style={f.k==='tension'?{gridColumn:'1/-1'}:{}}>
+                        <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:4}}>{f.l}</label>
+                        <input placeholder={f.ph} value={(svRdv as any)[f.k]}
+                          onChange={e=>setSvRdv(p=>({...p,[f.k]:e.target.value}))}
+                          style={{width:'100%',padding:'8px 10px',borderRadius:8,border:'1px solid #d1d5db',fontSize:13,boxSizing:'border-box' as const}}/>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={async()=>{
+                    try {
+                      await api.put(`/infirmier/signes-vitaux/${selectedRdv.rdv_id}`, svRdv)
+                      toast.success(`✓ Signes vitaux enregistrés — ${selectedRdv.patient_nom} envoyé au médecin`)
+                      setQueue(q=>q.filter((x:any)=>x.rdv_id!==selectedRdv.rdv_id))
+                      setSelectedRdv(null); setSvRdv({tension:'',pouls:'',temperature:'',poids:'',spo2:''})
+                    } catch(e:any){toast.error(e?.response?.data?.detail||'Erreur')}
+                  }} style={{width:'100%',background:'linear-gradient(135deg,#0d9488,#0f766e)',color:'white',border:'none',borderRadius:12,padding:'12px',fontWeight:700,cursor:'pointer',fontSize:14}}>
+                    ✓ Enregistrer &amp; Envoyer au médecin
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── ONGLET ALERTES PRESCRIPTIONS ─────────────────────────── */}
+        {onglet === 'alertes' && (
+          <div>
+            <div style={{marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+              <div style={{fontSize:13,color:'#64748b'}}>{alertesPrescriptions.length} prescription(s) à suivre (dernières 4h)</div>
+              <button onClick={()=>api.get('/infirmier/alertes-prescriptions').then(r=>setAlertesPrescriptions(r.data?.alertes||[]))}
+                style={{background:'#d97706',color:'white',border:'none',borderRadius:8,padding:'7px 14px',fontWeight:700,cursor:'pointer',fontSize:13}}>
+                🔄 Actualiser
+              </button>
+            </div>
+            {alertesPrescriptions.length===0 ? (
+              <div style={{background:'white',borderRadius:16,padding:40,textAlign:'center',border:'1px solid #e2e8f0'}}>
+                <div style={{fontSize:40,marginBottom:12}}>✅</div>
+                <div style={{fontWeight:700,color:'#16a34a'}}>Aucune alerte en cours</div>
+              </div>
+            ) : alertesPrescriptions.map((a:any,i:number)=>(
+              <div key={i} style={{background:'white',borderRadius:14,padding:16,border:`1px solid ${a.type==='labo'?'#3b82f6':'#a855f7'}`,marginBottom:12}}>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
+                  <span style={{background:a.type==='labo'?'#eff6ff':'#faf5ff',color:a.type==='labo'?'#1d4ed8':'#7e22ce',padding:'3px 10px',borderRadius:20,fontSize:12,fontWeight:700}}>
+                    {a.type==='labo'?'🔬 Laboratoire':'💊 Pharmacie'}
+                  </span>
+                  <span style={{color:'#94a3b8',fontSize:12}}>{new Date(a.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>
+                </div>
+                <div style={{fontWeight:600,fontSize:14,marginBottom:4}}>Dr {a.medecin_nom}</div>
+                <div style={{color:'#374151',fontSize:13}}>{a.medicaments}</div>
+                {a.examens_requis && <div style={{color:'#1d4ed8',fontSize:12,marginTop:4}}>Examens: {a.examens_requis}</div>}
+              </div>
+            ))}
+          </div>
+        )}
 
         {/* ── ONGLET RECHERCHE PAR ID ────────────────────────────────── */}
         {onglet === 'recherche' && (
