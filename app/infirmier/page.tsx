@@ -163,14 +163,27 @@ export default function InfirmierDashboard() {
             ) : (
               <div style={{display:'flex',flexDirection:'column',gap:12}}>
                 {queue.map((p:any)=>(
-                  <div key={p.rdv_id} style={{background:'white',borderRadius:14,padding:16,border:`2px solid ${p.priorite==='urgent'?'#ef4444':'#e2e8f0'}`,display:'flex',justifyContent:'space-between',alignItems:'center',gap:16}}>
+                  <div key={p.rdv_id} style={{background:'white',borderRadius:14,padding:16,border:`2px solid ${p.priorite==='urgent'?'#ef4444':'#e2e8f0'}`,display:'flex',justifyContent:'space-between',alignItems:'center',gap:16,flexWrap:'wrap' as const}}>
                     <div style={{display:'flex',alignItems:'center',gap:14}}>
-                      <div style={{background:p.priorite==='urgent'?'#fef2f2':'#f0fdfa',borderRadius:10,padding:'8px 12px',textAlign:'center',minWidth:64}}>
+                      {/* Ticket */}
+                      <div style={{background:p.priorite==='urgent'?'#fef2f2':'#f0fdfa',borderRadius:10,padding:'8px 12px',textAlign:'center' as const,minWidth:64}}>
                         <div style={{fontFamily:'monospace',fontWeight:900,fontSize:16,color:p.priorite==='urgent'?'#dc2626':'#0d9488'}}>#{p.ticket}</div>
                         <div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>{p.priorite==='urgent'?'🚨 URGENT':'Normal'}</div>
                       </div>
                       <div>
-                        <div style={{fontWeight:700,fontSize:15}}>{p.patient_nom}</div>
+                        <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:2}}>
+                          <span style={{fontWeight:700,fontSize:15}}>{p.patient_nom}</span>
+                          {/* Badge statut paiement */}
+                          <span style={{
+                            background: `${p.couleur || '#dc2626'}18`,
+                            color: p.couleur || '#dc2626',
+                            border: `1px solid ${p.couleur || '#dc2626'}40`,
+                            borderRadius:20,padding:'2px 9px',fontSize:11,fontWeight:700,
+                            whiteSpace:'nowrap' as const
+                          }}>
+                            {p.libelle || '⚠️ Non payé'}
+                          </span>
+                        </div>
                         <div style={{color:'#0d9488',fontSize:13,fontWeight:600}}>{p.service}</div>
                         <div style={{color:'#94a3b8',fontSize:12}}>{p.patient_telephone} · {new Date(p.heure).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
                       </div>

@@ -295,7 +295,15 @@ export default function MedecinDashboard() {
               <h2 style={{ fontWeight:900, fontSize:'1.2rem', margin:0 }}>
                 🏥 Patients en attente de consultation
               </h2>
-              <button onClick={() => api.get('/medecin/file-attente').then(r => { setFileAttente(r.data||[]); setNbAttente((r.data||[]).length) })}
+              <button onClick={() => Promise.allSettled([
+                          api.get('/medecin/file-attente'),
+                          api.get('/medecin/queue-patients')
+                        ]).then(([r1, r2]) => {
+                          const fromQueue = r2.status==='fulfilled' ? (r2.value.data?.patients||[]) : []
+                          const fromFa = r1.status==='fulfilled' ? (r1.value.data||[]) : []
+                          const combined = [...fromQueue, ...fromFa.filter((f:any) => !fromQueue.find((q:any) => q.rdv_id === f.id))]
+                          setFileAttente(combined); setNbAttente(combined.length)
+                        })}
                 style={{ background:'none', border:'1px solid #e2e8f0', borderRadius:8, padding:'7px 14px', cursor:'pointer', fontWeight:600, fontSize:13, color:'#64748b' }}>
                 🔄 Actualiser
               </button>
@@ -309,29 +317,38 @@ export default function MedecinDashboard() {
             ) : (
               <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
                 {fileAttente.map((f: any, i: number) => (
-                  <div key={f.id} style={{
-                    background:'white', borderRadius:14, padding:18,
-                    border: f.priorite === 1 ? '2px solid #dc2626' : '1px solid #e2e8f0',
-                    display:'flex', alignItems:'center', gap:14
+                  <div key={f.id || f.rdv_id} style={{
+                    background:'white', borderRadius:14, padding:16,
+                    border: `2px solid ${f.priorite === 1 || f.priorite === 'urgent' ? '#ef4444' : '#e2e8f0'}`,
+                    display:'flex', alignItems:'center', gap:14, flexWrap:'wrap' as const
                   }}>
-                    {/* Numéro de position */}
-                    <div style={{ width:40, height:40, borderRadius:'50%', background: f.priorite===1?'#fef2f2':'#eff6ff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, fontSize:16, color: f.priorite===1?'#dc2626':'#1641C8', flexShrink:0 }}>
+                    {/* Numéro position */}
+                    <div style={{ width:40, height:40, borderRadius:'50%', background: (f.priorite===1||f.priorite==='urgent')?'#fef2f2':'#eff6ff', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:900, fontSize:16, color:(f.priorite===1||f.priorite==='urgent')?'#dc2626':'#1641C8', flexShrink:0 }}>
                       {i+1}
                     </div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ display:'flex', alignItems:'center', gap:8 }}>
-                        <span style={{ fontWeight:800, fontSize:15, color:'#0f172a' }}>{f.patient_numero}</span>
-                        {f.priorite === 1 && <span style={{ background:'#fef2f2', color:'#dc2626', borderRadius:50, padding:'2px 10px', fontSize:11, fontWeight:700 }}>🚨 URGENT</span>}
+                    <div style={{ flex:1, minWidth:200 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' as const, marginBottom:3 }}>
+                        <span style={{ fontWeight:800, fontSize:15, color:'#0f172a' }}>{f.patient_nom || f.patient_numero}</span>
+                        {(f.priorite===1||f.priorite==='urgent') && <span style={{ background:'#fef2f2', color:'#dc2626', borderRadius:50, padding:'2px 10px', fontSize:11, fontWeight:700 }}>🚨 URGENT</span>}
+                        {/* Badge statut paiement — vert/rouge/jaune */}
+                        <span style={{
+                          background: `${f.couleur||'#dc2626'}15`,
+                          color: f.couleur || '#dc2626',
+                          border: `1px solid ${f.couleur||'#dc2626'}40`,
+                          borderRadius:20, padding:'2px 10px', fontSize:11, fontWeight:700
+                        }}>
+                          {f.libelle || '⚠️ Non payé'}
+                        </span>
                       </div>
-                      <div style={{ fontSize:12, color:'#64748b', marginTop:3 }}>
-                        Entré à {f.heure_entree ? new Date(f.heure_entree).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}) : '—'}
+                      <div style={{ fontSize:12, color:'#64748b' }}>
+                        {f.service || ''} · Entré à {(f.heure_entree||f.heure) ? new Date(f.heure_entree||f.heure).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}) : '—'}
+                        {f.signes_vitaux?.resume && <span style={{ color:'#0d9488', marginLeft:8 }}>· SV enregistrés</span>}
                         {f.alerte_message && <span style={{ color:'#dc2626', marginLeft:8 }}>⚠️ {f.alerte_message}</span>}
                       </div>
                     </div>
                     <button
                       onClick={async () => {
                         try {
-                          // Open dossier directly from file d'attente
                           const r = await api.get(`/medecin/dossier/${f.dossier_id}`)
                           setSelected(r.data.dossier)
                           setDossierId(f.dossier_id)
@@ -340,8 +357,8 @@ export default function MedecinDashboard() {
                           toast.error(e?.response?.data?.detail || 'Erreur accès dossier')
                         }
                       }}
-                      style={{ background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', border:'none', borderRadius:10, padding:'10px 20px', fontWeight:700, cursor:'pointer', fontSize:14 }}>
-                      📋 Ouvrir dossier
+                      style={{ background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', border:'none', borderRadius:10, padding:'10px 18px', fontWeight:700, cursor:'pointer', fontSize:13 }}>
+                      📋 Dossier
                     </button>
                   </div>
                 ))}

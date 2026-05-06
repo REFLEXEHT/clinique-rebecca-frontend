@@ -176,6 +176,9 @@ export default function CaissierPage() {
       setTotalDepenses(r.data?.total||0)
     }).catch(()=>{})
     api.get('/registre-rdv?jours=30').then(r => setRegistre(r.data?.rdvs||[])).catch(()=>{})
+    api.get('/labo/tarifs').then(r => setTarifsLabo(r.data || [])).catch(() => {})
+    api.get('/dentiste/tarifs').then(r => setTarifsDentiste(r.data || [])).catch(() => {})
+    api.get('/pharmacie/stocks').then(r => setStocksPharmacie((r.data || []).filter((s:any) => s.quantite > 0))).catch(() => {})
   }, [isAuthenticated])
 
   const chercherPatientPaiement = async () => {
@@ -256,6 +259,27 @@ export default function CaissierPage() {
   }
 
   const [queueResult, setQueueResult] = useState<any>(null)
+  const [tarifsLabo, setTarifsLabo] = useState<any[]>([])
+  const [tarifsDentiste, setTarifsDentiste] = useState<any[]>([])
+  const [stocksPharmacie, setStocksPharmacie] = useState<any[]>([])
+  const [previewNumero, setPreviewNumero] = useState<string>('')
+
+  // Calcule le prochain #RB-XXXX en temps réel dès que nom+prénom sont saisis
+  useEffect(() => {
+    if (formNouv.nom && formNouv.prenom) {
+      api.get('/caissier/dernier-patient').then(r => {
+        const last = r.data?.patient?.numero
+        if (last) {
+          const n = parseInt(last.replace('#RB-', '')) + 1
+          setPreviewNumero(`#RB-${String(n).padStart(4, '0')}`)
+        } else {
+          setPreviewNumero('#RB-0001')
+        }
+      }).catch(() => {})
+    } else {
+      setPreviewNumero('')
+    }
+  }, [formNouv.nom, formNouv.prenom])
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
 
@@ -621,8 +645,18 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20,alignItems:'start'}}>
             {/* Formulaire */}
             <div style={{background:'white',borderRadius:16,padding:24,border:'1px solid #e2e8f0'}}>
-              <h2 style={{fontWeight:800,fontSize:'1.05rem',color:'#0f172a',marginBottom:4}}>👤 Enregistrer un patient</h2>
-              <p style={{color:'#64748b',fontSize:12,marginBottom:16}}>ID (#RB-XXXX) attribué automatiquement. Le ticket est envoyé à l'infirmière.</p>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16}}>
+                <div>
+                  <h2 style={{fontWeight:800,fontSize:'1.05rem',color:'#0f172a',margin:0}}>👤 Enregistrer un patient</h2>
+                  <p style={{color:'#64748b',fontSize:12,margin:'4px 0 0'}}>Le ticket est envoyé à l'infirmière automatiquement.</p>
+                </div>
+                {previewNumero && (
+                  <div style={{background:'linear-gradient(135deg,#0f172a,#1641C8)',borderRadius:10,padding:'8px 14px',textAlign:'center'}}>
+                    <div style={{color:'rgba(255,255,255,0.5)',fontSize:9,textTransform:'uppercase',letterSpacing:1}}>ID attribué</div>
+                    <div style={{color:'white',fontFamily:'monospace',fontWeight:900,fontSize:18,letterSpacing:1}}>{previewNumero}</div>
+                  </div>
+                )}
+              </div>
 
               {/* Urgence */}
               <div style={{display:'flex',gap:8,marginBottom:14}}>
@@ -658,20 +692,49 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                 </div>
               </div>
 
-              {/* Service */}
+              {/* Service dynamique depuis la base */}
               <div style={{marginBottom:10}}>
                 <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:4}}>Service *</label>
                 <select value={formNouv.service} onChange={e=>{
-                  const t=SERVICES_TARIFS.find(x=>x.nom===e.target.value)
-                  setFormNouv(p=>({...p,service:e.target.value,montant:t?.prix||0}))
+                  const t = SERVICES_TARIFS.find(x=>x.nom===e.target.value)
+                  const laboT = tarifsLabo.find((x:any) => x.libelle===e.target.value)
+                  const dentT = tarifsDentiste.find((x:any) => x.libelle===e.target.value)
+                  const pharmT = stocksPharmacie.find((x:any) => x.nom===e.target.value)
+                  const prix = t?.prix || laboT?.montant || dentT?.montant || (pharmT ? pharmT.prix_unitaire : 0)
+                  setFormNouv(p=>({...p, service: e.target.value, montant: prix || 0}))
                 }} style={{width:'100%',padding:'9px 11px',borderRadius:8,border:'1px solid #d1d5db',fontSize:13,background:'white'}}>
-                  {['Clinique Externe','Dentisterie','Physiothérapie','Optométrie','Laboratoire','Pharmacie','Observation','Hospitalisation','Maternité','SOP','Gestes'].map(cat => (
+                  {/* Services fixes clinique */}
+                  {['Clinique Externe','Physiothérapie','Optométrie','Observation','Hospitalisation','Maternité','SOP','Gestes'].map(cat => (
                     <optgroup key={cat} label={cat}>
                       {SERVICES_TARIFS.filter(s=>s.cat===cat).map(s=>(
-                        <option key={s.nom} value={s.nom}>{s.nom} {s.prix>0?`(${s.prix.toLocaleString()} HTG)`:''}</option>
+                        <option key={s.nom} value={s.nom}>{s.nom}{s.prix>0?` — ${s.prix.toLocaleString()} HTG`:''}</option>
                       ))}
                     </optgroup>
                   ))}
+                  {/* Examens laboratoire depuis la base */}
+                  {tarifsLabo.length > 0 && (
+                    <optgroup label={`🔬 Laboratoire (${tarifsLabo.length} examens)`}>
+                      {tarifsLabo.map((t:any) => (
+                        <option key={t.id} value={t.libelle}>{t.libelle}{t.montant>0?` — ${t.montant.toLocaleString()} HTG`:''}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {/* Actes dentisterie depuis la base */}
+                  {tarifsDentiste.length > 0 && (
+                    <optgroup label={`🦷 Dentisterie (${tarifsDentiste.length} actes)`}>
+                      {tarifsDentiste.map((t:any) => (
+                        <option key={t.id} value={t.libelle}>{t.libelle}{t.montant>0?` — ${t.montant.toLocaleString()} HTG`:''}</option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {/* Médicaments pharmacie depuis le stock */}
+                  {stocksPharmacie.length > 0 && (
+                    <optgroup label={`💊 Pharmacie (${stocksPharmacie.length} produits en stock)`}>
+                      {stocksPharmacie.map((s:any) => (
+                        <option key={s.id} value={s.nom}>{s.nom} ({s.quantite} {s.unite}){s.prix_unitaire>0?` — ${s.prix_unitaire.toLocaleString()} HTG`:''}</option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
               </div>
 
