@@ -25,14 +25,16 @@ const NAV_GROUPS = [
     { href: '/admin/labo', icon: 'fa-flask-vial', label: 'Laboratoire' },
     { href: '/admin/audit', icon: 'fa-shield-halved', label: 'Journal Audit' },
     { href: '/admin/demandes-acces', icon: 'fa-key', label: 'Accès Dossiers' },
-    { href: '/admin/utilisateurs', icon: 'fa-users-gear', label: 'Comptes & Accès' },
+    { href: '/admin/tarifs',        icon: 'fa-tags',            label: 'Barèmes & Tarifs' },
+          { href: '/admin/utilisateurs', icon: 'fa-users-gear', label: 'Comptes & Accès' },
     { href: '/admin/stocks', icon: 'fa-boxes-stacked', label: 'Stocks pharmacie' },
   ]},
   { label: 'Rapports', items: [
     { href: '/admin/statistiques', icon: 'fa-chart-bar', label: 'Statistiques' },
     { href: '/admin/patients', icon: 'fa-users', label: 'Patients' },
     { href: '/patients/nouveau', icon: 'fa-user-plus', label: 'Nouveau patient' },
-    { href: '/admin/utilisateurs', icon: 'fa-user-shield', label: 'Utilisateurs' },
+    { href: '/admin/tarifs',        icon: 'fa-tags',            label: 'Barèmes & Tarifs' },
+          { href: '/admin/utilisateurs', icon: 'fa-user-shield', label: 'Utilisateurs' },
   ]},
 ]
 

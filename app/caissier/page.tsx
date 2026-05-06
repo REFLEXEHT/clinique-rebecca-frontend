@@ -177,6 +177,8 @@ export default function CaissierPage() {
     }).catch(()=>{})
     api.get('/registre-rdv?jours=30').then(r => setRegistre(r.data?.rdvs||[])).catch(()=>{})
     api.get('/labo/tarifs').then(r => setTarifsLabo(r.data || [])).catch(() => {})
+    api.get('/caissier/taux-change').then(r => setTauxChange(r.data?.taux_htg || 130)).catch(() => {})
+    api.get('/tarifs/gestes').then(r => setCatalogueGestes(r.data?.gestes || [])).catch(() => {})
     api.get('/dentiste/tarifs').then(r => setTarifsDentiste(r.data || [])).catch(() => {})
     api.get('/pharmacie/stocks').then(r => setStocksPharmacie((r.data || []).filter((s:any) => s.quantite > 0))).catch(() => {})
   }, [isAuthenticated])
@@ -260,6 +262,9 @@ export default function CaissierPage() {
 
   const [queueResult, setQueueResult] = useState<any>(null)
   const [tarifsLabo, setTarifsLabo] = useState<any[]>([])
+  const [tauxChange, setTauxChange] = useState<number>(130)
+  const [nouveauTaux, setNouveauTaux] = useState<string>('')
+  const [catalogueGestes, setCatalogueGestes] = useState<any[]>([])
   const [tarifsDentiste, setTarifsDentiste] = useState<any[]>([])
   const [stocksPharmacie, setStocksPharmacie] = useState<any[]>([])
   const [previewNumero, setPreviewNumero] = useState<string>('')
@@ -394,7 +399,19 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
               <span style={{fontSize:12,color:'#94a3b8'}}>{s.label}</span>
             </div>
           ))}
-          <div style={{marginLeft:'auto',color:'#64748b',fontSize:13}}>{new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
+          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:12}}>
+            <div style={{display:'flex',alignItems:'center',gap:6,background:'#f8fafc',borderRadius:8,padding:'6px 10px',border:'1px solid #e2e8f0'}}>
+              <span style={{fontSize:11,color:'#94a3b8'}}>1 USD =</span>
+              <span style={{fontFamily:'monospace',fontWeight:700,color:'#1641C8'}}>{tauxChange.toLocaleString()} HTG</span>
+              <input value={nouveauTaux} onChange={e=>setNouveauTaux(e.target.value)} onKeyDown={async e=>{
+                if(e.key==='Enter'&&nouveauTaux){
+                  const t=parseFloat(nouveauTaux)
+                  if(t>0){await api.post('/caissier/taux-change',{taux_htg:t});setTauxChange(t);setNouveauTaux('');toast.success(`Taux: 1 USD = ${t} HTG`)}
+                }
+              }} placeholder="Nouveau taux" style={{width:80,padding:'3px 6px',borderRadius:6,border:'1px solid #d1d5db',fontSize:12,fontFamily:'monospace'}}/>
+            </div>
+            <div style={{color:'#64748b',fontSize:13}}>{new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
+          </div>
         </div>
       </div>
 
@@ -700,7 +717,10 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   const laboT = tarifsLabo.find((x:any) => x.libelle===e.target.value)
                   const dentT = tarifsDentiste.find((x:any) => x.libelle===e.target.value)
                   const pharmT = stocksPharmacie.find((x:any) => x.nom===e.target.value)
-                  const prix = t?.prix || laboT?.montant || dentT?.montant || (pharmT ? pharmT.prix_unitaire : 0)
+                  const gesteT = catalogueGestes.find((x:any) => x.libelle===e.target.value)
+                  // Prix catalogue: USD → HTG au taux du jour
+                  const gesteHtg = gesteT ? Math.round((gesteT.prix_clinique_usd || gesteT.prix_usd || 0) * tauxChange) : 0
+                  const prix = t?.prix || laboT?.montant || dentT?.montant || (pharmT ? pharmT.prix_unitaire : 0) || gesteHtg
                   setFormNouv(p=>({...p, service: e.target.value, montant: prix || 0}))
                 }} style={{width:'100%',padding:'9px 11px',borderRadius:8,border:'1px solid #d1d5db',fontSize:13,background:'white'}}>
                   {/* Services fixes clinique */}
@@ -735,6 +755,22 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       ))}
                     </optgroup>
                   )}
+                  {/* Gestes médicaux depuis le catalogue barèmes */}
+                  {[...new Set(catalogueGestes.map((g:any)=>g.specialite))].map((spec:any) => {
+                    const gestesSpec = catalogueGestes.filter((g:any)=>g.specialite===spec)
+                    return (
+                      <optgroup key={spec} label={`🏥 ${spec} (${gestesSpec.length} gestes)`}>
+                        {gestesSpec.map((g:any) => {
+                          const prixHtg = Math.round(g.prix_usd * tauxChange)
+                          return (
+                            <option key={g.id} value={g.libelle} data-usd={g.prix_usd}>
+                              {g.libelle}{g.prix_usd > 0 ? ` — $${g.prix_usd} (${prixHtg.toLocaleString()} HTG)` : ''}
+                            </option>
+                          )
+                        })}
+                      </optgroup>
+                    )
+                  })}
                 </select>
               </div>
 
