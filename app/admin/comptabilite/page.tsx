@@ -118,7 +118,11 @@ export default function AdminComptabilite() {
       toast.success('Entrée enregistrée')
       reset({ type:'recette', mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16), categorie:'' })
       setShowForm(false); setEcriture(null); loadJournal()
-    } catch { toast.error('Erreur') }
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail
+      if (detail?.includes('clôtur')) toast.error('Période comptable clôturée — impossible d'enregistrer')
+      else toast.error(detail || 'Erreur enregistrement')
+    }
   }
 
   const onSubmitActe = async (data: any) => {
@@ -126,7 +130,7 @@ export default function AdminComptabilite() {
       const res = await api.post('/actes-facturables', { ...data, montant_total: Number(data.montant_total) })
       toast.success(`Acte enregistré — Part clinique: ${fmt(res.data.repartition?.montant_clinique || 0)}`)
       resetActe(); setShowActeForm(false); loadAll()
-    } catch { toast.error('Erreur enregistrement acte') }
+    } catch (e: any) { toast.error(e?.response?.data?.detail || 'Erreur enregistrement acte') }
   }
 
   const onSubmitDec = async (data: any) => {
@@ -134,7 +138,7 @@ export default function AdminComptabilite() {
       await api.post('/admin/decaissements', { ...data, montant: Number(data.montant) })
       toast.success('Décaissement enregistré')
       resetDec({ mode_paiement:'Espèces' }); setShowDecForm(false); loadAll()
-    } catch { toast.error('Erreur') }
+    } catch (e: any) { toast.error(e?.response?.data?.detail || 'Erreur décaissement') }
   }
 
   const onSubmitExplo = async (data: any) => {
@@ -142,7 +146,7 @@ export default function AdminComptabilite() {
       await api.post('/caissier/paiement-exploitant', { ...data, montant: Number(data.montant), flux_direct: data.flux_direct === 'true' || data.flux_direct === true })
       toast.success('Paiement exploitant enregistré')
       resetExplo({ mode_paiement:'Espèces', flux_direct: false }); setShowExploForm(false); loadAll()
-    } catch { toast.error('Erreur') }
+    } catch (e: any) { toast.error(e?.response?.data?.detail || 'Erreur paiement exploitant') }
   }
 
   const genererBilan = async () => {

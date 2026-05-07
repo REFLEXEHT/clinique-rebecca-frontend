@@ -290,17 +290,11 @@ export default function CaissierPage() {
   const [stocksPharmacie, setStocksPharmacie] = useState<any[]>([])
   const [previewNumero, setPreviewNumero] = useState<string>('')
 
-  // Affiche le prochain ID estimé dès que le nom est saisi
+  // Affiche le prochain ID dès que le nom est saisi — endpoint dédié pour fiabilité
   useEffect(() => {
     if (formNouv.nom && formNouv.prenom) {
-      api.get('/caissier/dernier-patient').then(r => {
-        const last = r.data?.patient?.numero
-        if (last && last.startsWith('#RB-')) {
-          const n = parseInt(last.replace('#RB-', '')) + 1
-          setPreviewNumero(`#RB-${String(n).padStart(4, '0')}`)
-        } else {
-          setPreviewNumero('#RB-0001')
-        }
+      api.get('/caissier/prochain-numero').then(r => {
+        setPreviewNumero(r.data?.prochain_numero || '#RB-????')
       }).catch(() => setPreviewNumero('#RB-????'))
     } else {
       setPreviewNumero('')
@@ -788,9 +782,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                 </div>
               </div>
 
-              {/* ═══════════════════════════════════════════════════════════
-                  SÉLECTION SERVICE — logique: Type → Branche/Examen → Praticien → Prix
-                  ═══════════════════════════════════════════════════════════ */}
+              {/* SERVICE — Type → Praticien (filtré) → Prix */}
               {(() => {
                 const TYPES = [
                   {id:'clinique',    icon:'🏥', label:'Clinique Ext.'},
@@ -804,14 +796,14 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   {id:'sop',         icon:'🔪', label:'SOP'},
                   {id:'geste',       icon:'⚕', label:'Geste médical'},
                 ]
-                const ST  = (formNouv as any).serviceType    || ''
-                const SC  = (formNouv as any).serviceSousCat || ''   // branche/spécialité choisie
-                const PS  = (formNouv as any).pharmSearch    || ''   // texte autocomplete
-                const LS  = (formNouv as any).laboSearch     || ''   // texte autocomplete labo
-                const PRIX_BASE = (formNouv as any).prixBase  || 0   // prix original avant override
-                const PRAT = (formNouv as any).praticien      || ''  // praticien saisi ou choisi
+                const ST   = (formNouv as any).serviceType    || ''
+                const SC   = (formNouv as any).serviceSousCat || ''
+                const PS   = (formNouv as any).pharmSearch    || ''
+                const LS   = (formNouv as any).laboSearch     || ''
+                const PRIX_BASE = (formNouv as any).prixBase  || 0
+                const PRAT = (formNouv as any).praticien      || ''
 
-                // Helpers
+                // ── Helpers ──────────────────────────────────────────────
                 const resetSvc = (type: string) =>
                   setFormNouv((p:any) => ({...p,
                     serviceType:type, serviceSousCat:'', pharmSearch:'', laboSearch:'',
@@ -839,20 +831,47 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   }
                 }
 
-                // Branches / spécialités disponibles dans les tarifs médecins
-                const BRANCHES = [...new Set(tarifs.filter((t:any)=>t.actif).map((t:any)=>t.specialite))].sort()
+                // ── Filtres praticiens par service ───────────────────────
+                // Clinique externe: branches issues des tarifs médecins actifs
+                const BRANCHES = [...new Set(
+                  tarifs.filter((t:any) => t.actif).map((t:any) => t.specialite)
+                )].sort() as string[]
 
-                // Médecins de la branche choisie
+                // Médecins filtrés par la branche choisie (clinique ext)
                 const MEDECINS_BRANCHE = SC
-                  ? tarifs.filter((t:any) => t.actif && t.specialite?.toLowerCase().includes(SC.toLowerCase()))
+                  ? tarifs.filter((t:any) => t.actif && t.specialite === SC)
                   : []
 
-                // Labo suggestions
+                // Praticien unique pour services à praticien fixe
+                const praticienPourService = (motCle: RegExp) =>
+                  tarifs.find((t:any) => t.actif && motCle.test(t.specialite || ''))
+
+                // Auto-saisi praticien unique au choix du service
+                const autoSetPraticien = (type: string) => {
+                  let motCle: RegExp | null = null
+                  if (type === 'dentisterie') motCle = /dent/i
+                  else if (type === 'physio')  motCle = /physio/i
+                  else if (type === 'optometrie') motCle = /optom/i
+                  if (motCle) {
+                    const t = praticienPourService(motCle)
+                    if (t) setFormNouv((p:any) => ({...p, praticien: t.medecin_nom}))
+                  }
+                }
+
+                // Médecins SOP (gynéco + anesthésie + chirurgie)
+                const MEDECINS_SOP = tarifs.filter((t:any) =>
+                  t.actif && /gyn|obst|chir|anest|matern/i.test(t.specialite || '')
+                )
+
+                // Médecins Maternité (gynéco + obstétrique)
+                const MEDECINS_MATERNITE = tarifs.filter((t:any) =>
+                  t.actif && /gyn|obst|matern/i.test(t.specialite || '')
+                )
+
+                // Suggestions labo / pharmacie
                 const LABO_SUGG = LS.length >= 2
                   ? tarifsLabo.filter((t:any) => t.libelle?.toLowerCase().includes(LS.toLowerCase())).slice(0,8)
                   : []
-
-                // Pharmacie suggestions
                 const PHARMA_SUGG = PS.length >= 2
                   ? stocksPharmacie.filter((s:any) => s.nom?.toLowerCase().includes(PS.toLowerCase())).slice(0,8)
                   : []
@@ -870,10 +889,13 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   <div style={{marginBottom:12}}>
                     <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:6}}>Service *</label>
 
-                    {/* Étape 1 — Type de service */}
+                    {/* Étape 1 — Type */}
                     <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:4,marginBottom:10}}>
                       {TYPES.map(t => (
-                        <button key={t.id} type="button" onClick={() => resetSvc(t.id)} style={{
+                        <button key={t.id} type="button" onClick={() => {
+                          resetSvc(t.id)
+                          autoSetPraticien(t.id)
+                        }} style={{
                           padding:'6px 3px', borderRadius:7, cursor:'pointer', fontSize:10, fontWeight:600,
                           textAlign:'center' as const, lineHeight:1.4,
                           border:`2px solid ${ST===t.id?'#1641C8':'#e2e8f0'}`,
@@ -883,21 +905,17 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       ))}
                     </div>
 
-                    {/* ── CLINIQUE EXTERNE: Branche → Médecin de la branche → Prix ── */}
+                    {/* ── CLINIQUE EXTERNE ── Branche → Médecin → Prix */}
                     {ST==='clinique' && (
                       <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
-                        {/* Étape 2: Choisir la branche/spécialité */}
                         <select value={SC} onChange={e => setSousCat(e.target.value)} style={selectStyle}>
                           <option value="">Branche / Spécialité...</option>
-                          {/* Branches issues des tarifs médecins */}
-                          {BRANCHES.map((b:any) => <option key={b} value={b}>{b}</option>)}
-                          {/* Fallback si pas de tarifs médecins */}
-                          {BRANCHES.length === 0 && ['Médecine interne','Gynécologie','Pédiatrie','Chirurgie','Orthopédie','Neurologie','Cardiologie','Dermatologie','ORL','Urologie','Psychiatrie'].map(b => (
+                          {BRANCHES.map((b:string) => <option key={b} value={b}>{b}</option>)}
+                          {BRANCHES.length === 0 && ['Médecine interne','Gynécologie','Pédiatrie','Chirurgie Générale','Orthopédie','Neurologie','Cardiologie','Dermatologie','ORL','Urologie','Psychiatrie'].map(b => (
                             <option key={b} value={b}>{b}</option>
                           ))}
                         </select>
 
-                        {/* Étape 3a: Si médecins disponibles dans cette branche */}
                         {SC && MEDECINS_BRANCHE.length > 0 && (
                           <select value={PRAT} onChange={e => {
                             const val = e.target.value
@@ -906,7 +924,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                             } else {
                               const t = tarifs.find((x:any) => x.medecin_nom === val)
                               setPraticien(val, t?.prix_consultation || 0)
-                              setFormNouv((p:any) => ({...p, service: `${SC} — ${val}`}))
+                              setFormNouv((p:any) => ({...p, service:`${SC} — ${val}`}))
                             }
                           }} style={selectStyle}>
                             <option value="">Choisir le médecin...</option>
@@ -919,17 +937,22 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                           </select>
                         )}
 
-                        {/* Étape 3b: Champ texte libre si pas de liste OU si "Autre" sélectionné */}
                         {SC && (MEDECINS_BRANCHE.length === 0 || PRAT === '__autre__') && (
-                          <input value={PRAT === '__autre__' ? '' : PRAT} onChange={e => {
-                            setPraticien(e.target.value)
-                            setFormNouv((p:any) => ({...p, service:`${SC}${e.target.value?` — ${e.target.value}`:''}`}))
-                          }} placeholder="Nom du praticien..." style={inlineInput} autoFocus={PRAT === '__autre__'} />
+                          <input
+                            value={PRAT === '__autre__' ? '' : PRAT}
+                            onChange={e => {
+                              setPraticien(e.target.value)
+                              setFormNouv((p:any) => ({...p, service:`${SC}${e.target.value?` — ${e.target.value}`:''}`}))
+                            }}
+                            placeholder="Nom du praticien..."
+                            style={inlineInput}
+                            autoFocus={PRAT === '__autre__'}
+                          />
                         )}
                       </div>
                     )}
 
-                    {/* ── MATERNITÉ ── */}
+                    {/* ── MATERNITÉ ── Prestation + médecin gynéco */}
                     {ST==='maternite' && (
                       <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
                         <select value={formNouv.service} onChange={e => {
@@ -941,62 +964,160 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                             <option key={s.nom} value={s.nom}>{s.nom}{s.prix>0?` — ${s.prix.toLocaleString()} HTG`:''}</option>
                           ))}
                         </select>
-                        <input value={PRAT} onChange={e => setPraticien(e.target.value)}
-                          placeholder="Médecin / sage-femme (optionnel)" style={inlineInput} />
-                        {/* Liste médecins gynéco si disponibles */}
-                        {tarifs.filter((t:any)=>t.actif&&/gyn|obst|matern/i.test(t.specialite||'')).length > 0 && (
-                          <select value={PRAT} onChange={e => setPraticien(e.target.value)} style={{...inlineInput,borderColor:'#e2e8f0'}}>
-                            <option value="">Ou choisir parmi la liste...</option>
-                            {tarifs.filter((t:any)=>t.actif&&/gyn|obst|matern/i.test(t.specialite||'')).map((t:any) => (
-                              <option key={t.id} value={t.medecin_nom}>{t.medecin_nom}</option>
+                        {MEDECINS_MATERNITE.length > 0 ? (
+                          <select value={PRAT} onChange={e => setPraticien(e.target.value)} style={{...inlineInput,borderColor:'#1641C8'}}>
+                            <option value="">Médecin / sage-femme...</option>
+                            {MEDECINS_MATERNITE.map((t:any) => (
+                              <option key={t.id} value={t.medecin_nom}>{t.medecin_nom} ({t.specialite})</option>
                             ))}
+                            <option value="__autre__">— Autre praticien —</option>
                           </select>
+                        ) : (
+                          <input value={PRAT} onChange={e => setPraticien(e.target.value)}
+                            placeholder="Médecin / sage-femme..." style={inlineInput} />
+                        )}
+                        {PRAT === '__autre__' && (
+                          <input onChange={e => setPraticien(e.target.value)}
+                            placeholder="Nom du praticien..." style={inlineInput} autoFocus />
                         )}
                       </div>
                     )}
 
-                    {/* ── DENTISTERIE ── */}
-                    {ST==='dentisterie' && (
-                      <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
-                        <select value={formNouv.service} onChange={e => {
-                          const t = SERVICES_TARIFS.find((x:any)=>x.nom===e.target.value)||tarifsDentiste.find((x:any)=>x.libelle===e.target.value)
-                          setService(e.target.value, (t as any)?.prix||(t as any)?.montant||0)
-                        }} style={selectStyle}>
-                          <option value="">Acte dentaire...</option>
-                          {SERVICES_TARIFS.filter((s:any)=>s.cat==='Dentisterie').map((s:any)=>(
-                            <option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>
-                          ))}
-                          {tarifsDentiste.length>0&&<option disabled>── Tarifs complets ──</option>}
-                          {tarifsDentiste.map((t:any)=>(
-                            <option key={t.id} value={t.libelle}>{t.libelle}{t.montant>0?` — ${t.montant.toLocaleString()} HTG`:''}</option>
-                          ))}
-                        </select>
-                        <input value={PRAT} onChange={e => setPraticien(e.target.value)}
-                          placeholder="Dentiste / praticien (optionnel)" style={inlineInput} />
-                      </div>
-                    )}
+                    {/* ── DENTISTERIE ── Acte + praticien auto-saisi */}
+                    {ST==='dentisterie' && (() => {
+                      const dentiste = tarifs.find((t:any) => /dent/i.test(t.specialite||''))
+                      return (
+                        <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
+                          <select value={formNouv.service} onChange={e => {
+                            const t = SERVICES_TARIFS.find((x:any)=>x.nom===e.target.value)
+                              || tarifsDentiste.find((x:any)=>x.libelle===e.target.value)
+                            setService(e.target.value, (t as any)?.prix||(t as any)?.montant||0)
+                          }} style={selectStyle}>
+                            <option value="">Acte dentaire...</option>
+                            {SERVICES_TARIFS.filter((s:any)=>s.cat==='Dentisterie').map((s:any)=>(
+                              <option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>
+                            ))}
+                            {tarifsDentiste.length>0&&<option disabled>── Tarifs complets ──</option>}
+                            {tarifsDentiste.map((t:any)=>(
+                              <option key={t.id} value={t.libelle}>{t.libelle}{t.montant>0?` — ${t.montant.toLocaleString()} HTG`:''}</option>
+                            ))}
+                          </select>
+                          {/* Praticien auto-saisi — modifiable */}
+                          <div style={{background:'#f0fdf4',borderRadius:7,padding:'6px 10px',fontSize:12,color:'#16a34a',display:'flex',gap:6,alignItems:'center'}}>
+                            <span>👨‍⚕️</span>
+                            <input
+                              value={PRAT}
+                              onChange={e => setPraticien(e.target.value)}
+                              style={{...inlineInput,border:'none',background:'transparent',padding:'0',color:'#16a34a',fontWeight:600}}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })()}
 
-                    {/* ── PHYSIO / OPTOMÉTRIE / OBSERVATION / SOP ── */}
-                    {(ST==='physio'||ST==='optometrie'||ST==='observation'||ST==='sop') && (
+                    {/* ── PHYSIOTHÉRAPIE ── Séance + praticien auto-saisi */}
+                    {ST==='physio' && (() => {
+                      return (
+                        <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
+                          <select value={formNouv.service} onChange={e => {
+                            const t = SERVICES_TARIFS.find((x:any)=>x.nom===e.target.value)
+                            setService(e.target.value, t?.prix||0)
+                          }} style={selectStyle}>
+                            <option value="">Prestation physio...</option>
+                            {SERVICES_TARIFS.filter((s:any)=>s.cat==='Physiothérapie').map((s:any)=>(
+                              <option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>
+                            ))}
+                          </select>
+                          <div style={{background:'#f0fdf4',borderRadius:7,padding:'6px 10px',fontSize:12,color:'#16a34a',display:'flex',gap:6,alignItems:'center'}}>
+                            <span>🦴</span>
+                            <input
+                              value={PRAT}
+                              onChange={e => setPraticien(e.target.value)}
+                              style={{...inlineInput,border:'none',background:'transparent',padding:'0',color:'#16a34a',fontWeight:600}}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                    {/* ── OPTOMÉTRIE ── Consultation + praticien auto-saisi */}
+                    {ST==='optometrie' && (() => {
+                      return (
+                        <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
+                          <select value={formNouv.service} onChange={e => {
+                            const t = SERVICES_TARIFS.find((x:any)=>x.nom===e.target.value)
+                            setService(e.target.value, t?.prix||0)
+                          }} style={selectStyle}>
+                            <option value="">Prestation optométrie...</option>
+                            {SERVICES_TARIFS.filter((s:any)=>s.cat==='Optométrie').map((s:any)=>(
+                              <option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>
+                            ))}
+                          </select>
+                          <div style={{background:'#f0fdf4',borderRadius:7,padding:'6px 10px',fontSize:12,color:'#16a34a',display:'flex',gap:6,alignItems:'center'}}>
+                            <span>👁️</span>
+                            <input
+                              value={PRAT}
+                              onChange={e => setPraticien(e.target.value)}
+                              style={{...inlineInput,border:'none',background:'transparent',padding:'0',color:'#16a34a',fontWeight:600}}
+                            />
+                          </div>
+                        </div>
+                      )
+                    })()}
+
+                    {/* ── OBSERVATION ── Durée */}
+                    {ST==='observation' && (
                       <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
                         <select value={formNouv.service} onChange={e => {
                           const t = SERVICES_TARIFS.find((x:any)=>x.nom===e.target.value)
                           setService(e.target.value, t?.prix||0)
                         }} style={selectStyle}>
-                          <option value="">Prestation...</option>
-                          {SERVICES_TARIFS.filter((s:any) =>
-                            (ST==='physio'&&s.cat==='Physiothérapie')||(ST==='optometrie'&&s.cat==='Optométrie')||
-                            (ST==='observation'&&(s.cat==='Observation'||s.cat==='Hospitalisation'))||(ST==='sop'&&s.cat==='SOP')
-                          ).map((s:any)=>(
+                          <option value="">Type d'observation...</option>
+                          {SERVICES_TARIFS.filter((s:any)=>s.cat==='Observation'||s.cat==='Hospitalisation').map((s:any)=>(
                             <option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>
                           ))}
                         </select>
                         <input value={PRAT} onChange={e => setPraticien(e.target.value)}
-                          placeholder="Praticien responsable (optionnel)" style={inlineInput} />
+                          placeholder="Médecin responsable (optionnel)" style={inlineInput} />
                       </div>
                     )}
 
-                    {/* ── LABORATOIRE: autocomplete examens ── */}
+                    {/* ── SOP ── Type chirurgie + médecin chirurgien/anesthésiste */}
+                    {ST==='sop' && (
+                      <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
+                        <select value={formNouv.service} onChange={e => {
+                          const t = SERVICES_TARIFS.find((x:any)=>x.nom===e.target.value)
+                          setService(e.target.value, t?.prix||0)
+                        }} style={selectStyle}>
+                          <option value="">Type d'opération...</option>
+                          {SERVICES_TARIFS.filter((s:any)=>s.cat==='SOP').map((s:any)=>(
+                            <option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>
+                          ))}
+                        </select>
+                        {/* Médecin SOP = chirurgien ou anesthésiste de la liste */}
+                        {MEDECINS_SOP.length > 0 ? (
+                          <select value={PRAT} onChange={e => {
+                            if (e.target.value === '__autre__') setPraticien('__autre__')
+                            else setPraticien(e.target.value)
+                          }} style={{...inlineInput,borderColor:'#1641C8'}}>
+                            <option value="">Chirurgien / Anesthésiste...</option>
+                            {MEDECINS_SOP.map((t:any) => (
+                              <option key={t.id} value={t.medecin_nom}>{t.medecin_nom} ({t.specialite})</option>
+                            ))}
+                            <option value="__autre__">— Autre praticien —</option>
+                          </select>
+                        ) : (
+                          <input value={PRAT} onChange={e => setPraticien(e.target.value)}
+                            placeholder="Chirurgien / Anesthésiste..." style={inlineInput} />
+                        )}
+                        {PRAT === '__autre__' && (
+                          <input onChange={e => setPraticien(e.target.value)}
+                            placeholder="Nom du praticien..." style={inlineInput} autoFocus />
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── LABORATOIRE ── Autocomplete examens */}
                     {ST==='labo' && (
                       <div style={{position:'relative'}}>
                         <input value={LS} onChange={e => setFormNouv((p:any)=>({...p,laboSearch:e.target.value,service:'',montant:0,prixBase:0}))}
@@ -1018,14 +1139,14 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                         )}
                         {LS.length >= 2 && LABO_SUGG.length === 0 && (
                           <div style={{marginTop:4,padding:'6px 10px',background:'#fef9c3',borderRadius:7,fontSize:12,color:'#92400e',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                            <span>"{LS}" non trouvé dans la liste</span>
+                            <span>"{LS}" non trouvé</span>
                             <button onClick={() => setService(LS, 0)} style={{background:'#d97706',color:'white',border:'none',borderRadius:5,padding:'3px 8px',cursor:'pointer',fontSize:11,fontWeight:700}}>Utiliser quand même</button>
                           </div>
                         )}
                       </div>
                     )}
 
-                    {/* ── PHARMACIE: autocomplete médicaments ── */}
+                    {/* ── PHARMACIE ── Autocomplete médicaments */}
                     {ST==='pharmacie' && (
                       <div style={{position:'relative'}}>
                         <input value={PS} onChange={e => setFormNouv((p:any)=>({...p,pharmSearch:e.target.value,service:'',montant:0,prixBase:0}))}
@@ -1050,7 +1171,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       </div>
                     )}
 
-                    {/* ── GESTE MÉDICAL: spécialité → geste du catalogue ── */}
+                    {/* ── GESTE MÉDICAL ── Spécialité → geste du catalogue + praticien de la spécialité */}
                     {ST==='geste' && (
                       <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
                         <select value={SC} onChange={e => setSousCat(e.target.value)} style={selectStyle}>
@@ -1076,8 +1197,35 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                             })}
                           </select>
                         )}
-                        <input value={PRAT} onChange={e => setPraticien(e.target.value)}
-                          placeholder="Praticien responsable (optionnel)" style={inlineInput} />
+                        {/* Médecins de la même spécialité que le geste */}
+                        {SC && (() => {
+                          const medsGeste = tarifs.filter((t:any) =>
+                            t.actif && t.specialite?.toLowerCase().includes(SC.toLowerCase().split(' ')[0])
+                          )
+                          if (medsGeste.length > 0) {
+                            return (
+                              <select value={PRAT} onChange={e => {
+                                if (e.target.value === '__autre__') setPraticien('__autre__')
+                                else setPraticien(e.target.value)
+                              }} style={{...inlineInput,borderColor:'#1641C8'}}>
+                                <option value="">Praticien responsable...</option>
+                                {medsGeste.map((t:any) => (
+                                  <option key={t.id} value={t.medecin_nom}>{t.medecin_nom}</option>
+                                ))}
+                                <option value="__autre__">— Autre praticien —</option>
+                              </select>
+                            )
+                          } else {
+                            return (
+                              <input value={PRAT} onChange={e => setPraticien(e.target.value)}
+                                placeholder="Praticien responsable..." style={inlineInput} />
+                            )
+                          }
+                        })()}
+                        {PRAT === '__autre__' && (
+                          <input onChange={e => setPraticien(e.target.value)}
+                            placeholder="Nom du praticien..." style={inlineInput} autoFocus />
+                        )}
                       </div>
                     )}
 
@@ -1107,10 +1255,10 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       </div>
                     )}
 
-                    {/* Confirmation */}
+                    {/* Confirmation sélection */}
                     {formNouv.service && (
                       <div style={{marginTop:6,padding:'6px 12px',background:'#f0fdf4',border:'1px solid #86efac',borderRadius:7,fontSize:12,color:'#16a34a',fontWeight:600,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                        <span>✓ {formNouv.service}{PRAT?` · ${PRAT}`:''}</span>
+                        <span>✓ {formNouv.service}{PRAT && PRAT !== '__autre__' ? ` · ${PRAT}` : ''}</span>
                         {formNouv.montant > 0 && (
                           <span style={{fontFamily:'monospace'}}>
                             {formNouv.montant.toLocaleString()} HTG

@@ -7,7 +7,7 @@ import { comptaApi } from '@/lib/api'
 import { Mouvement } from '@/types'
 import { Plus, Trash2 } from 'lucide-react'
 
-const CATS = ['RH','Médical','Pharmacie','Infrastructure','Équipements','Télécom','Autre']
+const CATS = ['RH / Salaires','Médical','Pharmacie achats','Infrastructure','Équipements','Télécom','Achats médicaments','Consommables médicaux','Honoraires médecins','Autres charges']
 const MODES = ['Espèces','Mobile Money','Virement','Chèque']
 
 interface FormData { description:string; categorie:string; montant:number; date_mouvement:string; mode_paiement:string; notes:string }
