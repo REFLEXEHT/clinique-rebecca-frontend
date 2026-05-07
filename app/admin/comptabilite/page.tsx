@@ -88,9 +88,9 @@ export default function AdminComptabilite() {
   const [optoData, setOptoData] = useState({ total_consultations: 0, total_montures: 0, mois: now.getMonth()+1, annee: now.getFullYear() })
   const [optoResultat, setOptoResultat] = useState<any>(null)
 
-  const { register, handleSubmit, watch, reset } = useForm({ defaultValues: { type:'recette', mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16), categorie: '', description: '', montant: 0, notes: '' } })
+  const { register, handleSubmit, watch, reset } = useForm({ defaultValues: { type:'recette', mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16), categorie: '', description: '', montant: 0, notes: '', tiers_nom: '', tiers_type: 'autre' } })
   const { register: regActe, handleSubmit: subActe, watch: watchActe, reset: resetActe } = useForm()
-  const { register: regDec, handleSubmit: subDec, reset: resetDec } = useForm({ defaultValues: { medecin_id: '', medecin_nom: '', montant: 0, motif: '', mode_paiement:'Espèces' } })
+  const { register: regDec, handleSubmit: subDec, reset: resetDec } = useForm({ defaultValues: { medecin_id: '', medecin_nom: '', montant: 0, motif: '', mode_paiement:'Espèces', tiers_nom: '', statut: 'effectue', date_prevue: '' } })
   const { register: regExplo, handleSubmit: subExplo, reset: resetExplo } = useForm({ defaultValues: { medecin_id: '', patient_nom: '', montant: 0, description: '', mode_paiement:'Espèces', flux_direct: false } })
 
   const typeW = watch('type')
@@ -143,7 +143,7 @@ export default function AdminComptabilite() {
     try {
       await api.post('/admin/mouvements', { ...data, montant: Number(data.montant), date_mouvement: new Date(data.date_mouvement).toISOString(), tiers_nom: data.tiers_nom||undefined, tiers_type: data.tiers_type||undefined })
       toast.success('Entrée enregistrée')
-      reset({ type:'recette', mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16), categorie:'' })
+      reset({ type:'recette', mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16), categorie:'', tiers_nom:'', tiers_type:'autre' })
       setShowForm(false); setEcriture(null); loadJournal()
     } catch (e: any) {
       const detail = e?.response?.data?.detail
