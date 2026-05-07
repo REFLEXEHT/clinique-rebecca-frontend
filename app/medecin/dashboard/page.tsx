@@ -896,6 +896,41 @@ export default function MedecinDashboard() {
               )}
             </div>
 
+            {/* ── SIGNATURE NUMÉRIQUE ── */}
+            <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 16, padding: 20 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 4 }}>
+                ✍️ Signature numérique
+              </div>
+              <p style={{ color: '#64748b', fontSize: 12, margin: '0 0 14px', lineHeight: 1.6 }}>
+                Votre signature sera automatiquement apposée sur les ordonnances, certificats médicaux, résultats de laboratoire et tout autre document officiel.
+                Signez une fois — utilisée partout.
+              </p>
+              <SignaturePad
+                onSign={sig => setMaSignature(sig)}
+                initialValue={maSignature || undefined}
+                label="Ma signature médicale"
+                width={440}
+                height={150}
+                strokeColor="#0f172a"
+                strokeWidth={2}
+              />
+              {maSignature && (
+                <button onClick={async () => {
+                  try {
+                    await api.post('/medecin/enregistrer-signature', { signature_base64: maSignature })
+                    toast.success('Signature enregistrée ✓ — elle sera utilisée sur vos documents officiels')
+                  } catch (e: any) {
+                    toast.error(e?.response?.data?.detail || 'Erreur enregistrement signature')
+                  }
+                }} style={{
+                  marginTop: 10, background: '#1641C8', color: 'white', border: 'none',
+                  borderRadius: 9, padding: '9px 20px', fontWeight: 700, cursor: 'pointer', fontSize: 13
+                }}>
+                  💾 Enregistrer ma signature
+                </button>
+              )}
+            </div>
+
             {/* Lien profil public */}
             <div style={{ background: '#f0f9ff', border: '1px solid #bae6fd', borderRadius: 16, padding: 18 }}>
               <div style={{ fontWeight: 700, color: '#0369a1', fontSize: 13, marginBottom: 6 }}>

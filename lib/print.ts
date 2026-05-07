@@ -462,3 +462,203 @@ export function imprimerRapportComptable(data: {
 
   openPrint(html, 870, 1150)
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// RÉSULTATS DE LABORATOIRE (A4)
+// ─────────────────────────────────────────────────────────────────────────────
+export function imprimerResultatLabo(data: {
+  patient: { numero: string; nom: string; age?: number; telephone?: string }
+  examens: Array<{ code: string; libelle: string; valeur: string; unite?: string; reference?: string; critique?: boolean }>
+  prescripteur?: string
+  technicien?: string
+  date?: string
+  signature_technicien?: string   // base64 PNG
+  signature_medecin?: string      // base64 PNG
+  recu_numero?: string
+}) {
+  const dateDoc = data.date ? new Date(data.date).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' }) : new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' })
+
+  const lignes = data.examens.map(e => `
+<tr style="${e.critique ? 'background:#fef2f2' : ''}">
+  <td style="font-weight:600">${e.code}</td>
+  <td>${e.libelle}</td>
+  <td style="font-weight:700;font-family:monospace;${e.critique ? 'color:#dc2626' : ''}">${e.valeur}${e.critique ? ' ⚠️' : ''}</td>
+  <td style="color:#64748b">${e.unite || '—'}</td>
+  <td style="color:#94a3b8;font-size:11px">${e.reference || '—'}</td>
+</tr>`).join('')
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Résultats Labo — ${data.patient.nom}</title>
+<style>${BASE_STYLE}
+.critique-box{background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:10px 14px;margin:10px 0;font-size:12px;color:#dc2626;font-weight:700}
+</style></head><body>
+<div class="page">
+  ${clinicHeader('RÉSULTATS D\'ANALYSES DE LABORATOIRE', data.recu_numero ? `Réf: ${data.recu_numero} · ${dateDoc}` : dateDoc)}
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+    <div style="background:#f8fafc;border-radius:8px;padding:12px;border:1px solid #e2e8f0">
+      <div class="section-title">Patient</div>
+      <div class="row"><span class="row-key">Dossier</span><span class="row-val" style="font-family:monospace">${data.patient.numero}</span></div>
+      <div class="row"><span class="row-key">Nom</span><span class="row-val">${data.patient.nom?.toUpperCase()}</span></div>
+      ${data.patient.age ? `<div class="row"><span class="row-key">Âge</span><span class="row-val">${data.patient.age} ans</span></div>` : ''}
+      ${data.patient.telephone ? `<div class="row"><span class="row-key">Tél.</span><span class="row-val">${data.patient.telephone}</span></div>` : ''}
+    </div>
+    <div style="background:#f8fafc;border-radius:8px;padding:12px;border:1px solid #e2e8f0">
+      <div class="section-title">Informations</div>
+      <div class="row"><span class="row-key">Date</span><span class="row-val">${dateDoc}</span></div>
+      ${data.prescripteur ? `<div class="row"><span class="row-key">Prescripteur</span><span class="row-val">${data.prescripteur}</span></div>` : ''}
+      ${data.technicien ? `<div class="row"><span class="row-key">Technicien</span><span class="row-val">${data.technicien}</span></div>` : ''}
+    </div>
+  </div>
+
+  ${data.examens.some(e => e.critique) ? `<div class="critique-box">⚠️ Valeurs critiques détectées — Contacter le prescripteur immédiatement</div>` : ''}
+
+  <div class="section">
+    <div class="section-title">Résultats des Analyses</div>
+    <table>
+      <thead><tr><th>Code</th><th>Examen</th><th>Résultat</th><th>Unité</th><th>Valeurs de référence</th></tr></thead>
+      <tbody>${lignes}</tbody>
+    </table>
+  </div>
+
+  <div class="signature-box">
+    <div>
+      <div style="font-size:10px;font-weight:700;color:#374151;margin-bottom:4px">Le Technicien de Laboratoire</div>
+      ${data.signature_technicien ? `<img src="${data.signature_technicien}" style="height:50px;max-width:180px;object-fit:contain" />` : ''}
+      <div class="sig-line">${data.technicien || 'Signature & Cachet'}</div>
+    </div>
+    <div>
+      <div style="font-size:10px;font-weight:700;color:#374151;margin-bottom:4px">Validé par le Médecin</div>
+      ${data.signature_medecin ? `<img src="${data.signature_medecin}" style="height:50px;max-width:180px;object-fit:contain" />` : ''}
+      <div class="sig-line">${data.prescripteur || 'Signature & Cachet'}</div>
+    </div>
+  </div>
+
+  ${clinicFooter('Document médical confidentiel — Résultats valides 3 mois')}
+  <button class="btn-print" onclick="window.print()">🖨 Imprimer les résultats</button>
+</div>
+</body></html>`
+
+  openPrint(html, 820, 1100)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ORDONNANCE / REQUÊTE MÉDICALE (A4)
+// ─────────────────────────────────────────────────────────────────────────────
+export function imprimerOrdonnance(data: {
+  patient: { numero: string; nom: string; age?: number; telephone?: string }
+  medecin_nom: string
+  medecin_specialite?: string
+  type: 'ordonnance' | 'requete_labo' | 'requete_imagerie' | 'compte_rendu_ecg' | 'autre'
+  titre?: string
+  contenu: string   // texte libre (médicaments, examens, compte rendu)
+  date?: string
+  signature_medecin?: string  // base64 PNG
+  urgence?: boolean
+}) {
+  const titres: Record<string, string> = {
+    ordonnance:        'ORDONNANCE MÉDICALE',
+    requete_labo:      'REQUÊTE D\'ANALYSES DE LABORATOIRE',
+    requete_imagerie:  'REQUÊTE D\'IMAGERIE MÉDICALE',
+    compte_rendu_ecg:  'COMPTE RENDU ECG / ÉLECTROCARDIOGRAMME',
+    autre:             data.titre || 'DOCUMENT MÉDICAL',
+  }
+  const titre = titres[data.type] || data.titre || 'DOCUMENT MÉDICAL'
+  const dateDoc = data.date ? new Date(data.date).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' }) : new Date().toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' })
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${titre} — ${data.patient.nom}</title>
+<style>${BASE_STYLE}
+.rx-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:20px;min-height:200px;white-space:pre-wrap;font-size:13px;line-height:1.9;font-family:Arial,sans-serif}
+.rx-symbol{font-size:28px;color:#1641C8;font-weight:900;margin-bottom:8px}
+.urgence-band{background:#fef2f2;border:2px solid #dc2626;border-radius:8px;padding:8px 14px;margin-bottom:12px;text-align:center;color:#dc2626;font-weight:900;font-size:14px;letter-spacing:1px}
+</style></head><body>
+<div class="page">
+  ${clinicHeader(titre, `Date: ${dateDoc}`)}
+
+  ${data.urgence ? '<div class="urgence-band">🚨 URGENT — TRAITEMENT PRIORITAIRE</div>' : ''}
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+    <div style="background:#f8fafc;border-radius:8px;padding:12px;border:1px solid #e2e8f0">
+      <div class="section-title">Patient</div>
+      <div class="row"><span class="row-key">Dossier</span><span class="row-val" style="font-family:monospace">${data.patient.numero}</span></div>
+      <div class="row"><span class="row-key">Nom</span><span class="row-val">${data.patient.nom?.toUpperCase()}</span></div>
+      ${data.patient.age ? `<div class="row"><span class="row-key">Âge</span><span class="row-val">${data.patient.age} ans</span></div>` : ''}
+    </div>
+    <div style="background:#f8fafc;border-radius:8px;padding:12px;border:1px solid #e2e8f0">
+      <div class="section-title">Prescripteur</div>
+      <div class="row"><span class="row-key">Médecin</span><span class="row-val">${data.medecin_nom}</span></div>
+      ${data.medecin_specialite ? `<div class="row"><span class="row-key">Spécialité</span><span class="row-val">${data.medecin_specialite}</span></div>` : ''}
+      <div class="row"><span class="row-key">Date</span><span class="row-val">${dateDoc}</span></div>
+    </div>
+  </div>
+
+  <div class="section">
+    ${data.type === 'ordonnance' ? '<div class="rx-symbol">℞</div>' : ''}
+    <div class="rx-box">${data.contenu}</div>
+  </div>
+
+  <div class="signature-box">
+    <div style="grid-column:2">
+      <div style="font-size:10px;font-weight:700;color:#374151;margin-bottom:4px">${data.medecin_nom}</div>
+      ${data.medecin_specialite ? `<div style="font-size:10px;color:#64748b;margin-bottom:4px">${data.medecin_specialite}</div>` : ''}
+      ${data.signature_medecin ? `<img src="${data.signature_medecin}" style="height:60px;max-width:200px;object-fit:contain;margin-bottom:4px;display:block" />` : '<div style="height:60px"></div>'}
+      <div class="sig-line">Signature &amp; Cachet médecin</div>
+    </div>
+  </div>
+
+  ${clinicFooter('Document valide uniquement avec signature et cachet du médecin')}
+  <button class="btn-print" onclick="window.print()">🖨 Imprimer</button>
+</div>
+</body></html>`
+
+  openPrint(html, 820, 1100)
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// TICKET RAPIDE (80mm) — générique pour tout reçu thermique
+// ─────────────────────────────────────────────────────────────────────────────
+export function imprimerTicket80mm(data: {
+  titre: string
+  lignes: Array<{ label: string; valeur: string; gras?: boolean }>
+  totalLabel?: string
+  totalValeur?: string
+  footer?: string
+  qrData?: string
+}) {
+  const now = new Date().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${data.titre}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;width:80mm;max-width:80mm;margin:0 auto;padding:8px;font-size:11px;color:#111}
+.logo{font-size:13px;font-weight:900;color:#1641C8;text-align:center}
+.sub{font-size:9px;color:#666;text-align:center;margin-bottom:6px}
+.sep{border:none;border-top:1px dashed #ccc;margin:5px 0}
+.titre{text-align:center;font-size:13px;font-weight:900;color:#374151;margin:6px 0;text-transform:uppercase}
+.row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted #e5e7eb;font-size:11px}
+.row-key{color:#64748b;flex:1}
+.row-val{font-weight:600;text-align:right;flex:1}
+.total{background:#f0fdf4;border:2px solid #16a34a;border-radius:6px;padding:7px;text-align:center;margin:7px 0}
+.total-val{font-size:18px;font-weight:900;color:#16a34a;font-family:monospace}
+.footer-txt{text-align:center;font-size:9px;color:#94a3b8;margin-top:7px;line-height:1.6}
+.btn-print{display:block;width:100%;padding:8px;background:#1641C8;color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;margin-top:8px}
+@media print{.btn-print{display:none!important}}
+</style></head><body>
+<div class="logo">🏥 CLINIQUE DE LA REBECCA</div>
+<div class="sub">#44 Rue Rebecca, Pétion-Ville · (509) 4858-5757<br>${now}</div>
+<hr class="sep">
+<div class="titre">${data.titre}</div>
+<hr class="sep">
+${data.lignes.map(l => `<div class="row"><span class="row-key">${l.label}</span><span class="row-val" style="${l.gras ? 'font-weight:900' : ''}">${l.valeur}</span></div>`).join('')}
+${data.totalLabel ? `
+<hr class="sep">
+<div class="total">
+  <div style="font-size:9px;font-weight:700;color:#16a34a;text-transform:uppercase;margin-bottom:2px">${data.totalLabel}</div>
+  <div class="total-val">${data.totalValeur || ''}</div>
+</div>` : ''}
+<hr class="sep">
+<div class="footer-txt">${data.footer || 'Merci de votre confiance — Clinique de la Rebecca'}</div>
+<button class="btn-print" onclick="window.print()">🖨 Imprimer</button>
+</body></html>`
+
+  openPrint(html, 420, 700)
+}

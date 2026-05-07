@@ -185,6 +185,7 @@ export default function InfirmierDashboard() {
                           </span>
                         </div>
                         <div style={{color:'#0d9488',fontSize:13,fontWeight:600}}>{p.service}</div>
+                        {p.medecin_nom && <div style={{color:'#1641C8',fontSize:12,fontWeight:600}}>👨‍⚕️ Dr {p.medecin_nom.replace('Dr ','')}</div>}
                         <div style={{color:'#94a3b8',fontSize:12}}>{p.patient_telephone} · {new Date(p.heure).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
                       </div>
                     </div>
