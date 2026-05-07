@@ -175,7 +175,7 @@ export function imprimerRecuPaiement(p: {
     especes: '💵 Espèces', moncash: '📱 MonCash', natcash: '📲 NatCash',
     carte: '💳 Carte bancaire', zelle: '🇺🇸 Zelle (USD)'
   }
-  const refNum = p.recu_numero || p.numero_piece || '—'
+  const refNum = (p.recu_numero || p.numero_piece || '—').toString().replace(/JournalEnum\./g,'').replace(/[<>]/g,'').trim()
   const now = new Date().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reçu ${refNum}</title>

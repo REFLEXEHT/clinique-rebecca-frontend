@@ -180,16 +180,21 @@ export default function CaissierPage() {
       router.push('/login')
   }, [isAuthenticated, user, loading, router])
 
+  // Reload paiements/depenses when periode changes
   useEffect(() => {
     if (!isAuthenticated) return
-    api.get('/caissier/paiements-jour').then(r => {
+    api.get(`/caissier/paiements-jour?periode=${periodeEncaisse}`).then(r => {
       setPaiements(r.data?.paiements||[])
       setTotalJour(r.data?.total||0)
     }).catch(()=>{})
-    api.get('/caissier/depenses-jour').then(r => {
+    api.get(`/caissier/depenses-jour?periode=${periodeDepense}`).then(r => {
       setDepenses(r.data?.depenses||[])
       setTotalDepenses(r.data?.total||0)
     }).catch(()=>{})
+  }, [isAuthenticated, periodeDepense, periodeEncaisse])
+
+  useEffect(() => {
+    if (!isAuthenticated) return
     api.get('/registre-rdv?jours=30').then(r => setRegistre(r.data?.rdvs||[])).catch(()=>{})
     api.get('/labo/tarifs').then(r => setTarifsLabo(r.data || [])).catch(() => {})
     api.get('/caissier/taux-change').then(r => setTauxChange(r.data?.taux_htg || 130)).catch(() => {})
@@ -294,7 +299,9 @@ export default function CaissierPage() {
     finally { setLoadingDepense(false) }
   }
 
-  const [loadingDepense, setLoadingDepense] = useState(false)
+  const [loadingDepense,  setLoadingDepense]  = useState(false)
+  const [periodeDepense,  setPeriodeDepense]  = useState<'jour'|'mois'>('jour')
+  const [periodeEncaisse, setPeriodeEncaisse] = useState<'jour'|'mois'>('jour')
   const [rdvPaiementId,   setRdvPaiementId]   = useState<number|null>(null)
   const [rdvPaiementInfo, setRdvPaiementInfo] = useState<PaiementInfo|null>(null)
   const [queueResult, setQueueResult] = useState<any>(null)
@@ -308,14 +315,19 @@ export default function CaissierPage() {
   const [stocksPharmacie, setStocksPharmacie] = useState<any[]>([])
   const [previewNumero, setPreviewNumero] = useState<string>('')
 
-  // Charger le prochain numéro immédiatement au montage du composant
+  // Charger le prochain numéro — avec retry (token peut ne pas être dispo immédiatement)
   useEffect(() => {
-    api.get('/caissier/prochain-numero').then(r => {
-      setPreviewNumero(r.data?.prochain_numero || '#RB-????')
-    }).catch(() => setPreviewNumero('#RB-????'))
+    const load = () => api.get('/caissier/prochain-numero').then(r => {
+      const num = r.data?.prochain_numero
+      if (num && num !== '#RB-????') setPreviewNumero(num)
+    }).catch(() => {})
+    load()
+    // Retry après 1.5s si le token n'était pas encore dispo
+    const t = setTimeout(load, 1500)
+    return () => clearTimeout(t)
   }, [])
 
-  // Recalculer si un patient vient d'être enregistré (queueResult change)
+  // Recalculer après chaque enregistrement
   useEffect(() => {
     if (queueResult) {
       api.get('/caissier/prochain-numero').then(r => {
@@ -343,7 +355,9 @@ export default function CaissierPage() {
     if (!formNouv.telephone) { toast.error('Téléphone requis'); return }
     // Vérifier paiement si montant > 0
     const paiNvInfo = (formNouv as any).paiementNvInfo
-    if (formNouv.montant > 0 && !paiNvInfo?.verifie) {
+    const modeNv = formNouv.mode_paiement || 'especes'
+    // Espèces: toujours autorisé. Autres modes: vérification requise seulement si montant > 0
+    if (formNouv.montant > 0 && modeNv !== 'especes' && !paiNvInfo?.verifie) {
       toast.error("Vérifiez le mode de paiement avant d'enregistrer")
       return
     }
@@ -361,7 +375,14 @@ export default function CaissierPage() {
       setQueueResult(r.data)
       toast.success(`✓ Patient ${r.data.patient?.numero} — Ticket #${r.data.ticket} envoyé à l'infirmière`)
       // Imprimer la facture automatiquement (appel direct dans le même tick)
-      imprimerRecuEnregistrement(r.data)
+      imprimerRecuEnregistrement({
+        ...r.data,
+        patient: {
+          ...r.data.patient,
+          // Assurer que le nom complet est affiché (prenom + nom)
+          nom: `${formNouv.prenom} ${r.data.patient?.nom || formNouv.nom}`.trim(),
+        }
+      })
       setFormNouv({ nom:'', prenom:'', age:'', adresse:'', telephone:'', email:'',
         contact_urgence:'', type_visite:'premiere', service: SERVICES_TARIFS[0].nom,
         montant: SERVICES_TARIFS[0].prix, mode_paiement:'especes', priorite:'normal' })
@@ -400,6 +421,28 @@ export default function CaissierPage() {
 
   const creerPatient = enregistrerVisite
 
+  const imprimerRapportCaissier = () => {
+    const { imprimerRapportComptable } = require('@/lib/print')
+    const now = new Date()
+    imprimerRapportComptable({
+      moisNom: now.toLocaleDateString('fr-FR', {month:'long'}),
+      annee: now.getFullYear(),
+      totalProduits: totalJour,
+      totalCharges: totalDepenses,
+      resultatNet: totalJour - totalDepenses,
+      ratioMarge: totalJour > 0 ? Math.round((totalJour - totalDepenses) / totalJour * 100) : 0,
+      ratioCharges: totalJour > 0 ? Math.round(totalDepenses / totalJour * 100) : 0,
+      nbPatients: paiements.length,
+      nbTransactions: paiements.length + depenses.length,
+      recettesParService: paiements.reduce((acc:any,p:any)=>({...acc,[p.service||'Autre']:(acc[p.service||'Autre']||0)+p.montant}),{}),
+      chargesParCategorie: depenses.reduce((acc:any,d:any)=>({...acc,[d.categorie||'Autre']:(acc[d.categorie||'Autre']||0)+d.montant}),{}),
+      tresorerieParMode: paiements.reduce((acc:any,p:any)=>({...acc,[p.mode_paiement||'especes']:(acc[p.mode_paiement||'especes']||0)+p.montant}),{}),
+      anomalies: [],
+      rapport: rapport || `Rapport journalier — Caissier: ${user?.nom}\nEncaissements: ${totalJour.toLocaleString('fr')} HTG (${paiements.length} transactions)\nDécaissements: ${totalDepenses.toLocaleString('fr')} HTG (${depenses.length} dépenses)\nSolde net: ${(totalJour-totalDepenses).toLocaleString('fr')} HTG`,
+      typeRapport: 'journalier',
+    })
+  }
+
   const genererRapport = async () => {
     setLoadRapport(true)
     try {
@@ -411,7 +454,7 @@ Catégories dépenses: ${depenses.map((d:any)=>d.categorie).join(', ')}.
 Solde net: ${totalJour - totalDepenses} HTG.
 Génère un rapport comptable structuré avec: résumé financier, recettes par catégorie, dépenses par catégorie, solde net, recommandations. Max 300 mots.`}], { max_tokens: 600 })
       setRapport(data.content?.[0]?.text || '')
-    } catch { setRapport('Erreur') }
+    } catch (e: any) { setRapport('⚠️ Erreur de génération. Vérifiez la connexion au service IA (clé ANTHROPIC_API_KEY dans les variables Vercel).') }
     finally { setLoadRapport(false) }
   }
 
@@ -872,7 +915,18 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
               )}
 
               <div style={{background:'white',borderRadius:16,padding:18,border:'1px solid #e2e8f0',maxHeight:420,overflowY:'auto'}}>
-                <h3 style={{fontWeight:700,fontSize:14,marginBottom:12}}>📋 Transactions du jour ({paiements.length})</h3>
+                <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+                  <h3 style={{fontWeight:700,fontSize:14,margin:0}}>📋 Transactions {periodeEncaisse==='jour'?"du jour":"du mois"} ({paiements.length})</h3>
+                  <div style={{display:'flex',gap:3,background:'#f1f5f9',borderRadius:7,padding:2}}>
+                    {(['jour','mois'] as const).map(p => (
+                      <button key={p} onClick={()=>setPeriodeEncaisse(p)} style={{
+                        padding:'3px 10px',borderRadius:5,border:'none',cursor:'pointer',fontSize:11,fontWeight:700,
+                        background:periodeEncaisse===p?'white':'transparent',
+                        color:periodeEncaisse===p?'#16a34a':'#94a3b8'
+                      }}>{p==='jour'?"Auj.":"Mois"}</button>
+                    ))}
+                  </div>
+                </div>
                 {paiements.length===0 ? (
                   <p style={{color:'#94a3b8',textAlign:'center',padding:20,fontSize:13}}>Aucune transaction</p>
                 ) : paiements.map((p:any,i:number)=>(
@@ -996,22 +1050,38 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
             </div>
 
             <div style={{background:'white',borderRadius:16,padding:18,border:'1px solid #e2e8f0',maxHeight:500,overflowY:'auto'}}>
-              <div style={{display:'flex',justifyContent:'space-between',marginBottom:14}}>
-                <h3 style={{fontWeight:700,fontSize:14,margin:0}}>Dépenses du jour ({depenses.length})</h3>
-                <span style={{fontWeight:700,color:'#dc2626'}}>{totalDepenses.toLocaleString()} HTG</span>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:14}}>
+                <h3 style={{fontWeight:700,fontSize:14,margin:0}}>
+                  Dépenses {periodeDepense==='jour'?"du jour":"du mois"} ({depenses.length})
+                </h3>
+                <div style={{display:'flex',alignItems:'center',gap:8}}>
+                  <span style={{fontWeight:700,color:'#dc2626'}}>{totalDepenses.toLocaleString()} HTG</span>
+                  <div style={{display:'flex',gap:3,background:'#f1f5f9',borderRadius:7,padding:2}}>
+                    {(['jour','mois'] as const).map(p => (
+                      <button key={p} onClick={()=>setPeriodeDepense(p)} style={{
+                        padding:'3px 10px',borderRadius:5,border:'none',cursor:'pointer',fontSize:11,fontWeight:700,
+                        background:periodeDepense===p?'white':'transparent',
+                        color:periodeDepense===p?'#dc2626':'#94a3b8'
+                      }}>{p==='jour'?"Auj.":"Mois"}</button>
+                    ))}
+                  </div>
+                </div>
               </div>
               {depenses.length===0 ? (
                 <p style={{color:'#94a3b8',textAlign:'center',padding:20,fontSize:13}}>Aucune dépense enregistrée</p>
               ) : depenses.map((d:any,i:number)=>(
-                <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid #f1f5f9',fontSize:12}}>
-                  <div>
-                    <div style={{fontWeight:600,fontSize:13}}>{d.description}</div>
-                    <div style={{color:'#64748b'}}>{d.categorie}</div>
+                <div key={i} style={{padding:'8px 0',borderBottom:'1px solid #f1f5f9',fontSize:12}}>
+                  <div style={{display:'flex',justifyContent:'space-between'}}>
+                    <div>
+                      <div style={{fontWeight:600,fontSize:13}}>{d.description}</div>
+                      <div style={{color:'#64748b'}}>{d.categorie}</div>
+                    </div>
+                    <div style={{textAlign:'right',flexShrink:0}}>
+                      <div style={{fontWeight:700,color:'#dc2626'}}>{(d.montant||0).toLocaleString()} HTG</div>
+                      <div style={{color:'#94a3b8'}}>{d.mode}</div>
+                    </div>
                   </div>
-                  <div style={{textAlign:'right',flexShrink:0}}>
-                    <div style={{fontWeight:700,color:'#dc2626'}}>{(d.montant||0).toLocaleString()} HTG</div>
-                    <div style={{color:'#94a3b8'}}>{d.mode}</div>
-                  </div>
+                  {d.tiers_nom && <div style={{fontSize:11,color:'#92400e',marginTop:2}}>🏢 Remis à: <strong>{d.tiers_nom}</strong></div>}
                 </div>
               ))}
             </div>
@@ -1580,7 +1650,8 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
 
                             {(() => {
                 const paiNv = (formNouv as any).paiementNvInfo
-                const montantOk = formNouv.montant === 0 || paiNv?.verifie
+                const modeIsEspeces = !formNouv.mode_paiement || formNouv.mode_paiement === 'especes'
+                const montantOk = formNouv.montant === 0 || modeIsEspeces || paiNv?.verifie
                 const champOk   = !formNouv.nom||!formNouv.prenom||!formNouv.telephone
                 const disabled  = champOk || !montantOk
                 return (
@@ -1590,9 +1661,9 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                     opacity: disabled ? 0.4 : 1, marginTop:4
                   }}>
                     {champOk
-                      ? "Complétez les champs requis"
+                      ? "Prénom, NOM et téléphone requis"
                       : !montantOk
-                        ? "Vérifiez le paiement"
+                        ? `Vérifiez le paiement ${formNouv.mode_paiement} d'abord`
                         : "✓ Enregistrer & Envoyer à l'infirmière"}
                   </button>
                 )
@@ -1775,7 +1846,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                 <button onClick={genererRapport} disabled={loadRapport} style={{background:'linear-gradient(135deg,#d97706,#b45309)',color:'white',border:'none',borderRadius:10,padding:'10px 18px',fontWeight:700,cursor:'pointer',fontSize:14}}>
                   {loadRapport?'⏳ Génération...':'🤖 Générer rapport IA'}
                 </button>
-                {rapport && <button onClick={()=>window.print()} style={{background:'#374151',color:'white',border:'none',borderRadius:10,padding:'10px 14px',fontWeight:700,cursor:'pointer',fontSize:14,display:'flex',alignItems:'center',gap:6}}><Printer size={14}/></button>}
+                {rapport && <button onClick={()=>imprimerRapportCaissier()} style={{background:'#374151',color:'white',border:'none',borderRadius:10,padding:'10px 14px',fontWeight:700,cursor:'pointer',fontSize:14,display:'flex',alignItems:'center',gap:6}}><Printer size={14}/>PDF</button>}
               </div>
             </div>
 
