@@ -224,10 +224,22 @@ export default function InfirmierDashboard() {
                       </div>
                     ))}
                   </div>
+                  {/* Afficher le médecin destinataire */}
+                  {selectedRdv.medecin_nom && (
+                    <div style={{background:'#eff6ff',borderRadius:8,padding:'8px 12px',marginBottom:10,fontSize:13,color:'#1641C8',fontWeight:600}}>
+                      👨‍⚕️ Sera envoyé à : {selectedRdv.medecin_nom}
+                    </div>
+                  )}
                   <button onClick={async()=>{
                     try {
-                      await api.put(`/infirmier/signes-vitaux/${selectedRdv.rdv_id}`, svRdv)
-                      toast.success(`✓ Signes vitaux enregistrés — ${selectedRdv.patient_nom} envoyé au médecin`)
+                      const payload = {
+                        ...svRdv,
+                        medecin_nom:   selectedRdv.medecin_nom   || '',
+                        medecin_email: selectedRdv.medecin_email || '',
+                      }
+                      await api.put(`/infirmier/signes-vitaux/${selectedRdv.rdv_id}`, payload)
+                      const dest = selectedRdv.medecin_nom ? ` → Dr ${selectedRdv.medecin_nom.replace('Dr ','')}` : ' au médecin'
+                      toast.success(`✓ ${selectedRdv.patient_nom} envoyé${dest}`)
                       setQueue(q=>q.filter((x:any)=>x.rdv_id!==selectedRdv.rdv_id))
                       setSelectedRdv(null); setSvRdv({tension:'',pouls:'',temperature:'',poids:'',spo2:''})
                     } catch(e:any){toast.error(e?.response?.data?.detail||'Erreur')}

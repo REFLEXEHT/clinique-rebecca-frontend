@@ -176,9 +176,9 @@ export default function MedecinDashboard() {
 
     api.get('/medecin/file-attente')
         .then(r => {
-          const file = r.data || []
+          const file = r.data?.patients || r.data || []
           setFileAttente(file)
-          setNbAttente(file.length)
+          setNbAttente(Array.isArray(file) ? file.length : (r.data?.total || 0))
         })
         .catch(() => {})
     }
@@ -295,15 +295,11 @@ export default function MedecinDashboard() {
               <h2 style={{ fontWeight:900, fontSize:'1.2rem', margin:0 }}>
                 🏥 Patients en attente de consultation
               </h2>
-              <button onClick={() => Promise.allSettled([
-                          api.get('/medecin/file-attente'),
-                          api.get('/medecin/queue-patients')
-                        ]).then(([r1, r2]) => {
-                          const fromQueue = r2.status==='fulfilled' ? (r2.value.data?.patients||[]) : []
-                          const fromFa = r1.status==='fulfilled' ? (r1.value.data||[]) : []
-                          const combined = [...fromQueue, ...fromFa.filter((f:any) => !fromQueue.find((q:any) => q.rdv_id === f.id))]
-                          setFileAttente(combined); setNbAttente(combined.length)
-                        })}
+              <button onClick={() => api.get('/medecin/file-attente').then(r => {
+                          const file = r.data?.patients || r.data || []
+                          setFileAttente(Array.isArray(file) ? file : [])
+                          setNbAttente(Array.isArray(file) ? file.length : (r.data?.total || 0))
+                        }).catch(()=>{})}
                 style={{ background:'none', border:'1px solid #e2e8f0', borderRadius:8, padding:'7px 14px', cursor:'pointer', fontWeight:600, fontSize:13, color:'#64748b' }}>
                 🔄 Actualiser
               </button>
@@ -349,12 +345,16 @@ export default function MedecinDashboard() {
                     <button
                       onClick={async () => {
                         try {
-                          const r = await api.get(`/medecin/dossier/${f.dossier_id}`)
-                          setSelected(r.data.dossier)
-                          setDossierId(f.dossier_id)
+                          // Chercher le dossier par patient_id si dossier_id absent
+                          const pid = f.dossier_id || f.patient_id
+                          if (!pid) { toast.error('Dossier introuvable'); return }
+                          const endpoint = f.dossier_id ? `/medecin/dossier/${f.dossier_id}` : `/medecin/dossier-patient/${f.patient_id}`
+                          const r = await api.get(endpoint)
+                          setSelected(r.data.dossier || r.data)
+                          setDossierId(f.dossier_id || r.data?.id)
                           setOnglet('consultations')
                         } catch (e: any) {
-                          toast.error(e?.response?.data?.detail || 'Erreur accès dossier')
+                          toast.error(e?.response?.data?.detail || "Dossier non disponible — signes vitaux requis")
                         }
                       }}
                       style={{ background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', border:'none', borderRadius:10, padding:'10px 18px', fontWeight:700, cursor:'pointer', fontSize:13 }}>
