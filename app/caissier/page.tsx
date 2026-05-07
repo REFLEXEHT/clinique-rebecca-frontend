@@ -148,6 +148,9 @@ export default function CaissierPage() {
   const router = useRouter()
   const [onglet, setOnglet] = useState<'paiement'|'documents'|'depenses'|'nouveau'|'rapport'|'registre'>('paiement')
   const [periodeDepense,  setPeriodeDepense]  = useState<'jour'|'mois'>('jour')
+  const [rapportUnlocked, setRapportUnlocked] = useState(false)
+  const [rapportPwd,      setRapportPwd]      = useState('')
+  const [rapportPwdErr,   setRapportPwdErr]   = useState('')
   const [periodeEncaisse, setPeriodeEncaisse] = useState<'jour'|'mois'>('jour')
   const [searchPaiement, setSearchPaiement] = useState('')
   const [searchDoc, setSearchDoc] = useState('')
@@ -501,44 +504,9 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
         ))}
       </div>
 
-      {/* KPIs — masqués sur onglet Nouveau patient pour confidentialité */}
-      <div style={{background:'white',borderBottom:'1px solid #f1f5f9',padding:'12px 20px'}}>
-        <div style={{maxWidth:1100,margin:'0 auto',display:'flex',gap:16,flexWrap:'wrap',alignItems:'center'}}>
-          {onglet !== 'nouveau' ? (
-            <>
-              {[
-                {label:'Encaissé',val:`${totalJour.toLocaleString('fr-FR')} HTG`,c:'#16a34a'},
-                {label:'Dépensé',val:`${totalDepenses.toLocaleString('fr-FR')} HTG`,c:'#dc2626'},
-                {label:'Net',val:`${(totalJour-totalDepenses).toLocaleString('fr-FR')} HTG`,c:'#1641C8'},
-                {label:'Transactions',val:String(paiements.length),c:'#d97706'},
-              ].map(s=>(
-                <div key={s.label} style={{display:'flex',alignItems:'center',gap:8}}>
-                  <span style={{fontWeight:900,fontSize:'1.1rem',color:s.c}}>{s.val}</span>
-                  <span style={{fontSize:12,color:'#94a3b8'}}>{s.label}</span>
-                </div>
-              ))}
-            </>
-          ) : (
-            <div style={{display:'flex',alignItems:'center',gap:8,color:'#94a3b8',fontSize:12,background:'#f8fafc',borderRadius:8,padding:'6px 12px',border:'1px solid #e2e8f0'}}>
-              <span>🔒</span>
-              <span>Données financières masquées — enregistrement patient en cours</span>
-            </div>
-          )}
-          <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:12}}>
-            <div style={{display:'flex',alignItems:'center',gap:6,background:'#f8fafc',borderRadius:8,padding:'6px 10px',border:'1px solid #e2e8f0'}}>
-              <span style={{fontSize:11,color:'#94a3b8'}}>1 USD =</span>
-              <span style={{fontFamily:'monospace',fontWeight:700,color:'#1641C8'}}>{tauxChange.toLocaleString()} HTG</span>
-              <input value={nouveauTaux} onChange={e=>setNouveauTaux(e.target.value)} onKeyDown={async e=>{
-                if(e.key==='Enter'&&nouveauTaux){
-                  const t=parseFloat(nouveauTaux)
-                  if(t>0){await api.post('/caissier/taux-change',{taux_htg:t});setTauxChange(t);setNouveauTaux('');toast.success(`Taux: 1 USD = ${t} HTG`)}
-                }
-              }} placeholder="Nouveau taux" style={{width:80,padding:'3px 6px',borderRadius:6,border:'1px solid #d1d5db',fontSize:12,fontFamily:'monospace'}}/>
-            </div>
-            <div style={{color:'#64748b',fontSize:13}}>{new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})}</div>
-          </div>
-        </div>
-      </div>
+      {/* Barre taux de change uniquement — stats financières dans onglet Rapport */}
+      <div style={{background:'white',borderBottom:'1px solid #f1f5f9',padding:'8px 20px'}}>
+        <div style={{maxWidth:1100,margin:'0 auto',display:'flex',justifyContent:'flex-end',alignItems:'center',gap:12}}>
 
       <div style={{maxWidth:1100,margin:'0 auto',padding:'20px'}}>
 
@@ -1849,6 +1817,58 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
         {/* ── RAPPORT IA ─────────────────────────────────────────── */}
         {onglet==='rapport' && (
           <div>
+            {/* ── VERROU MOT DE PASSE CAISSIER ── */}
+            {!rapportUnlocked ? (
+              <div style={{maxWidth:420,margin:'60px auto',textAlign:'center'}}>
+                <div style={{fontSize:48,marginBottom:16}}>🔐</div>
+                <h2 style={{fontWeight:900,fontSize:'1.2rem',color:'#0f172a',marginBottom:8}}>Accès protégé</h2>
+                <p style={{color:'#64748b',fontSize:14,marginBottom:24,lineHeight:1.6}}>
+                  Les données financières sont confidentielles.<br/>
+                  Confirmez votre mot de passe pour accéder au rapport.
+                </p>
+                <input
+                  type="password"
+                  value={rapportPwd}
+                  onChange={e=>{setRapportPwd(e.target.value);setRapportPwdErr('')}}
+                  onKeyDown={async e=>{
+                    if(e.key==='Enter'){
+                      try{
+                        await api.post('/auth/verify-password',{password:rapportPwd})
+                        setRapportUnlocked(true);setRapportPwd('')
+                      }catch{setRapportPwdErr('Mot de passe incorrect')}
+                    }
+                  }}
+                  placeholder="Votre mot de passe..."
+                  style={{width:'100%',padding:'12px 16px',borderRadius:10,border:`2px solid ${rapportPwdErr?'#dc2626':'#e2e8f0'}`,fontSize:15,marginBottom:8,textAlign:'center',boxSizing:'border-box' as const}}
+                  autoFocus
+                />
+                {rapportPwdErr && <div style={{color:'#dc2626',fontSize:13,marginBottom:8}}>{rapportPwdErr}</div>}
+                <button onClick={async()=>{
+                  if(!rapportPwd){setRapportPwdErr('Saisissez votre mot de passe');return}
+                  try{
+                    await api.post('/auth/verify-password',{password:rapportPwd})
+                    setRapportUnlocked(true);setRapportPwd('')
+                  }catch{setRapportPwdErr('Mot de passe incorrect')}
+                }} style={{width:'100%',background:'linear-gradient(135deg,#d97706,#b45309)',color:'white',border:'none',borderRadius:10,padding:'12px',fontWeight:700,cursor:'pointer',fontSize:14}}>
+                  🔓 Confirmer et accéder
+                </button>
+              </div>
+            ) : (
+              <div>
+                {/* Stats financières — accessibles seulement après authentification */}
+                <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:14,marginBottom:24}}>
+                  {[
+                    {label:`Encaissé ${periodeEncaisse==='mois'?'(mois)':'(auj.)'}`,val:totalJour,c:'#16a34a',bg:'#f0fdf4'},
+                    {label:`Dépensé ${periodeDepense==='mois'?'(mois)':'(auj.)'}`,val:totalDepenses,c:'#dc2626',bg:'#fef2f2'},
+                    {label:'Net',val:totalJour-totalDepenses,c:totalJour-totalDepenses>=0?'#1641C8':'#dc2626',bg:'#eff6ff'},
+                    {label:'Transactions',val:paiements.length,c:'#d97706',bg:'#fefce8'},
+                  ].map(s=>(
+                    <div key={s.label} style={{background:s.bg,borderRadius:14,padding:18,textAlign:'center',border:'1px solid #e2e8f0'}}>
+                      <div style={{fontWeight:900,fontSize:'1.4rem',color:s.c}}>{typeof s.val==='number'?s.val.toLocaleString('fr-FR'):s.val}</div>
+                      <div style={{fontSize:12,color:'#64748b',marginTop:4}}>{s.label}</div>
+                    </div>
+                  ))}
+                </div>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
               <h2 style={{fontWeight:900,fontSize:'1.2rem',margin:0}}>📊 Rapport comptable journalier</h2>
               <div style={{display:'flex',gap:8}}>
@@ -1859,23 +1879,17 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
               </div>
             </div>
 
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr 1fr',gap:14,marginBottom:24}}>
-              {[
-                {label:'Total encaissé',val:totalJour,c:'#16a34a',bg:'#f0fdf4'},
-                {label:'Total décaissé',val:totalDepenses,c:'#dc2626',bg:'#fef2f2'},
-                {label:'Solde net',val:totalJour-totalDepenses,c:totalJour-totalDepenses>=0?'#1641C8':'#dc2626',bg:'#eff6ff'},
-              ].map(s=>(
-                <div key={s.label} style={{background:s.bg,borderRadius:14,padding:20,textAlign:'center',border:'1px solid #e2e8f0'}}>
-                  <div style={{fontWeight:900,fontSize:'1.5rem',color:s.c}}>{s.val.toLocaleString('fr-FR')} HTG</div>
-                  <div style={{fontSize:13,color:'#64748b',marginTop:4}}>{s.label}</div>
-                </div>
-              ))}
-            </div>
+
 
             {rapport && (
               <div style={{background:'white',borderRadius:16,padding:28,border:'1px solid #e2e8f0',marginBottom:20}}>
                 <div style={{fontWeight:700,color:'#d97706',marginBottom:12,fontSize:15}}>📋 Rapport IA — {new Date().toLocaleDateString('fr-FR')}</div>
                 <div style={{fontSize:14,color:'#374151',lineHeight:1.9,whiteSpace:'pre-wrap'}}>{rapport}</div>
+              </div>
+            )}
+                <button onClick={()=>{setRapportUnlocked(false);setRapport('')}} style={{marginTop:12,background:'#f1f5f9',border:'none',borderRadius:8,padding:'8px 16px',cursor:'pointer',fontSize:12,color:'#64748b'}}>
+                  🔒 Verrouiller le rapport
+                </button>
               </div>
             )}
           </div>
