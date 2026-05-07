@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useState, useCallback } from 'react'
+import { imprimerRapportComptable, imprimerRecuPaiement } from '@/lib/print'
 import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { api } from '@/lib/api'
@@ -1040,76 +1041,27 @@ export default function AdminComptabilite() {
                 {aiLoading ? '⏳ Analyse IA...' : '🤖 Générer le rapport IA'}
               </button>
               {aiRapport && (
-                <button onClick={()=>{
-                  const d = aiDonnees
-                  const w = window.open('','_blank','width=820,height=1050')
-                  if(!w) { alert("Autorisez les popups pour imprimer"); return }
-                  const lignesProduits = d?.recettes_par_service
-                    ? Object.entries(d.recettes_par_service).sort((a:any,b:any)=>b[1]-a[1])
-                        .map(([k,v]:any)=>`<tr><td>${k}</td><td style="text-align:right;font-weight:700;color:#16a34a">${(v||0).toLocaleString('fr')} HTG</td><td style="text-align:right">${d.total_produits>0?((v/d.total_produits)*100).toFixed(1):'0'}%</td></tr>`).join('')
-                    : ''
-                  const lignesCharges = d?.charges_par_categorie
-                    ? Object.entries(d.charges_par_categorie).sort((a:any,b:any)=>b[1]-a[1])
-                        .map(([k,v]:any)=>`<tr><td>${k}</td><td style="text-align:right;font-weight:700;color:#dc2626">${(v||0).toLocaleString('fr')} HTG</td></tr>`).join('')
-                    : ''
-                  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
-<title>Rapport Comptable ${MOIS_NOMS[moisBilan]} ${anneeBilan}</title>
-<style>
-*{box-sizing:border-box;margin:0;padding:0}
-body{font-family:Arial,sans-serif;padding:24px;color:#1e293b;font-size:13px;line-height:1.6}
-.header{text-align:center;border-bottom:3px solid #1641C8;padding-bottom:14px;margin-bottom:20px}
-.clinic{font-size:22px;font-weight:900;color:#1641C8}
-.sub{font-size:11px;color:#64748b;margin-top:3px}
-.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
-.kpi{border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center;background:#f8fafc}
-.kpi-val{font-size:16px;font-weight:900}.kpi-lbl{font-size:9px;color:#64748b;margin-top:3px;text-transform:uppercase}
-.green{color:#16a34a}.red{color:#dc2626}.blue{color:#1641C8}
-.section{margin-bottom:20px}
-.section-title{font-size:12px;font-weight:700;color:#1641C8;border-bottom:2px solid #dbeafe;padding-bottom:6px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
-.rapport-text{white-space:pre-wrap;line-height:1.9;font-size:13px;background:#f8fafc;border-radius:8px;padding:16px;border:1px solid #e2e8f0}
-table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
-th{background:#f1f5f9;padding:7px 10px;text-align:left;font-size:11px;color:#64748b;border-bottom:2px solid #e2e8f0}
-td{padding:7px 10px;border-bottom:1px solid #f1f5f9}
-.footer{text-align:center;font-size:9px;color:#94a3b8;margin-top:20px;padding-top:12px;border-top:1px solid #e2e8f0;line-height:1.8}
-.btn-print{display:block;width:100%;padding:11px;background:#1641C8;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700;margin-top:16px}
-@media print{.btn-print{display:none!important} body{padding:8px}}
-</style></head><body>
-<div class="header">
-  <div class="clinic">🏥 CLINIQUE DE LA REBECCA</div>
-  <div class="sub">#44 Rue Rebecca, Pétion-Ville · (509) 4858-5757</div>
-  <div class="sub" style="font-weight:700;color:#374151;margin-top:8px;font-size:13px">RAPPORT COMPTABLE — ${MOIS_NOMS[moisBilan].toUpperCase()} ${anneeBilan}</div>
-  <div class="sub">Généré le ${new Date().toLocaleDateString('fr-FR')} · Assistant IA Comptable · PCN Haïti</div>
-</div>
-${d?`<div class="kpis">
-  <div class="kpi"><div class="kpi-val green">+${(d.total_produits||0).toLocaleString('fr')} HTG</div><div class="kpi-lbl">Total Produits</div></div>
-  <div class="kpi"><div class="kpi-val red">-${(d.total_charges||0).toLocaleString('fr')} HTG</div><div class="kpi-lbl">Total Charges</div></div>
-  <div class="kpi"><div class="kpi-val ${(d.resultat_net||0)>=0?'green':'red'}">${(d.resultat_net||0)>=0?'+':''}${(d.resultat_net||0).toLocaleString('fr')} HTG</div><div class="kpi-lbl">Résultat Net (${d.ratio_marge||0}%)</div></div>
-  <div class="kpi"><div class="kpi-val blue">${d.nb_patients||0}</div><div class="kpi-lbl">Patients · ${d.nb_transactions||0} trans.</div></div>
-</div>`:''}
-<div class="section">
-  <div class="section-title">Rapport de l'Assistant Comptable IA</div>
-  <div class="rapport-text">${aiRapport}</div>
-</div>
-${lignesProduits?`<div class="section">
-  <div class="section-title">Détail des Produits — Classe 7 PCN</div>
-  <table><thead><tr><th>Service</th><th style="text-align:right">Montant HTG</th><th style="text-align:right">%</th></tr></thead>
-  <tbody>${lignesProduits}</tbody></table>
-</div>`:''}
-${lignesCharges?`<div class="section">
-  <div class="section-title">Détail des Charges — Classe 6 PCN</div>
-  <table><thead><tr><th>Catégorie</th><th style="text-align:right">Montant HTG</th></tr></thead>
-  <tbody>${lignesCharges}</tbody></table>
-</div>`:''}
-<div class="footer">
-  Rapport généré automatiquement par l'Assistant IA Comptable de la Clinique de la Rebecca<br>
-  Conformité : Plan Comptable National Haïtien (PCN) · IFRS pour PME · DGI · OFATMA<br>
-  Ce rapport est indicatif — une vérification par un expert-comptable est recommandée avant toute décision
-</div>
-<button class="btn-print" onclick="window.print()">🖨 Imprimer le rapport comptable</button>
-</body></html>`)
-                  w.document.close(); w.focus(); setTimeout(()=>w.print(), 500)
-                }} className="btn-ghost py-2 flex items-center gap-1">
-                  <i className="fa-solid fa-print"/>Imprimer
+                <button onClick={()=> {
+                  if (!aiDonnees) return
+                  imprimerRapportComptable({
+                    moisNom: MOIS_NOMS[moisBilan],
+                    annee: anneeBilan,
+                    totalProduits: aiDonnees.total_produits || 0,
+                    totalCharges:  aiDonnees.total_charges  || 0,
+                    resultatNet:   aiDonnees.resultat_net   || 0,
+                    ratioMarge:    aiDonnees.ratio_marge    || 0,
+                    ratioCharges:  aiDonnees.ratio_charges  || 0,
+                    nbPatients:    aiDonnees.nb_patients    || 0,
+                    nbTransactions:aiDonnees.nb_transactions|| 0,
+                    recettesParService:  aiDonnees.recettes_par_service   || {},
+                    chargesParCategorie: aiDonnees.charges_par_categorie  || {},
+                    tresorerieParMode:   aiDonnees.tresorerie_par_mode    || {},
+                    anomalies: aiDonnees.anomalies || [],
+                    rapport: aiRapport,
+                    typeRapport: aiType,
+                  })
+                }} className="btn-outline py-2 flex items-center gap-2">
+                  <i className="fa-solid fa-print"/>Imprimer le rapport
                 </button>
               )}
             </div>
@@ -1176,7 +1128,7 @@ ${lignesCharges?`<div class="section">
         </div>
       )}
 
-            {onglet === 'config' && (
+      {onglet === 'config' && (
         <div>
           <h2 className="font-extrabold text-[15px] mb-2">Configuration — Règles de répartition</h2>
           <p className="text-slate-400 text-xs mb-5">Ces règles sont appliquées automatiquement lors de l'enregistrement de chaque acte médical.</p>
