@@ -26,7 +26,12 @@ const MODES = ['Espèces','Mobile Money (Moncash)','Natcash','Virement','Chèque
 const MOIS_NOMS = ['','Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre']
 
 const fmt = (n: number) => `${(n||0).toLocaleString('fr')} HTG`
-const fmtDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'2-digit',hour:'2-digit',minute:'2-digit'})
+const fmtDate = (d: string | null | undefined) => {
+  if (!d) return '—'
+  const dt = new Date(d)
+  if (isNaN(dt.getTime())) return '—'
+  return dt.toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
+}
 
 // ─── Suggestion IA écriture comptable ────────────────────────────────────────
 const suggererEcriture = (type: string, cat: string, desc: string) => {
@@ -53,7 +58,8 @@ export default function AdminComptabilite() {
   const [onglet, setOnglet] = useState('journal')
   const [mouvements, setMouvements] = useState<any[]>([])
   const [actes, setActes] = useState<any[]>([])
-  const [decaissements, setDecaissements] = useState<any[]>([])
+  const [decaissements,          setDecaissements]          = useState<any[]>([])
+  const [decaissementsPlanifies, setDecaissementsPlanifies] = useState<any[]>([])
   const [profils, setProfils] = useState<any[]>([])
   const [bilans, setBilans] = useState<any[]>([])
   const [bilanCourant, setBilanCourant] = useState<any>(null)
@@ -108,15 +114,22 @@ export default function AdminComptabilite() {
   const loadAll = useCallback(async () => {
     loadJournal()
     try { const r = await api.get('/admin/actes-facturables', { params: { mois: moisBilan, annee: anneeBilan } }); setActes(r.data) } catch {}
-    try { const r = await api.get('/admin/decaissements'); setDecaissements(r.data) } catch {}
+    try {
+      const [rAll, rPlan] = await Promise.all([
+        api.get('/admin/decaissements'),
+        api.get('/admin/decaissements', { params: { statut: 'planifie' } })
+      ])
+      setDecaissements(rAll.data || [])
+      setDecaissementsPlanifies(rPlan.data || [])
+    } catch { setDecaissements([]); setDecaissementsPlanifies([]) }
     try { const r = await api.get('/admin/profils-medecins'); setProfils(r.data) } catch {}
     try { const r = await api.get('/admin/bilans'); setBilans(r.data) } catch {}
     try { const r = await api.get('/admin/regles-partage'); setRegles(r.data) } catch {}
     try { const r = await api.get('/admin/tarifs-clinic'); setTarifs(r.data) } catch {}
     try { const r = await api.get('/admin/contrat-optometrie'); setContratOptomet(r.data) } catch {}
-  }, [moisBilan, anneeBilan, loadJournal])
+  }, [moisBilan, anneeBilan, loadJournal, refreshKey])
 
-  useEffect(() => { loadAll() }, [loadAll])
+  useEffect(() => { loadAll() }, [loadAll, refreshKey])
 
   const totaux = mouvements.reduce((acc, m) => {
     if (m.type === 'recette') acc.rec += m.montant
@@ -212,8 +225,25 @@ export default function AdminComptabilite() {
   }
 
   const exportPDF = () => {
-    toast.success('Export PDF en préparation...')
-    window.print()
+    const mNom = MOIS_NOMS[moisBilan] || 'Inconnu'
+    const aData = aiDonnees || {}
+    imprimerRapportComptable({
+      moisNom:   mNom,
+      annee:     anneeBilan,
+      totalProduits:  totaux.rec,
+      totalCharges:   totaux.dep,
+      resultatNet:    totaux.rec - totaux.dep,
+      ratioMarge:     totaux.rec > 0 ? Math.round((totaux.rec - totaux.dep) / totaux.rec * 100) : 0,
+      ratioCharges:   totaux.rec > 0 ? Math.round(totaux.dep / totaux.rec * 100) : 0,
+      nbPatients:     aData.nb_patients    || 0,
+      nbTransactions: mouvements.length,
+      recettesParService:  aData.recettes_par_service  || mouvements.filter((m:any)=>m.type==='recette').reduce((acc:any,m:any)=>({...acc,[m.categorie||'Autre']:(acc[m.categorie||'Autre']||0)+m.montant}),{}),
+      chargesParCategorie: aData.charges_par_categorie || mouvements.filter((m:any)=>m.type==='depense').reduce((acc:any,m:any)=>({...acc,[m.categorie||'Autre']:(acc[m.categorie||'Autre']||0)+m.montant}),{}),
+      tresorerieParMode:   aData.tresorerie_par_mode   || {},
+      anomalies: aData.anomalies || [],
+      rapport:   aiRapport || `Rapport comptable ${mNom} ${anneeBilan} — ${mouvements.length} mouvement(s) enregistré(s).\nRecettes: ${totaux.rec.toLocaleString('fr')} HTG\nDépenses: ${totaux.dep.toLocaleString('fr')} HTG\nRésultat net: ${(totaux.rec-totaux.dep).toLocaleString('fr')} HTG`,
+      typeRapport: 'mensuel',
+    })
   }
 
   const bilanMoisCourant = bilans.find(b => b.mois === moisBilan && b.annee === anneeBilan)
@@ -233,8 +263,8 @@ export default function AdminComptabilite() {
           <select value={anneeBilan} onChange={e => setAnneeBilan(Number(e.target.value))} className="input w-28 text-sm">
             {[2024,2025,2026,2027].map(a => <option key={a} value={a}>{a}</option>)}
           </select>
-          <button onClick={loadAll} className="btn-ghost py-2"><RefreshCw size={14}/></button>
-          <button onClick={exportPDF} className="btn-ghost py-2"><i className="fa-solid fa-file-pdf text-red-500 mr-1"/>PDF</button>
+          <button onClick={() => setRefreshKey(k => k + 1)} title="Actualiser" className="btn-ghost py-2"><RefreshCw size={14}/></button>
+          <button onClick={exportPDF} title="Exporter le rapport PDF" className="btn-ghost py-2 text-red-500 font-bold"><i className="fa-solid fa-file-pdf mr-1"/>PDF</button>
         </div>
       </div>
 
@@ -259,7 +289,7 @@ export default function AdminComptabilite() {
         </div>
         <div className="kpi-card">
           <div className="w-9 h-9 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center mb-2"><Users size={18}/></div>
-          <div className="text-xl font-black text-orange-600">{actes.filter(a => a.statut_decaissement === 'en_attente').length}</div>
+          <div className="text-xl font-black text-orange-600">{decaissementsPlanifies.length + actes.filter((a:any) => a.statut_decaissement === 'en_attente').length}</div>
           <div className="text-xs text-slate-500 font-semibold">Décaissements en attente</div>
         </div>
       </div>
@@ -360,7 +390,7 @@ export default function AdminComptabilite() {
               <tbody>
                 {mouvements.filter(m=>filterType==='tous'||m.type===filterType).map(m=>(
                   <tr key={m.id}>
-                    <td className="text-xs text-slate-400">{fmtDate(m.date_mouvement)}</td>
+                    <td className="text-xs text-slate-400">{fmtDate(m.date_mouvement || m.created_at)}</td>
                     <td><span className={`badge ${m.type==='recette'?'badge-green':'badge-red'} text-[10px]`}>{m.type==='recette'?'↑':'↓'} {m.type}</span></td>
                     <td className="text-xs text-slate-600 font-semibold">{m.categorie}</td>
                     <td className="text-xs max-w-[180px] truncate">{m.description}</td>
@@ -496,11 +526,39 @@ export default function AdminComptabilite() {
                   <div><label className="label">Mode paiement</label>
                     <select {...regDec('mode_paiement')} className="input">{MODES.map(m=><option key={m}>{m}</option>)}</select></div>
                 </div>
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div><label className="label">Statut</label>
+                    <select {...regDec('statut')} className="input">
+                      <option value="effectue">✅ Effectué maintenant</option>
+                      <option value="planifie">🗓 Planifié (date future)</option>
+                    </select>
+                  </div>
+                  <div><label className="label">Date prévue (si planifié)</label>
+                    <input {...regDec('date_prevue')} type="date" className="input" defaultValue={new Date(Date.now()+86400000).toISOString().slice(0,10)}/></div>
+                </div>
                 <div className="flex gap-3">
                   <button type="submit" className="btn-primary"><i className="fa-solid fa-money-bill-transfer mr-1.5"/>Enregistrer</button>
                   <button type="button" onClick={()=>setShowDecForm(false)} className="btn-ghost">Annuler</button>
                 </div>
               </form>
+            </div>
+          )}
+
+          {/* Décaissements planifiés */}
+          {decaissementsPlanifies.length > 0 && (
+            <div className="card p-4 mb-4 border-l-4 border-amber-400 bg-amber-50">
+              <h3 className="font-bold text-sm text-amber-700 mb-3">🗓 Décaissements planifiés ({decaissementsPlanifies.length})</h3>
+              <div className="flex flex-col gap-2">
+                {decaissementsPlanifies.map((d:any) => (
+                  <div key={d.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-amber-200">
+                    <div>
+                      <div className="font-semibold text-sm">{d.medecin_nom}</div>
+                      <div className="text-xs text-slate-500">{d.motif} · Prévu: {fmtDate(d.date_prevue || d.date_decaissement)}</div>
+                    </div>
+                    <div className="font-extrabold text-amber-600">-{fmt(d.montant)}</div>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
@@ -585,7 +643,7 @@ export default function AdminComptabilite() {
               <tbody>
                 {mouvements.filter(m=>m.categorie==='Exploitant').map((m:any)=>(
                   <tr key={m.id}>
-                    <td className="text-xs text-slate-400">{fmtDate(m.date_mouvement)}</td>
+                    <td className="text-xs text-slate-400">{fmtDate(m.date_mouvement || m.created_at)}</td>
                     <td className="font-semibold text-xs">{m.description?.split('—')[0]}</td>
                     <td className="text-xs text-slate-600">{m.description?.split('—')[1]}</td>
                     <td className="text-xs text-slate-500">{m.description?.split('—')[2]}</td>
@@ -676,7 +734,7 @@ export default function AdminComptabilite() {
               {bilanMoisCourant && bilanMoisCourant.statut === 'brouillon' && (
                 <button onClick={()=>validerBilan(bilanMoisCourant.id)} className="btn-green py-2"><CheckCircle size={14}/>Valider</button>
               )}
-              {bilanMoisCourant && <button onClick={exportPDF} className="btn-ghost py-2"><i className="fa-solid fa-file-pdf text-red-500 mr-1"/>Export</button>}
+              {bilanMoisCourant && <button onClick={exportPDF} title="Exporter PDF" className="btn-ghost py-2 text-red-500 font-bold"><i className="fa-solid fa-file-pdf mr-1"/>PDF</button>}
             </div>
           </div>
 
@@ -788,7 +846,7 @@ export default function AdminComptabilite() {
                 </button>
               ))}
               <button onClick={genererCumul} className="btn-primary py-1.5 px-5 ml-auto"><Calculator size={14}/>Générer</button>
-              {cumul && <button onClick={exportPDF} className="btn-ghost py-1.5"><i className="fa-solid fa-file-pdf text-red-500 mr-1"/>PDF</button>}
+              {cumul && <button onClick={exportPDF} title="Exporter PDF" className="btn-ghost py-1.5 text-red-500 font-bold"><i className="fa-solid fa-file-pdf mr-1"/>PDF</button>}
             </div>
           </div>
 
