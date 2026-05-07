@@ -6,7 +6,7 @@ import { api, aiApi } from '@/lib/api'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import PaiementFlow, { type PaiementInfo } from '@/components/ui/PaiementFlow'
-import { imprimerRecuEnregistrement, imprimerRecuPaiement, imprimerFactureOfficielle } from '@/lib/print'
+import { imprimerRecuEnregistrement, imprimerRecuPaiement, imprimerFactureOfficielle, imprimerRapportComptable } from '@/lib/print'
 import { LogOut, Printer, Search, Plus, TrendingUp, ArrowDownCircle, Eye } from 'lucide-react'
 
 const SERVICES_TARIFS = [
@@ -425,7 +425,6 @@ export default function CaissierPage() {
   const creerPatient = enregistrerVisite
 
   const imprimerRapportCaissier = () => {
-    const { imprimerRapportComptable } = require('@/lib/print')
     const now = new Date()
     imprimerRapportComptable({
       moisNom: now.toLocaleDateString('fr-FR', {month:'long'}),
@@ -504,9 +503,16 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
         ))}
       </div>
 
-      {/* Barre taux de change uniquement — stats financières dans onglet Rapport */}
-      <div style={{background:'white',borderBottom:'1px solid #f1f5f9',padding:'8px 20px'}}>
-        <div style={{maxWidth:1100,margin:'0 auto',display:'flex',justifyContent:'flex-end',alignItems:'center',gap:12}}>
+      {/* Barre taux de change — seule info visible en permanence */}
+      <div style={{background:'white',borderBottom:'1px solid #f1f5f9',padding:'7px 20px',display:'flex',justifyContent:'flex-end',alignItems:'center',gap:12}}>
+        <div style={{display:'flex',alignItems:'center',gap:6,background:'#f8fafc',borderRadius:8,padding:'5px 10px',border:'1px solid #e2e8f0'}}>
+          <span style={{fontSize:11,color:'#94a3b8'}}>1 USD =</span>
+          <input type="number" value={tauxChange} onChange={e=>setTauxChange(parseFloat(e.target.value)||130)}
+            style={{width:52,border:'none',background:'transparent',fontWeight:700,fontSize:14,color:'#d97706',textAlign:'center' as const}}/>
+          <span style={{fontSize:11,color:'#94a3b8'}}>HTG</span>
+        </div>
+        <div style={{fontSize:12,color:'#94a3b8'}}>{new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'2-digit',month:'short'})}</div>
+      </div>
 
       <div style={{maxWidth:1100,margin:'0 auto',padding:'20px'}}>
 
