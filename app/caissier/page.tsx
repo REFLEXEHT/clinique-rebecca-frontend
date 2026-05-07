@@ -251,7 +251,7 @@ export default function CaissierPage() {
   }
 
   const enregistrerPaiement = async () => {
-    if (!patient) { toast.error('Recherchez un patient'); return }
+    if (!patient) { toast.error("Recherchez un patient d'abord"); return }
     if (!form.montant) { toast.error('Saisissez un montant'); return }
     if (form.mode_paiement !== 'especes' && !(form as any).paiementVerifie) {
       toast.error(`Vérifiez le paiement ${form.mode_paiement} avant d'enregistrer`)
@@ -832,7 +832,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                             reference:form.reference,
                           })
                           setForm(p=>({...p,paiementVerifie:true}))
-                          toast.success('Zelle confirmé ✓ — n'oubliez pas de vérifier sur l'app bancaire')
+                          toast.success("Zelle confirmé ✓ — n'oubliez pas de vérifier sur l'app bancaire")
                         }catch(e:any){toast.error(e?.response?.data?.detail||'Informations Zelle invalides')}
                       }}
                       style={{width:'100%',background:(form as any).paiementVerifie?'#16a34a':'#0284c7',color:'white',border:'none',borderRadius:8,padding:'9px',fontWeight:700,cursor:'pointer',fontSize:13}}
@@ -851,7 +851,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                     fontSize:15,opacity:(!patient||!form.montant||(form.mode_paiement!=='especes'&&!(form as any).paiementVerifie))?0.4:1,
                     marginTop:4
                   }}>
-                  {!patient ? 'Recherchez un patient d'abord' :
+                  {!patient ? "Recherchez un patient d'abord" :
                    !form.montant ? 'Saisissez un montant' :
                    form.mode_paiement!=='especes'&&!(form as any).paiementVerifie ? `Vérifiez le ${form.mode_paiement} d'abord` :
                    '✓ Enregistrer le paiement'}

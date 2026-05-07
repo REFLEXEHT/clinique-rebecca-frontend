@@ -120,7 +120,7 @@ export default function AdminComptabilite() {
       setShowForm(false); setEcriture(null); loadJournal()
     } catch (e: any) {
       const detail = e?.response?.data?.detail
-      if (detail?.includes('clôtur')) toast.error('Période comptable clôturée — impossible d'enregistrer')
+      if (detail?.includes('clôtur')) toast.error("Période comptable clôturée — impossible d'enregistrer")
       else toast.error(detail || 'Erreur enregistrement')
     }
   }
