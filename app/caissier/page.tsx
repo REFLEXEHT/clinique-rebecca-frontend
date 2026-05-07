@@ -191,6 +191,7 @@ export default function CaissierPage() {
     api.get('/registre-rdv?jours=30').then(r => setRegistre(r.data?.rdvs||[])).catch(()=>{})
     api.get('/labo/tarifs').then(r => setTarifsLabo(r.data || [])).catch(() => {})
     api.get('/caissier/taux-change').then(r => setTauxChange(r.data?.taux_htg || 130)).catch(() => {})
+    api.get('/specialistes').then(r => setSpecialistes(r.data || [])).catch(() => {})
     api.get('/tarifs/gestes').then(r => setCatalogueGestes(r.data?.gestes || [])).catch(() => {})
     api.get('/dentiste/tarifs').then(r => setTarifsDentiste(r.data || [])).catch(() => {})
     api.get('/pharmacie/stocks').then(r => setStocksPharmacie((r.data || []).filter((s:any) => s.quantite > 0))).catch(() => {})
@@ -275,6 +276,7 @@ export default function CaissierPage() {
 
   const [queueResult, setQueueResult] = useState<any>(null)
   const [tarifsLabo, setTarifsLabo] = useState<any[]>([])
+  const [specialistes, setSpecialistes] = useState<any[]>([])
   const [tauxChange, setTauxChange] = useState<number>(130)
   const [nouveauTaux, setNouveauTaux] = useState<string>('')
   const [catalogueGestes, setCatalogueGestes] = useState<any[]>([])
@@ -282,18 +284,20 @@ export default function CaissierPage() {
   const [stocksPharmacie, setStocksPharmacie] = useState<any[]>([])
   const [previewNumero, setPreviewNumero] = useState<string>('')
 
-  // Calcule le prochain #RB-XXXX en temps réel dès que nom+prénom sont saisis
+  // Affiche "ID en attente" dès que le nom est saisi, actualise après enregistrement
   useEffect(() => {
     if (formNouv.nom && formNouv.prenom) {
-      api.get('/caissier/dernier-patient').then(r => {
-        const last = r.data?.patient?.numero
-        if (last) {
-          const n = parseInt(last.replace('#RB-', '')) + 1
-          setPreviewNumero(`#RB-${String(n).padStart(4, '0')}`)
-        } else {
-          setPreviewNumero('#RB-0001')
-        }
-      }).catch(() => {})
+      if (!previewNumero) {
+        api.get('/caissier/dernier-patient').then(r => {
+          const last = r.data?.patient?.numero
+          if (last) {
+            const n = parseInt(last.replace('#RB-', '')) + 1
+            setPreviewNumero(`#RB-${String(n).padStart(4, '0')}`)
+          } else {
+            setPreviewNumero('#RB-0001')
+          }
+        }).catch(() => setPreviewNumero('#RB-????'))
+      }
     } else {
       setPreviewNumero('')
     }
@@ -311,9 +315,12 @@ export default function CaissierPage() {
         montant: formNouv.montant,
         mode_paiement: formNouv.mode_paiement,
         priorite: formNouv.priorite,
+        medecin_nom: (formNouv as any).medecin_choisi || '',
       })
       setQueueResult(r.data)
       toast.success(`✓ Patient ${r.data.patient?.numero} — Ticket #${r.data.ticket} envoyé à l'infirmière`)
+      // Imprimer la facture automatiquement
+      setTimeout(() => imprimerFacture(r.data), 500)
       setFormNouv({ nom:'', prenom:'', age:'', adresse:'', telephone:'', email:'',
         contact_urgence:'', type_visite:'premiere', service: SERVICES_TARIFS[0].nom,
         montant: SERVICES_TARIFS[0].prix, mode_paiement:'especes', priorite:'normal' })
@@ -328,6 +335,48 @@ export default function CaissierPage() {
         toast.success(`Dernier patient: ${r.data.patient.prenom} ${r.data.patient.nom} — ${r.data.patient.numero}`)
       } else toast("Aucun patient enregistré aujourd'hui")
     } catch { toast.error('Erreur') }
+  }
+
+  const imprimerFacture = (data: any) => {
+    const patient = data.patient || {}
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Facture ${patient.numero}</title>
+<style>
+  body{font-family:Arial,sans-serif;max-width:400px;margin:0 auto;padding:20px;font-size:13px}
+  .header{text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:15px}
+  .logo{font-size:20px;font-weight:900;color:#1641C8}
+  .ticket{font-size:40px;font-weight:900;text-align:center;color:#1641C8;letter-spacing:3px;margin:10px 0}
+  .row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dotted #ccc}
+  .total{font-size:18px;font-weight:900;text-align:right;margin-top:10px;padding:8px 0;border-top:2px solid #000}
+  .footer{text-align:center;margin-top:15px;font-size:11px;color:#666}
+  .id{font-size:32px;font-weight:900;font-family:monospace;text-align:center;background:#f0f9ff;padding:8px;border-radius:8px;margin:10px 0}
+  @media print{button{display:none}}
+</style>
+</head><body>
+<div class="header">
+  <div class="logo">🏥 Clinique de la Rebecca</div>
+  <div style="font-size:11px;color:#666">Pétion-Ville, Haïti · Tel: (509) 4858-5757</div>
+  <div style="font-size:11px;margin-top:4px">Reçu de paiement</div>
+  <div style="font-size:11px">${new Date().toLocaleString('fr-FR')}</div>
+</div>
+<div class="id">${patient.numero || '#—'}</div>
+<div class="ticket">#${data.ticket || '—'}</div>
+<table style="width:100%">
+  <tr class="row"><td>Patient</td><td><strong>${patient.nom || ''}</strong></td></tr>
+  <tr class="row"><td>Téléphone</td><td>${patient.telephone || '—'}</td></tr>
+  <tr class="row"><td>Service</td><td><strong>${data.service || '—'}</strong></td></tr>
+  <tr class="row"><td>Mode paiement</td><td>${data.mode_paiement || 'Espèces'}</td></tr>
+  ${data.montant > 0 ? `<tr><td colspan="2" class="total">Total: ${data.montant?.toLocaleString('fr-FR')} HTG</td></tr>` : ''}
+</table>
+<div class="footer">
+  Présentez ce ticket à l'infirmière<br>
+  Clinique de la Rebecca — Tous droits réservés<br>
+  ${data.rdv_id ? 'RDV #' + data.rdv_id : ''}
+</div>
+<br><button onclick="window.print()" style="width:100%;padding:10px;background:#1641C8;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">🖨 Imprimer</button>
+</body></html>`
+    const w = window.open('', '_blank', 'width=450,height=600')
+    if (w) { w.document.write(html); w.document.close(); w.focus(); setTimeout(()=>w.print(), 300) }
   }
 
   const rechercherPatient = async () => {
@@ -757,19 +806,35 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                     </div>
 
                     {typeChoisi==='clinique' && (
-                      <select value={formNouv.service} onChange={e=>{const t=SERVICES_TARIFS.find(x=>x.nom===e.target.value);setSC(e.target.value,t?.prix)}}
-                        style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
-                        <option value="">Choisir la spécialité...</option>
-                        {SERVICES_TARIFS.filter(s=>s.cat==='Clinique Externe').map(s=><option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>)}
-                      </select>
+                      <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
+                        <select value={formNouv.service} onChange={e=>{const t=SERVICES_TARIFS.find(x=>x.nom===e.target.value);setSC(e.target.value,t?.prix)}}
+                          style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
+                          <option value="">Spécialité / motif...</option>
+                          {SERVICES_TARIFS.filter(s=>s.cat==='Clinique Externe').map(s=><option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>)}
+                        </select>
+                        {formNouv.service && (
+                          <select value={(formNouv as any).medecin_choisi||''} onChange={e=>setFormNouv((p:any)=>({...p,medecin_choisi:e.target.value}))}
+                            style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #e2e8f0',fontSize:13,background:'white'}}>
+                            <option value="">Médecin (optionnel)</option>
+                            {specialistes.filter((s:any)=>s.actif).map((s:any)=><option key={s.id} value={s.nom}>{s.titre||'Dr'} {s.nom} — {s.specialite}</option>)}
+                          </select>
+                        )}
+                      </div>
                     )}
 
                     {typeChoisi==='maternite' && (
-                      <select value={formNouv.service} onChange={e=>{const t=SERVICES_TARIFS.find(x=>x.nom===e.target.value);setSC(e.target.value,t?.prix)}}
-                        style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
-                        <option value="">Choisir la prestation...</option>
-                        {SERVICES_TARIFS.filter(s=>s.cat==='Maternité').map(s=><option key={s.nom} value={s.nom}>{s.nom}{s.prix>0?` — ${s.prix.toLocaleString()} HTG`:''}</option>)}
-                      </select>
+                      <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
+                        <select value={formNouv.service} onChange={e=>{const t=SERVICES_TARIFS.find(x=>x.nom===e.target.value);setSC(e.target.value,t?.prix)}}
+                          style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
+                          <option value="">Prestation maternité...</option>
+                          {SERVICES_TARIFS.filter(s=>s.cat==='Maternité').map(s=><option key={s.nom} value={s.nom}>{s.nom}{s.prix>0?` — ${s.prix.toLocaleString()} HTG`:''}</option>)}
+                        </select>
+                        <select value={(formNouv as any).medecin_choisi||''} onChange={e=>setFormNouv((p:any)=>({...p,medecin_choisi:e.target.value}))}
+                          style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #e2e8f0',fontSize:13,background:'white'}}>
+                          <option value="">Médecin / sage-femme (optionnel)</option>
+                          {specialistes.filter((s:any)=>s.actif).map((s:any)=><option key={s.id} value={s.nom}>{s.titre||'Dr'} {s.nom} — {s.specialite}</option>)}
+                        </select>
+                      </div>
                     )}
 
                     {typeChoisi==='dentisterie' && (
@@ -850,9 +915,34 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       </div>
                     )}
 
+                    {/* Prix override pour gestes médicaux */}
+                    {typeChoisi==='geste' && formNouv.service && (
+                      <div style={{marginTop:6,background:'#f8fafc',borderRadius:8,padding:'10px 12px',border:'1px solid #e2e8f0'}}>
+                        <div style={{fontSize:11,color:'#64748b',marginBottom:6}}>Ajustement du prix (optionnel)</div>
+                        <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                          <label style={{fontSize:12,color:'#374151',whiteSpace:'nowrap' as const}}>Remise %</label>
+                          <input type="number" min="0" max="100" placeholder="0"
+                            value={(formNouv as any).remisePct||''}
+                            onChange={e=>{
+                              const pct=parseInt(e.target.value)||0
+                              const base=(formNouv as any).montantBase||formNouv.montant
+                              setFormNouv((p:any)=>({...p,remisePct:pct,montantBase:base,montant:Math.round(base*(1-pct/100))}))
+                            }}
+                            style={{width:60,padding:'5px 8px',borderRadius:6,border:'1px solid #d1d5db',fontSize:12,textAlign:'right' as const}}/>
+                          <span style={{color:'#94a3b8',fontSize:11}}>ou</span>
+                          <label style={{fontSize:12,color:'#374151',whiteSpace:'nowrap' as const}}>Prix direct HTG</label>
+                          <input type="number" placeholder="Saisir"
+                            value={formNouv.montant||''}
+                            onChange={e=>setFormNouv((p:any)=>({...p,montant:parseInt(e.target.value)||0,remisePct:0}))}
+                            style={{flex:1,padding:'5px 8px',borderRadius:6,border:'1px solid #d1d5db',fontSize:12,textAlign:'right' as const}}/>
+                          <span style={{fontSize:11,color:'#374151'}}>HTG</span>
+                        </div>
+                      </div>
+                    )}
                     {formNouv.service && (
-                      <div style={{marginTop:6,padding:'5px 10px',background:'#f0fdf4',border:'1px solid #86efac',borderRadius:7,fontSize:12,color:'#16a34a',fontWeight:600}}>
-                        ✓ {formNouv.service}
+                      <div style={{marginTop:6,padding:'5px 10px',background:'#f0fdf4',border:'1px solid #86efac',borderRadius:7,fontSize:12,color:'#16a34a',fontWeight:600,display:'flex',justifyContent:'space-between'}}>
+                        <span>✓ {formNouv.service}</span>
+                        {formNouv.montant>0 && <span style={{fontFamily:'monospace'}}>{formNouv.montant.toLocaleString()} HTG</span>}
                       </div>
                     )}
                   </div>
@@ -902,8 +992,11 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                     <div>📋 Service: <strong>{queueResult.service}</strong></div>
                     {queueResult.montant>0 && <div>💰 Payé: <strong>{queueResult.montant?.toLocaleString()} HTG</strong></div>}
                   </div>
-                  <div style={{marginTop:12,fontSize:12,opacity:0.6}}>
-                    ✅ Ticket envoyé à l'infirmière · Signes vitaux en cours
+                  <div style={{marginTop:12,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                    <div style={{fontSize:12,opacity:0.6}}>✅ Envoyé à l'infirmière</div>
+                    <button onClick={()=>imprimerFacture(queueResult)} style={{background:'rgba(255,255,255,0.2)',color:'white',border:'1px solid rgba(255,255,255,0.4)',borderRadius:8,padding:'6px 14px',cursor:'pointer',fontSize:12,fontWeight:700}}>
+                      🖨 Imprimer reçu
+                    </button>
                   </div>
                 </div>
               )}

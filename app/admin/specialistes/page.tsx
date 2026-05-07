@@ -56,13 +56,13 @@ export default function AdminSpecialistes() {
   })
   const selectedEmoji = watch('emoji')
 
-  const load = () => api.get('/specialistes').then(r => setSpecs(r.data || [])).catch(() => {})
+  const load = () => api.get('/admin/specialistes').then(r => setSpecs(r.data || [])).catch(() => {})
   useEffect(() => { load() }, [])
 
   const onAdd = async (data: FormData) => {
     setLoading(true)
     try {
-      await api.post('/specialistes', {
+      await api.post('/admin/specialistes', {
         ...data,
         description: data.description || `Consultation : ${data.prix_consultation?.toLocaleString()} HTG | RDV : ${data.prix_rdv?.toLocaleString()} HTG`,
       })
@@ -86,7 +86,7 @@ export default function AdminSpecialistes() {
   const onSaveEdit = async () => {
     if (!editingId) return
     try {
-      await api.put(`/specialistes/${editingId}`, {
+      await api.put(`/admin/specialistes/${editingId}`, {
         ...editData,
         description: editData.description || `Consultation : ${editData.prix_consultation?.toLocaleString()} HTG | RDV : ${editData.prix_rdv?.toLocaleString()} HTG`,
       })
@@ -97,7 +97,7 @@ export default function AdminSpecialistes() {
 
   const onDelete = async (s: SpecialisteExt) => {
     if (!confirm(`Supprimer ${s.nom} définitivement ?`)) return
-    try { await api.delete(`/specialistes/${s.id}`); toast.success('Supprimé'); load() }
+    try { await api.delete(`/admin/specialistes/${s.id}`); toast.success('Supprimé'); load() }
     catch { toast.error('Erreur') }
   }
 
