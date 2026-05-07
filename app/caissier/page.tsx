@@ -1584,7 +1584,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   </div>
                   <div style={{marginTop:12,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
                     <div style={{fontSize:12,opacity:0.6}}>✅ Envoyé à l'infirmière</div>
-                    <button onClick={()=>imprimerFacture(queueResult)} style={{background:'rgba(255,255,255,0.2)',color:'white',border:'1px solid rgba(255,255,255,0.4)',borderRadius:8,padding:'6px 14px',cursor:'pointer',fontSize:12,fontWeight:700}}>
+                    <button onClick={()=>imprimerFactureOf(queueResult)} style={{background:'rgba(255,255,255,0.2)',color:'white',border:'1px solid rgba(255,255,255,0.4)',borderRadius:8,padding:'6px 14px',cursor:'pointer',fontSize:12,fontWeight:700}}>
                       🖨 Imprimer reçu
                     </button>
                   </div>
