@@ -5,7 +5,9 @@ import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import toast from 'react-hot-toast'
-import { LogOut, Search, AlertTriangle, CheckCircle, Clock, Edit, FlaskConical } from 'lucide-react'
+import { LogOut, Search, AlertTriangle, CheckCircle, Clock, Edit, FlaskConical, Printer } from 'lucide-react'
+import SignaturePad from '@/components/ui/SignaturePad'
+import { imprimerResultatLabo } from '@/lib/print'
 
 // ── 188 examens complets ─────────────────────────────────────────────────
 const TOUS_EXAMENS = [
@@ -168,6 +170,8 @@ export default function LaboPage() {
   const [searchPat, setSearchPat] = useState('')
   const [patient,   setPatient]   = useState<any>(null)
   const [resultats, setResultats] = useState<any[]>([])
+  const [maSignature, setMaSignature] = useState<string | null>(null)
+  const [showSigPad, setShowSigPad] = useState(false)
   const [alertes,   setAlertes]   = useState<any[]>([])
   const [submitting,setSubmitting]= useState(false)
   const [editId,    setEditId]    = useState<number|null>(null)
@@ -185,6 +189,10 @@ export default function LaboPage() {
 
   useEffect(() => {
     if (!isAuthenticated) return
+    // Charger la signature du technicien
+    api.get('/medecin/ma-signature').then(r => {
+      if (r.data?.signature) setMaSignature(r.data.signature)
+    }).catch(() => {})
     api.get('/labo/resultats-recents?limit=50')
       .then(r => {
         const all = r.data || []
@@ -495,8 +503,93 @@ export default function LaboPage() {
                   {r.resultats}
                 </div>
                 {r.notes && <div style={{fontSize:12,color:'#64748b',marginTop:6,fontStyle:'italic'}}>{r.notes}</div>}
+                {/* Bouton imprimer résultat */}
+                <div style={{display:'flex',justifyContent:'flex-end',marginTop:10}}>
+                  <button onClick={()=>{
+                    if (!maSignature) {
+                      toast.error("Enregistrez votre signature d'abord — voir section Signature ci-dessous")
+                      setShowSigPad(true)
+                      return
+                    }
+                    imprimerResultatLabo({
+                      patient: {
+                        numero: r.patient_id || r.patient_numero || '#RB-????',
+                        nom:    r.patient_nom || 'Patient',
+                        age:    r.patient_age,
+                        telephone: r.patient_telephone,
+                      },
+                      examens: [{
+                        code:      r.code || '',
+                        libelle:   r.type_examen,
+                        valeur:    r.resultats,
+                        unite:     r.unite || '',
+                        reference: r.reference || '',
+                        critique:  r.valeur_critique,
+                      }],
+                      technicien:           user?.nom || 'Technicien',
+                      prescripteur:         r.medecin_prescripteur || '',
+                      signature_technicien: maSignature,
+                      date:        r.date_examen,
+                      recu_numero: r.numero_resultat || r.id?.toString(),
+                      notes:       r.notes,
+                    })
+                  }} style={{
+                    background:'#16a34a',color:'white',border:'none',borderRadius:8,
+                    padding:'7px 16px',fontWeight:700,cursor:'pointer',fontSize:12,
+                    display:'flex',alignItems:'center',gap:6
+                  }}>
+                    <Printer size={13}/>Imprimer le résultat
+                  </button>
+                </div>
               </div>
             ))}
+
+            {/* ── SIGNATURE TECHNICIEN ── */}
+            <div style={{background:'white',borderRadius:16,padding:20,border:'2px dashed #16a34a',marginTop:20}}>
+              <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
+                <div>
+                  <div style={{fontWeight:800,fontSize:14,color:'#15803d'}}>✍️ Ma signature de technicien</div>
+                  <div style={{fontSize:12,color:'#64748b',marginTop:2}}>
+                    Sera apposée automatiquement sur tous vos résultats imprimés.
+                  </div>
+                </div>
+                {maSignature && !showSigPad && (
+                  <button onClick={()=>setShowSigPad(true)} style={{background:'#f0fdf4',border:'1px solid #16a34a',color:'#15803d',borderRadius:8,padding:'6px 14px',cursor:'pointer',fontSize:12,fontWeight:700}}>
+                    ✏️ Modifier
+                  </button>
+                )}
+              </div>
+              {maSignature && !showSigPad ? (
+                <div style={{display:'flex',alignItems:'center',gap:14}}>
+                  <div style={{background:'#f0fdf4',border:'1px solid #86efac',borderRadius:10,padding:10}}>
+                    <img src={maSignature} style={{height:60,maxWidth:200,objectFit:'contain'}} alt="Ma signature"/>
+                  </div>
+                  <div style={{fontSize:12,color:'#16a34a',fontWeight:600}}>✅ Signature enregistrée — apparaîtra sur vos documents</div>
+                </div>
+              ) : (
+                <div>
+                  <SignaturePad
+                    onSign={sig => setMaSignature(sig)}
+                    initialValue={maSignature || undefined}
+                    label={`Signature — ${user?.nom || 'Technicien de Laboratoire'}`}
+                    width={440}
+                    height={140}
+                    strokeColor="#15803d"
+                  />
+                  {maSignature && (
+                    <button onClick={async()=>{
+                      try {
+                        await api.post('/medecin/enregistrer-signature', { signature_base64: maSignature })
+                        toast.success('Signature enregistrée ✓')
+                        setShowSigPad(false)
+                      } catch(e:any) { toast.error('Erreur enregistrement') }
+                    }} style={{marginTop:10,background:'#16a34a',color:'white',border:'none',borderRadius:8,padding:'9px 20px',fontWeight:700,cursor:'pointer',fontSize:13}}>
+                      💾 Enregistrer ma signature
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
