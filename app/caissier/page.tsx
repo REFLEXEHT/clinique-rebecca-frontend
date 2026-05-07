@@ -266,15 +266,19 @@ export default function CaissierPage() {
 
   const enregistrerDepense = async () => {
     if (!formDepense.montant || !formDepense.description) { toast.error('Complétez les champs requis'); return }
+    if (!formDepense.categorie) { toast.error('Catégorie requise'); return }
+    setLoadingDepense(true)
     try {
       const r = await api.post('/caissier/depense', formDepense)
       toast.success('Dépense enregistrée ✓')
       setDepenses(prev => [r.data, ...prev])
       setTotalDepenses(prev => prev + formDepense.montant)
       setFormDepense({categorie:CATEGORIES_DEPENSES[0],description:'',montant:0,mode:'especes'})
-    } catch (e: any) { toast.error(e?.response?.data?.detail||'Erreur') }
+    } catch (e: any) { toast.error(e?.response?.data?.detail||'Erreur enregistrement dépense') }
+    finally { setLoadingDepense(false) }
   }
 
+  const [loadingDepense, setLoadingDepense] = useState(false)
   const [queueResult, setQueueResult] = useState<any>(null)
   const [tarifsLabo, setTarifsLabo] = useState<any[]>([])
   const [tarifs, setTarifs] = useState<any[]>([])       // TarifMedecin: medecin_nom + specialite + prix_consultation
@@ -286,26 +290,36 @@ export default function CaissierPage() {
   const [stocksPharmacie, setStocksPharmacie] = useState<any[]>([])
   const [previewNumero, setPreviewNumero] = useState<string>('')
 
-  // Affiche "ID en attente" dès que le nom est saisi, actualise après enregistrement
+  // Affiche le prochain ID estimé dès que le nom est saisi
   useEffect(() => {
     if (formNouv.nom && formNouv.prenom) {
-      if (!previewNumero) {
-        api.get('/caissier/dernier-patient').then(r => {
-          const last = r.data?.patient?.numero
-          if (last) {
-            const n = parseInt(last.replace('#RB-', '')) + 1
-            setPreviewNumero(`#RB-${String(n).padStart(4, '0')}`)
-          } else {
-            setPreviewNumero('#RB-0001')
-          }
-        }).catch(() => setPreviewNumero('#RB-????'))
-      }
+      api.get('/caissier/dernier-patient').then(r => {
+        const last = r.data?.patient?.numero
+        if (last && last.startsWith('#RB-')) {
+          const n = parseInt(last.replace('#RB-', '')) + 1
+          setPreviewNumero(`#RB-${String(n).padStart(4, '0')}`)
+        } else {
+          setPreviewNumero('#RB-0001')
+        }
+      }).catch(() => setPreviewNumero('#RB-????'))
     } else {
       setPreviewNumero('')
     }
   }, [formNouv.nom, formNouv.prenom])
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
+
+  // Recalculer le prix HTG des gestes médicaux si le taux de change est modifié
+  useEffect(() => {
+    if ((formNouv as any).serviceType === 'geste' && formNouv.service && catalogueGestes.length > 0) {
+      const g = catalogueGestes.find((x:any) => x.libelle === formNouv.service)
+      if (g && g.prix_usd > 0) {
+        const htg = Math.round((g.prix_clinique_usd || g.prix_usd) * tauxChange)
+        setFormNouv((p:any) => ({...p, montant: htg, prixBase: htg, remisePct: 0}))
+      }
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tauxChange])
 
   const enregistrerVisite = async () => {
     if (!formNouv.nom || !formNouv.prenom) { toast.error('Nom et prénom requis'); return }
@@ -317,12 +331,13 @@ export default function CaissierPage() {
         montant: formNouv.montant,
         mode_paiement: formNouv.mode_paiement,
         priorite: formNouv.priorite,
-        medecin_nom: (formNouv as any).medecin_choisi || '',
+        medecin_nom: (formNouv as any).praticien || '',
+        praticien: (formNouv as any).praticien || '',
       })
       setQueueResult(r.data)
       toast.success(`✓ Patient ${r.data.patient?.numero} — Ticket #${r.data.ticket} envoyé à l'infirmière`)
-      // Imprimer la facture automatiquement
-      setTimeout(() => imprimerFacture(r.data), 500)
+      // Imprimer la facture automatiquement (appel direct dans le même tick)
+      imprimerFacture(r.data)
       setFormNouv({ nom:'', prenom:'', age:'', adresse:'', telephone:'', email:'',
         contact_urgence:'', type_visite:'premiere', service: SERVICES_TARIFS[0].nom,
         montant: SERVICES_TARIFS[0].prix, mode_paiement:'especes', priorite:'normal' })
@@ -691,11 +706,11 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   ))}
                 </div>
               </div>
-              <button onClick={enregistrerDepense} disabled={!formDepense.montant||!formDepense.description} style={{
+              <button onClick={enregistrerDepense} disabled={!formDepense.montant||!formDepense.description||loadingDepense} style={{
                 width:'100%',background:'linear-gradient(135deg,#dc2626,#b91c1c)',color:'white',
                 border:'none',borderRadius:10,padding:'12px',fontWeight:700,cursor:'pointer',fontSize:14,
-                opacity:(!formDepense.montant||!formDepense.description)?0.5:1
-              }}>✓ Enregistrer la dépense</button>
+                opacity:(!formDepense.montant||!formDepense.description||loadingDepense)?0.5:1
+              }}>{loadingDepense ? '⏳ Enregistrement...' : '✓ Enregistrer la dépense'}</button>
             </div>
 
             <div style={{background:'white',borderRadius:16,padding:18,border:'1px solid #e2e8f0',maxHeight:500,overflowY:'auto'}}>
@@ -882,12 +897,17 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                           ))}
                         </select>
 
-                        {/* Étape 3: Médecin de cette branche (avec prix) */}
+                        {/* Étape 3a: Si médecins disponibles dans cette branche */}
                         {SC && MEDECINS_BRANCHE.length > 0 && (
                           <select value={PRAT} onChange={e => {
-                            const t = tarifs.find((x:any) => x.medecin_nom === e.target.value)
-                            setPraticien(e.target.value, t?.prix_consultation || 0)
-                            setFormNouv((p:any) => ({...p, service: `${SC} — ${e.target.value}`}))
+                            const val = e.target.value
+                            if (val === '__autre__') {
+                              setPraticien('__autre__')
+                            } else {
+                              const t = tarifs.find((x:any) => x.medecin_nom === val)
+                              setPraticien(val, t?.prix_consultation || 0)
+                              setFormNouv((p:any) => ({...p, service: `${SC} — ${val}`}))
+                            }
                           }} style={selectStyle}>
                             <option value="">Choisir le médecin...</option>
                             {MEDECINS_BRANCHE.map((t:any) => (
@@ -895,23 +915,16 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                                 {t.medecin_nom}{t.prix_consultation > 0 ? ` — ${t.prix_consultation.toLocaleString()} HTG` : ''}
                               </option>
                             ))}
+                            <option value="__autre__">— Autre praticien (saisir) —</option>
                           </select>
                         )}
 
-                        {/* Si pas de tarif médecin: champ libre praticien + prix manuel */}
-                        {SC && MEDECINS_BRANCHE.length === 0 && (
-                          <input value={PRAT} onChange={e => {
-                            setPraticien(e.target.value)
-                            setFormNouv((p:any) => ({...p, service:`${SC} — ${e.target.value}`}))
-                          }} placeholder="Nom du médecin (optionnel)" style={inlineInput} />
-                        )}
-
-                        {/* Si médecin choisi mais pas dans la liste: champ libre */}
-                        {SC && (
-                          <input value={PRAT} onChange={e => {
+                        {/* Étape 3b: Champ texte libre si pas de liste OU si "Autre" sélectionné */}
+                        {SC && (MEDECINS_BRANCHE.length === 0 || PRAT === '__autre__') && (
+                          <input value={PRAT === '__autre__' ? '' : PRAT} onChange={e => {
                             setPraticien(e.target.value)
                             setFormNouv((p:any) => ({...p, service:`${SC}${e.target.value?` — ${e.target.value}`:''}`}))
-                          }} placeholder="Ou saisir un autre praticien..." style={{...inlineInput,borderColor:'#e2e8f0'}} />
+                          }} placeholder="Nom du praticien..." style={inlineInput} autoFocus={PRAT === '__autre__'} />
                         )}
                       </div>
                     )}

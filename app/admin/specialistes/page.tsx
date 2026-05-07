@@ -62,14 +62,25 @@ export default function AdminSpecialistes() {
   const onAdd = async (data: FormData) => {
     setLoading(true)
     try {
+      const specialite = (data.specialite === 'Autre (saisir manuellement)' && data.specialite_autre)
+        ? data.specialite_autre
+        : data.specialite
       await api.post('/admin/specialistes', {
         ...data,
+        specialite,
         description: data.description || `Consultation : ${data.prix_consultation?.toLocaleString()} HTG | RDV : ${data.prix_rdv?.toLocaleString()} HTG`,
       })
       toast.success(`Dr ${data.nom} ajouté ✓`)
       reset({ emoji: '👨‍⚕️', categorie: 'tous', ordre: 0, prix_consultation: 3000, prix_rdv: 3000, type_medecin: 'investisseur' })
       setShowForm(false); setEmojiPicker(false); load()
-    } catch { toast.error('Erreur lors de l\'ajout') }
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail
+      if (Array.isArray(detail)) {
+        toast.error('Erreur: ' + detail.map((d: any) => d.msg).join(', '))
+      } else {
+        toast.error(detail || "Erreur lors de l'ajout")
+      }
+    }
     finally { setLoading(false) }
   }
 
@@ -92,7 +103,14 @@ export default function AdminSpecialistes() {
       })
       toast.success('Médecin mis à jour ✓')
       setEditingId(null); setEditData({}); setEditEmojiPicker(false); load()
-    } catch { toast.error('Erreur') }
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail
+      if (Array.isArray(detail)) {
+        toast.error('Erreur: ' + detail.map((d: any) => d.msg).join(', '))
+      } else {
+        toast.error(detail || 'Erreur mise à jour')
+      }
+    }
   }
 
   const onDelete = async (s: SpecialisteExt) => {

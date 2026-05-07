@@ -27,14 +27,23 @@ export default function AdminDepenses() {
 
   const total = mouvements.reduce((s,m)=>s+m.montant,0)
 
+  const [loadingSubmit, setLoadingSubmit] = useState(false)
+
   const onSubmit = async (data: FormData) => {
+    if (!data.categorie) { return }
+    setLoadingSubmit(true)
     try {
       await comptaApi.create({ type:'depense', categorie:data.categorie, description:data.description, montant:Number(data.montant), date_mouvement:new Date(data.date_mouvement).toISOString(), mode_paiement:data.mode_paiement, notes:data.notes||undefined })
       toast.success('Dépense enregistrée')
       reset({ mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16) })
       setShowForm(false)
       load()
-    } catch { toast.error('Erreur') }
+    } catch (e: any) {
+      const detail = e?.response?.data?.detail
+      toast.error(detail || 'Erreur enregistrement — vérifiez que la période comptable est ouverte')
+    } finally {
+      setLoadingSubmit(false)
+    }
   }
 
   const del = async (id: number) => {
@@ -68,7 +77,7 @@ export default function AdminDepenses() {
               <div><label className="label">Mode de paiement</label><select {...register('mode_paiement')} className="input">{MODES.map(m=><option key={m}>{m}</option>)}</select></div>
             </div>
             <div className="mb-4"><label className="label">Notes</label><input {...register('notes')} className="input" placeholder="Optionnel"/></div>
-            <div className="flex gap-3"><button type="submit" className="btn-primary"><i className="fa-solid fa-save"/>Enregistrer</button><button type="button" onClick={()=>setShowForm(false)} className="btn-ghost">Annuler</button></div>
+            <div className="flex gap-3"><button type="submit" disabled={loadingSubmit} className="btn-primary"><i className="fa-solid fa-save"/>{loadingSubmit ? 'Enregistrement...' : 'Enregistrer'}</button><button type="button" onClick={()=>setShowForm(false)} className="btn-ghost">Annuler</button></div>
           </form>
         </div>
       )}
