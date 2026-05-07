@@ -1015,14 +1015,14 @@ export default function AdminComptabilite() {
       {/* ── RAPPORT IA COMPTABLE ── */}
       {onglet === 'ai_compta' && (
         <div>
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h2 className="font-extrabold text-[15px] flex items-center gap-2">
               <span>🤖</span>Assistant comptable IA — {MOIS_NOMS[moisBilan]} {anneeBilan}
             </h2>
-            <div className="flex gap-2 items-center">
-              <select value={aiType} onChange={e=>setAiType(e.target.value)} className="input w-48 py-1.5 text-xs">
+            <div className="flex gap-2 items-center flex-wrap">
+              <select value={aiType} onChange={e=>setAiType(e.target.value)} className="input w-52 py-1.5 text-xs">
                 <option value="mensuel">📊 Rapport mensuel complet</option>
-                <option value="flux_tresorerie">💰 Flux de trésorerie</option>
+                <option value="flux_tresorerie">💰 Flux trésorerie (IAS 7)</option>
                 <option value="bilan_patrimonial">🏦 Bilan patrimonial</option>
                 <option value="annuel">📈 Synthèse annuelle</option>
               </select>
@@ -1032,47 +1032,138 @@ export default function AdminComptabilite() {
                   const r = await api.post('/admin/comptable-ai',{mois:moisBilan,annee:anneeBilan,type:aiType})
                   setAiRapport(r.data.rapport)
                   setAiDonnees(r.data.donnees)
-                  toast.success('Rapport IA généré ✓')
+                  if(r.data.anomalies?.length>0) toast.error(`⚠️ ${r.data.anomalies.length} anomalie(s) détectée(s)`)
+                  else toast.success('Rapport IA généré ✓')
                 }catch(e:any){toast.error(e?.response?.data?.detail||'Erreur IA')}
                 finally{setAiLoading(false)}
               }} className="btn-primary py-2">
-                {aiLoading?'⏳ Analyse en cours...':'🤖 Générer le rapport IA'}
+                {aiLoading ? '⏳ Analyse IA...' : '🤖 Générer le rapport IA'}
               </button>
-              {aiRapport && <button onClick={()=>window.print()} className="btn-ghost py-2"><i className="fa-solid fa-print mr-1"/>Imprimer</button>}
+              {aiRapport && (
+                <button onClick={()=>{
+                  const d = aiDonnees
+                  const w = window.open('','_blank','width=820,height=1050')
+                  if(!w) { alert("Autorisez les popups pour imprimer"); return }
+                  const lignesProduits = d?.recettes_par_service
+                    ? Object.entries(d.recettes_par_service).sort((a:any,b:any)=>b[1]-a[1])
+                        .map(([k,v]:any)=>`<tr><td>${k}</td><td style="text-align:right;font-weight:700;color:#16a34a">${(v||0).toLocaleString('fr')} HTG</td><td style="text-align:right">${d.total_produits>0?((v/d.total_produits)*100).toFixed(1):'0'}%</td></tr>`).join('')
+                    : ''
+                  const lignesCharges = d?.charges_par_categorie
+                    ? Object.entries(d.charges_par_categorie).sort((a:any,b:any)=>b[1]-a[1])
+                        .map(([k,v]:any)=>`<tr><td>${k}</td><td style="text-align:right;font-weight:700;color:#dc2626">${(v||0).toLocaleString('fr')} HTG</td></tr>`).join('')
+                    : ''
+                  w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8">
+<title>Rapport Comptable ${MOIS_NOMS[moisBilan]} ${anneeBilan}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,sans-serif;padding:24px;color:#1e293b;font-size:13px;line-height:1.6}
+.header{text-align:center;border-bottom:3px solid #1641C8;padding-bottom:14px;margin-bottom:20px}
+.clinic{font-size:22px;font-weight:900;color:#1641C8}
+.sub{font-size:11px;color:#64748b;margin-top:3px}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.kpi{border:1px solid #e2e8f0;border-radius:8px;padding:12px;text-align:center;background:#f8fafc}
+.kpi-val{font-size:16px;font-weight:900}.kpi-lbl{font-size:9px;color:#64748b;margin-top:3px;text-transform:uppercase}
+.green{color:#16a34a}.red{color:#dc2626}.blue{color:#1641C8}
+.section{margin-bottom:20px}
+.section-title{font-size:12px;font-weight:700;color:#1641C8;border-bottom:2px solid #dbeafe;padding-bottom:6px;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px}
+.rapport-text{white-space:pre-wrap;line-height:1.9;font-size:13px;background:#f8fafc;border-radius:8px;padding:16px;border:1px solid #e2e8f0}
+table{width:100%;border-collapse:collapse;font-size:12px;margin-top:6px}
+th{background:#f1f5f9;padding:7px 10px;text-align:left;font-size:11px;color:#64748b;border-bottom:2px solid #e2e8f0}
+td{padding:7px 10px;border-bottom:1px solid #f1f5f9}
+.footer{text-align:center;font-size:9px;color:#94a3b8;margin-top:20px;padding-top:12px;border-top:1px solid #e2e8f0;line-height:1.8}
+.btn-print{display:block;width:100%;padding:11px;background:#1641C8;color:white;border:none;border-radius:8px;font-size:13px;cursor:pointer;font-weight:700;margin-top:16px}
+@media print{.btn-print{display:none!important} body{padding:8px}}
+</style></head><body>
+<div class="header">
+  <div class="clinic">🏥 CLINIQUE DE LA REBECCA</div>
+  <div class="sub">#44 Rue Rebecca, Pétion-Ville · (509) 4858-5757</div>
+  <div class="sub" style="font-weight:700;color:#374151;margin-top:8px;font-size:13px">RAPPORT COMPTABLE — ${MOIS_NOMS[moisBilan].toUpperCase()} ${anneeBilan}</div>
+  <div class="sub">Généré le ${new Date().toLocaleDateString('fr-FR')} · Assistant IA Comptable · PCN Haïti</div>
+</div>
+${d?`<div class="kpis">
+  <div class="kpi"><div class="kpi-val green">+${(d.total_produits||0).toLocaleString('fr')} HTG</div><div class="kpi-lbl">Total Produits</div></div>
+  <div class="kpi"><div class="kpi-val red">-${(d.total_charges||0).toLocaleString('fr')} HTG</div><div class="kpi-lbl">Total Charges</div></div>
+  <div class="kpi"><div class="kpi-val ${(d.resultat_net||0)>=0?'green':'red'}">${(d.resultat_net||0)>=0?'+':''}${(d.resultat_net||0).toLocaleString('fr')} HTG</div><div class="kpi-lbl">Résultat Net (${d.ratio_marge||0}%)</div></div>
+  <div class="kpi"><div class="kpi-val blue">${d.nb_patients||0}</div><div class="kpi-lbl">Patients · ${d.nb_transactions||0} trans.</div></div>
+</div>`:''}
+<div class="section">
+  <div class="section-title">Rapport de l'Assistant Comptable IA</div>
+  <div class="rapport-text">${aiRapport}</div>
+</div>
+${lignesProduits?`<div class="section">
+  <div class="section-title">Détail des Produits — Classe 7 PCN</div>
+  <table><thead><tr><th>Service</th><th style="text-align:right">Montant HTG</th><th style="text-align:right">%</th></tr></thead>
+  <tbody>${lignesProduits}</tbody></table>
+</div>`:''}
+${lignesCharges?`<div class="section">
+  <div class="section-title">Détail des Charges — Classe 6 PCN</div>
+  <table><thead><tr><th>Catégorie</th><th style="text-align:right">Montant HTG</th></tr></thead>
+  <tbody>${lignesCharges}</tbody></table>
+</div>`:''}
+<div class="footer">
+  Rapport généré automatiquement par l'Assistant IA Comptable de la Clinique de la Rebecca<br>
+  Conformité : Plan Comptable National Haïtien (PCN) · IFRS pour PME · DGI · OFATMA<br>
+  Ce rapport est indicatif — une vérification par un expert-comptable est recommandée avant toute décision
+</div>
+<button class="btn-print" onclick="window.print()">🖨 Imprimer le rapport comptable</button>
+</body></html>`)
+                  w.document.close(); w.focus(); setTimeout(()=>w.print(), 500)
+                }} className="btn-ghost py-2 flex items-center gap-1">
+                  <i className="fa-solid fa-print"/>Imprimer
+                </button>
+              )}
             </div>
           </div>
 
-          {/* Données collectées */}
+          {/* KPIs */}
           {aiDonnees && (
-            <div className="grid grid-cols-4 gap-4 mb-5">
-              <div className="kpi-card"><div className="text-xl font-black text-green-600">+{aiDonnees.total_produits.toLocaleString('fr')} HTG</div><div className="text-xs text-slate-500">Total Produits</div></div>
-              <div className="kpi-card"><div className="text-xl font-black text-red-500">-{aiDonnees.total_charges.toLocaleString('fr')} HTG</div><div className="text-xs text-slate-500">Total Charges</div></div>
-              <div className="kpi-card"><div className={`text-xl font-black ${aiDonnees.resultat_net>=0?'text-[#1641C8]':'text-red-600'}`}>{aiDonnees.resultat_net>=0?'+':''}{aiDonnees.resultat_net.toLocaleString('fr')} HTG</div><div className="text-xs text-slate-500">Résultat Net</div></div>
-              <div className="kpi-card"><div className="text-xl font-black text-purple-600">{aiDonnees.nb_patients}</div><div className="text-xs text-slate-500">Patients ({aiDonnees.nb_transactions} trans.)</div></div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+              <div className="kpi-card"><div className="text-xl font-black text-green-600">+{(aiDonnees.total_produits||0).toLocaleString('fr')} HTG</div><div className="text-xs text-slate-500">Total Produits</div></div>
+              <div className="kpi-card"><div className="text-xl font-black text-red-500">-{(aiDonnees.total_charges||0).toLocaleString('fr')} HTG</div><div className="text-xs text-slate-500">Total Charges</div></div>
+              <div className="kpi-card"><div className={`text-xl font-black ${(aiDonnees.resultat_net||0)>=0?'text-[#1641C8]':'text-red-600'}`}>{(aiDonnees.resultat_net||0)>=0?'+':''}{(aiDonnees.resultat_net||0).toLocaleString('fr')} HTG</div><div className="text-xs text-slate-500">Résultat Net ({aiDonnees.ratio_marge||0}%)</div></div>
+              <div className="kpi-card"><div className="text-xl font-black text-purple-600">{aiDonnees.nb_patients||0}</div><div className="text-xs text-slate-500">{aiDonnees.nb_transactions||0} transactions</div></div>
+            </div>
+          )}
+          {aiDonnees?.anomalies_count > 0 && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-semibold">
+              ⚠️ {aiDonnees.anomalies_count} anomalie(s) comptable(s) détectée(s) — vérifiez les écritures PCN
             </div>
           )}
 
           {/* Rapport IA */}
           {aiRapport ? (
-            <div id="rapport-ai-print" className="card p-6">
+            <div className="card p-6">
               <div className="flex items-center justify-between mb-4 border-b pb-3">
                 <div>
                   <div className="font-extrabold text-[#1641C8] text-base">CLINIQUE DE LA REBECCA</div>
-                  <div className="text-xs text-slate-500">Rapport comptable IA — {MOIS_NOMS[moisBilan]} {anneeBilan}</div>
+                  <div className="text-xs text-slate-500">Rapport IA — {MOIS_NOMS[moisBilan]} {anneeBilan} · PCN Haïti · IFRS PME</div>
                 </div>
                 <div className="text-xs text-slate-400">Généré le {new Date().toLocaleDateString('fr-FR')}</div>
               </div>
-              <div style={{whiteSpace:'pre-wrap',lineHeight:1.8,fontSize:14,color:'#1e293b'}}>{aiRapport}</div>
+              <div style={{whiteSpace:'pre-wrap',lineHeight:1.9,fontSize:14,color:'#1e293b'}}>{aiRapport}</div>
+              {aiDonnees?.recettes_par_service && Object.keys(aiDonnees.recettes_par_service).length > 0 && (
+                <div className="mt-5 pt-4 border-t">
+                  <div className="text-xs font-bold text-slate-500 mb-3 uppercase tracking-wider">Produits par service (Classe 7 PCN)</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    {Object.entries(aiDonnees.recettes_par_service).sort((a:any,b:any)=>b[1]-a[1]).map(([k,v]:any)=>(
+                      <div key={k} className="flex justify-between items-center text-xs p-2 bg-slate-50 rounded-lg gap-2">
+                        <span className="text-slate-600 truncate">{k}</span>
+                        <span className="font-bold text-green-700 whitespace-nowrap">+{(v||0).toLocaleString('fr')} HTG</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
               <div className="mt-4 pt-3 border-t text-[10px] text-slate-400 text-center">
-                Rapport généré par assistant IA — Clinique de la Rebecca · Vérification comptable recommandée avant toute décision
+                Rapport généré par assistant IA · PCN Haïti · IFRS pour PME · Vérification recommandée
               </div>
             </div>
           ) : !aiLoading && (
-            <div className="card p-12 text-center text-slate-300">
+            <div className="card p-12 text-center">
               <span className="text-5xl">🤖</span>
-              <p className="text-sm mt-4">Sélectionnez le type de rapport et cliquez sur "Générer"</p>
-              <p className="text-xs mt-1 text-slate-400">L'IA analyse l'ensemble des données financières: recettes, charges, trésorerie, activité clinique</p>
-              <p className="text-xs text-slate-400">Conformité PCN Haïti + IFRS pour PME</p>
+              <p className="text-sm mt-4 text-slate-500 font-medium">Sélectionnez le type de rapport et cliquez sur "Générer"</p>
+              <p className="text-xs mt-2 text-slate-400">L'IA analyse: recettes par service, charges, trésorerie PCN, activité clinique, anomalies</p>
+              <p className="text-xs text-slate-400">Normes: PCN Haïti · IFRS pour PME · DGI · OFATMA</p>
             </div>
           )}
           {aiLoading && (
