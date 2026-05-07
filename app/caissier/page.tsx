@@ -501,20 +501,29 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
         ))}
       </div>
 
-      {/* KPIs */}
+      {/* KPIs — masqués sur onglet Nouveau patient pour confidentialité */}
       <div style={{background:'white',borderBottom:'1px solid #f1f5f9',padding:'12px 20px'}}>
-        <div style={{maxWidth:1100,margin:'0 auto',display:'flex',gap:16,flexWrap:'wrap'}}>
-          {[
-            {label:'Encaissé',val:`${totalJour.toLocaleString('fr-FR')} HTG`,c:'#16a34a'},
-            {label:'Dépensé',val:`${totalDepenses.toLocaleString('fr-FR')} HTG`,c:'#dc2626'},
-            {label:'Net',val:`${(totalJour-totalDepenses).toLocaleString('fr-FR')} HTG`,c:'#1641C8'},
-            {label:'Transactions',val:paiements.length,c:'#d97706'},
-          ].map(s=>(
-            <div key={s.label} style={{display:'flex',alignItems:'center',gap:8}}>
-              <span style={{fontWeight:900,fontSize:'1.1rem',color:s.c}}>{s.val}</span>
-              <span style={{fontSize:12,color:'#94a3b8'}}>{s.label}</span>
+        <div style={{maxWidth:1100,margin:'0 auto',display:'flex',gap:16,flexWrap:'wrap',alignItems:'center'}}>
+          {onglet !== 'nouveau' ? (
+            <>
+              {[
+                {label:'Encaissé',val:`${totalJour.toLocaleString('fr-FR')} HTG`,c:'#16a34a'},
+                {label:'Dépensé',val:`${totalDepenses.toLocaleString('fr-FR')} HTG`,c:'#dc2626'},
+                {label:'Net',val:`${(totalJour-totalDepenses).toLocaleString('fr-FR')} HTG`,c:'#1641C8'},
+                {label:'Transactions',val:String(paiements.length),c:'#d97706'},
+              ].map(s=>(
+                <div key={s.label} style={{display:'flex',alignItems:'center',gap:8}}>
+                  <span style={{fontWeight:900,fontSize:'1.1rem',color:s.c}}>{s.val}</span>
+                  <span style={{fontSize:12,color:'#94a3b8'}}>{s.label}</span>
+                </div>
+              ))}
+            </>
+          ) : (
+            <div style={{display:'flex',alignItems:'center',gap:8,color:'#94a3b8',fontSize:12,background:'#f8fafc',borderRadius:8,padding:'6px 12px',border:'1px solid #e2e8f0'}}>
+              <span>🔒</span>
+              <span>Données financières masquées — enregistrement patient en cours</span>
             </div>
-          ))}
+          )}
           <div style={{marginLeft:'auto',display:'flex',alignItems:'center',gap:12}}>
             <div style={{display:'flex',alignItems:'center',gap:6,background:'#f8fafc',borderRadius:8,padding:'6px 10px',border:'1px solid #e2e8f0'}}>
               <span style={{fontSize:11,color:'#94a3b8'}}>1 USD =</span>
