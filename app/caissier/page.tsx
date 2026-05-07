@@ -165,7 +165,7 @@ export default function CaissierPage() {
     mode_paiement: 'especes', reference: ''
   })
   const [formDepense, setFormDepense] = useState({
-    categorie: CATEGORIES_DEPENSES[0], description: '', montant: 0, mode: 'especes'
+    categorie: CATEGORIES_DEPENSES[0], description: '', montant: 0, mode: 'especes', tiers_nom: ''
   })
   const [formNouv, setFormNouv] = useState({
     nom:'', prenom:'', age:'', adresse:'', telephone:'', email:'',
