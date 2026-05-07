@@ -155,7 +155,7 @@ export default function MedecinDashboard() {
   const [editProfil, setEditProfil] = useState(false)
   const [filtreActe, setFiltreActe] = useState<TypeActe | 'tous'>('tous')
   const [profil, setProfil] = useState({
-    bio: '', telephone: '', disponibilites: 'Lun–Ven 07h–17h · Sam 07h–12h', emoji: '👨‍⚕️'
+    bio: '', telephone: '', disponibilites: 'Lun–Ven 07h–17h · Sam 07h–12h', emoji: '👨‍⚕️', photoProfil: ''
   })
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ActeForm>({
@@ -797,8 +797,34 @@ export default function MedecinDashboard() {
             {/* Carte identité */}
             <div style={{ background: 'white', borderRadius: 20, padding: 28, border: '1px solid #e2e8f0', marginBottom: 16 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 20, marginBottom: 24, paddingBottom: 20, borderBottom: '1px solid #f1f5f9' }}>
-                <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg,#1641C8,#0d9488)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 32 }}>
-                  {profil.emoji}
+                <div style={{ position: 'relative' }}>
+                  {(user as any)?.photo_profil || profil.photoProfil ? (
+                    <img src={(user as any)?.photo_profil || profil.photoProfil} alt="Photo"
+                      style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '3px solid #e2e8f0' }} />
+                  ) : (
+                    <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'linear-gradient(135deg,#1641C8,#0d9488)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 34 }}>
+                      {profil.emoji}
+                    </div>
+                  )}
+                  <label title="Changer la photo" style={{ position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, borderRadius: '50%', background: 'white', border: '2px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 4px rgba(0,0,0,0.1)' }}>
+                    <i className="fa-solid fa-camera" style={{ fontSize: 10, color: '#374151' }} />
+                    <input type="file" accept="image/jpeg,image/png,image/webp" style={{ display: 'none' }}
+                      onChange={async e => {
+                        const file = e.target.files?.[0]
+                        if (!file) return
+                        if (file.size > 2_000_000) { toast.error('Photo trop lourde — max 2MB'); return }
+                        const reader = new FileReader()
+                        reader.onload = async () => {
+                          const b64 = reader.result as string
+                          try {
+                            await api.post('/medecin/photo-profil', { photo_base64: b64 })
+                            setProfil(p => ({ ...p, photoProfil: b64 }))
+                            toast.success('Photo mise à jour ✓')
+                          } catch (err: any) { toast.error(err?.response?.data?.detail || 'Erreur upload') }
+                        }
+                        reader.readAsDataURL(file)
+                      }} />
+                  </label>
                 </div>
                 <div>
                   <h3 style={{ fontWeight: 900, fontSize: '1.2rem', color: '#0f172a', margin: '0 0 4px' }}>Dr. {user?.nom}</h3>

@@ -31,9 +31,22 @@ const SERVICES_TARIFS = [
   {nom:'Médicaments Pharmacie',prix:0,cat:'Pharmacie'},
   {nom:'Observation/24h',prix:8000,cat:'Observation'},
   {nom:'Hospitalisation/24h',prix:15000,cat:'Hospitalisation'},
-  {nom:'Chambre Maternité',prix:12000,cat:'Maternité'},
-  {nom:'Accouchement voie basse',prix:25000,cat:'Maternité'},
-  {nom:'Césarienne',prix:75000,cat:'Maternité'},
+  {nom:'Chambre Maternité / Jour',prix:15000,cat:'Maternité'},
+  {nom:'Suivi prénatal — Consultation',prix:5000,cat:'Maternité'},
+  {nom:'Accouchement vaginal spontané',prix:80000,cat:'Maternité'},
+  {nom:'Accouchement vaginal après induction',prix:85000,cat:'Maternité'},
+  {nom:'Accouchement vaginal jumeaux',prix:100000,cat:'Maternité'},
+  {nom:'AVAC (après césarienne)',prix:105000,cat:'Maternité'},
+  {nom:'Section Césarienne simple',prix:110000,cat:'Maternité'},
+  {nom:'Section Césarienne à faibles risques',prix:130000,cat:'Maternité'},
+  {nom:'Section Césarienne à haut risque',prix:160000,cat:'Maternité'},
+  {nom:'Ligature des trompes (isolée)',prix:33000,cat:'Maternité'},
+  {nom:'Ligature des trompes (avec césarienne)',prix:13000,cat:'Maternité'},
+  {nom:'Échographie obstétricale T1',prix:5000,cat:'Maternité'},
+  {nom:'Échographie obstétricale T2',prix:5000,cat:'Maternité'},
+  {nom:'Échographie obstétricale T3',prix:5000,cat:'Maternité'},
+  {nom:'Échographie avec Doppler',prix:10000,cat:'Maternité'},
+  {nom:'Non Stress Test (NST)',prix:13000,cat:'Maternité'},
   {nom:'Salle SOP - Chirurgie mineure',prix:35000,cat:'SOP'},
   {nom:'Salle SOP - Chirurgie majeure',prix:80000,cat:'SOP'},
   {nom:'Geste médical simple',prix:2000,cat:'Gestes'},
@@ -709,71 +722,142 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                 </div>
               </div>
 
-              {/* Service dynamique depuis la base */}
-              <div style={{marginBottom:10}}>
-                <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:4}}>Service *</label>
-                <select value={formNouv.service} onChange={e=>{
-                  const t = SERVICES_TARIFS.find(x=>x.nom===e.target.value)
-                  const laboT = tarifsLabo.find((x:any) => x.libelle===e.target.value)
-                  const dentT = tarifsDentiste.find((x:any) => x.libelle===e.target.value)
-                  const pharmT = stocksPharmacie.find((x:any) => x.nom===e.target.value)
-                  const gesteT = catalogueGestes.find((x:any) => x.libelle===e.target.value)
-                  // Prix catalogue: USD → HTG au taux du jour
-                  const gesteHtg = gesteT ? Math.round((gesteT.prix_clinique_usd || gesteT.prix_usd || 0) * tauxChange) : 0
-                  const prix = t?.prix || laboT?.montant || dentT?.montant || (pharmT ? pharmT.prix_unitaire : 0) || gesteHtg
-                  setFormNouv(p=>({...p, service: e.target.value, montant: prix || 0}))
-                }} style={{width:'100%',padding:'9px 11px',borderRadius:8,border:'1px solid #d1d5db',fontSize:13,background:'white'}}>
-                  {/* Services fixes clinique */}
-                  {['Clinique Externe','Physiothérapie','Optométrie','Observation','Hospitalisation','Maternité','SOP','Gestes'].map(cat => (
-                    <optgroup key={cat} label={cat}>
-                      {SERVICES_TARIFS.filter(s=>s.cat===cat).map(s=>(
-                        <option key={s.nom} value={s.nom}>{s.nom}{s.prix>0?` — ${s.prix.toLocaleString()} HTG`:''}</option>
-                      ))}
-                    </optgroup>
-                  ))}
-                  {/* Examens laboratoire depuis la base */}
-                  {tarifsLabo.length > 0 && (
-                    <optgroup label={`🔬 Laboratoire (${tarifsLabo.length} examens)`}>
-                      {tarifsLabo.map((t:any) => (
-                        <option key={t.id} value={t.libelle}>{t.libelle}{t.montant>0?` — ${t.montant.toLocaleString()} HTG`:''}</option>
-                      ))}
-                    </optgroup>
-                  )}
-                  {/* Actes dentisterie depuis la base */}
-                  {tarifsDentiste.length > 0 && (
-                    <optgroup label={`🦷 Dentisterie (${tarifsDentiste.length} actes)`}>
-                      {tarifsDentiste.map((t:any) => (
-                        <option key={t.id} value={t.libelle}>{t.libelle}{t.montant>0?` — ${t.montant.toLocaleString()} HTG`:''}</option>
-                      ))}
-                    </optgroup>
-                  )}
-                  {/* Médicaments pharmacie depuis le stock */}
-                  {stocksPharmacie.length > 0 && (
-                    <optgroup label={`💊 Pharmacie (${stocksPharmacie.length} produits en stock)`}>
-                      {stocksPharmacie.map((s:any) => (
-                        <option key={s.id} value={s.nom}>{s.nom} ({s.quantite} {s.unite}){s.prix_unitaire>0?` — ${s.prix_unitaire.toLocaleString()} HTG`:''}</option>
-                      ))}
-                    </optgroup>
-                  )}
-                  {/* Gestes médicaux depuis le catalogue barèmes */}
-                  {[...new Set(catalogueGestes.map((g:any)=>g.specialite))].map((spec:any) => {
-                    const gestesSpec = catalogueGestes.filter((g:any)=>g.specialite===spec)
-                    return (
-                      <optgroup key={spec} label={`🏥 ${spec} (${gestesSpec.length} gestes)`}>
-                        {gestesSpec.map((g:any) => {
-                          const prixHtg = Math.round(g.prix_usd * tauxChange)
-                          return (
-                            <option key={g.id} value={g.libelle} data-usd={g.prix_usd}>
-                              {g.libelle}{g.prix_usd > 0 ? ` — $${g.prix_usd} (${prixHtg.toLocaleString()} HTG)` : ''}
-                            </option>
-                          )
-                        })}
-                      </optgroup>
-                    )
-                  })}
-                </select>
-              </div>
+              {/* SÉLECTION SERVICE — 3 niveaux cascadés */}
+              {(() => {
+                const TYPES = [
+                  {id:'clinique',    icon:'🏥', label:'Clinique Ext.'},
+                  {id:'maternite',   icon:'🤱', label:'Maternité'},
+                  {id:'dentisterie', icon:'🦷', label:'Dentisterie'},
+                  {id:'physio',      icon:'🦴', label:'Physio'},
+                  {id:'optometrie',  icon:'👁', label:'Optométrie'},
+                  {id:'labo',        icon:'🔬', label:'Laboratoire'},
+                  {id:'pharmacie',   icon:'💊', label:'Pharmacie'},
+                  {id:'observation', icon:'🛏', label:'Observation'},
+                  {id:'sop',         icon:'🔪', label:'SOP'},
+                  {id:'geste',       icon:'⚕', label:'Geste médical'},
+                ]
+                const typeChoisi = (formNouv as any).serviceType || ''
+                const sousCat = (formNouv as any).serviceSousCat || ''
+                const pharmSearch = (formNouv as any).pharmSearch || ''
 
+                const setST = (t: string) => setFormNouv((p:any)=>({...p,serviceType:t,serviceSousCat:'',pharmSearch:'',service:'',montant:0}))
+                const setSC = (sc: string, prix?: number) => setFormNouv((p:any)=>({...p,serviceSousCat:sc,service:sc,montant:prix||0}))
+
+                return (
+                  <div style={{marginBottom:12}}>
+                    <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:6}}>Service *</label>
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:4,marginBottom:typeChoisi?10:0}}>
+                      {TYPES.map(t=>(
+                        <button key={t.id} type="button" onClick={()=>setST(t.id)} style={{
+                          padding:'6px 3px',borderRadius:7,border:`2px solid ${typeChoisi===t.id?'#1641C8':'#e2e8f0'}`,
+                          background:typeChoisi===t.id?'#eff6ff':'#fafafa',cursor:'pointer',fontSize:10,fontWeight:600,
+                          color:typeChoisi===t.id?'#1641C8':'#64748b',textAlign:'center' as const,lineHeight:1.4
+                        }}>{t.icon}<br/>{t.label}</button>
+                      ))}
+                    </div>
+
+                    {typeChoisi==='clinique' && (
+                      <select value={formNouv.service} onChange={e=>{const t=SERVICES_TARIFS.find(x=>x.nom===e.target.value);setSC(e.target.value,t?.prix)}}
+                        style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
+                        <option value="">Choisir la spécialité...</option>
+                        {SERVICES_TARIFS.filter(s=>s.cat==='Clinique Externe').map(s=><option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>)}
+                      </select>
+                    )}
+
+                    {typeChoisi==='maternite' && (
+                      <select value={formNouv.service} onChange={e=>{const t=SERVICES_TARIFS.find(x=>x.nom===e.target.value);setSC(e.target.value,t?.prix)}}
+                        style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
+                        <option value="">Choisir la prestation...</option>
+                        {SERVICES_TARIFS.filter(s=>s.cat==='Maternité').map(s=><option key={s.nom} value={s.nom}>{s.nom}{s.prix>0?` — ${s.prix.toLocaleString()} HTG`:''}</option>)}
+                      </select>
+                    )}
+
+                    {typeChoisi==='dentisterie' && (
+                      <select value={formNouv.service} onChange={e=>{
+                        const t=SERVICES_TARIFS.find(x=>x.nom===e.target.value)||tarifsDentiste.find((x:any)=>x.libelle===e.target.value)
+                        setSC(e.target.value,(t as any)?.prix||(t as any)?.montant)
+                      }} style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
+                        <option value="">Choisir l'acte...</option>
+                        {SERVICES_TARIFS.filter(s=>s.cat==='Dentisterie').map(s=><option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>)}
+                        {tarifsDentiste.length>0&&<option disabled>── Tarifs détaillés ──</option>}
+                        {tarifsDentiste.map((t:any)=><option key={t.id} value={t.libelle}>{t.libelle}{t.montant>0?` — ${t.montant.toLocaleString()} HTG`:''}</option>)}
+                      </select>
+                    )}
+
+                    {typeChoisi==='labo' && (
+                      <select value={formNouv.service} onChange={e=>{
+                        const t=tarifsLabo.find((x:any)=>x.libelle===e.target.value)
+                        setSC(e.target.value,t?.montant_usd?Math.round(t.montant_usd*tauxChange):t?.montant)
+                      }} style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
+                        <option value="">Choisir l'examen...</option>
+                        {tarifsLabo.map((t:any)=><option key={t.id} value={t.libelle}>{t.libelle}{t.montant_usd?` — $${t.montant_usd}`:t.montant?` — ${t.montant.toLocaleString()} HTG`:''}</option>)}
+                      </select>
+                    )}
+
+                    {(typeChoisi==='physio'||typeChoisi==='optometrie'||typeChoisi==='observation'||typeChoisi==='sop') && (
+                      <select value={formNouv.service} onChange={e=>{const t=SERVICES_TARIFS.find(x=>x.nom===e.target.value);setSC(e.target.value,t?.prix)}}
+                        style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
+                        <option value="">Choisir...</option>
+                        {SERVICES_TARIFS.filter(s=>(typeChoisi==='physio'&&s.cat==='Physiothérapie')||(typeChoisi==='optometrie'&&s.cat==='Optométrie')||(typeChoisi==='observation'&&(s.cat==='Observation'||s.cat==='Hospitalisation'))||(typeChoisi==='sop'&&s.cat==='SOP')).map(s=><option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>)}
+                      </select>
+                    )}
+
+                    {typeChoisi==='geste' && (
+                      <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
+                        <select value={sousCat} onChange={e=>setFormNouv((p:any)=>({...p,serviceSousCat:e.target.value,service:'',montant:0}))}
+                          style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
+                          <option value="">Spécialité...</option>
+                          {[...new Set(catalogueGestes.map((g:any)=>g.specialite))].sort().map((s:any)=><option key={s} value={s}>{s}</option>)}
+                        </select>
+                        {sousCat && (
+                          <select value={formNouv.service} onChange={e=>{
+                            const g=catalogueGestes.find((x:any)=>x.libelle===e.target.value)
+                            const htg=g&&g.prix_usd>0?Math.round((g.prix_clinique_usd||g.prix_usd)*tauxChange):g?.prix_htg_ref||0
+                            setSC(e.target.value,htg)
+                          }} style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'2px solid #1641C8',fontSize:13,background:'white'}}>
+                            <option value="">Geste...</option>
+                            {catalogueGestes.filter((g:any)=>g.specialite===sousCat).map((g:any)=>{
+                              const htg=g.prix_usd>0?Math.round((g.prix_clinique_usd||g.prix_usd)*tauxChange):0
+                              return <option key={g.id} value={g.libelle}>{g.libelle}{htg>0?` — $${g.prix_usd} (${htg.toLocaleString()} HTG)`:g.prix_htg_ref?` — ${g.prix_htg_ref.toLocaleString()} HTG ref.`:''}</option>
+                            })}
+                          </select>
+                        )}
+                      </div>
+                    )}
+
+                    {typeChoisi==='pharmacie' && (
+                      <div style={{position:'relative'}}>
+                        <input value={pharmSearch} onChange={e=>setFormNouv((p:any)=>({...p,pharmSearch:e.target.value,service:'',montant:0}))}
+                          placeholder="Saisir le nom du médicament..."
+                          style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,boxSizing:'border-box' as const}}/>
+                        {pharmSearch.length>=2 && (
+                          <div style={{position:'absolute',top:'100%',left:0,right:0,background:'white',border:'1px solid #e2e8f0',borderRadius:8,boxShadow:'0 4px 16px rgba(0,0,0,0.12)',zIndex:100,maxHeight:180,overflowY:'auto'}}>
+                            {stocksPharmacie.filter((s:any)=>s.nom?.toLowerCase().includes(pharmSearch.toLowerCase())).slice(0,8).map((s:any)=>(
+                              <div key={s.id} onClick={()=>setFormNouv((p:any)=>({...p,pharmSearch:s.nom,service:s.nom,montant:s.prix_unitaire||0}))}
+                                style={{padding:'7px 12px',cursor:'pointer',fontSize:12,borderBottom:'1px solid #f1f5f9',display:'flex',justifyContent:'space-between'}}>
+                                <span>{s.nom} <span style={{color:'#94a3b8',fontSize:10}}>({s.quantite} {s.unite})</span></span>
+                                <span style={{color:'#0d9488',fontWeight:700}}>{s.prix_unitaire?.toLocaleString()||0} HTG</span>
+                              </div>
+                            ))}
+                            {stocksPharmacie.filter((s:any)=>s.nom?.toLowerCase().includes(pharmSearch.toLowerCase())).length===0 && (
+                              <div style={{padding:'8px 12px',fontSize:11,color:'#94a3b8'}}>
+                                Non trouvé en stock
+                                <button onClick={()=>setFormNouv((p:any)=>({...p,service:pharmSearch,montant:0}))} style={{display:'block',marginTop:3,background:'#f1f5f9',border:'none',borderRadius:5,padding:'3px 8px',cursor:'pointer',fontSize:11}}>Utiliser "{pharmSearch}" →</button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {formNouv.service && (
+                      <div style={{marginTop:6,padding:'5px 10px',background:'#f0fdf4',border:'1px solid #86efac',borderRadius:7,fontSize:12,color:'#16a34a',fontWeight:600}}>
+                        ✓ {formNouv.service}
+                      </div>
+                    )}
+                  </div>
+                )
+              })()}
               {/* Montant */}
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
                 <div>
