@@ -281,14 +281,15 @@ export default function CaissierPage() {
 
   const enregistrerDepense = async () => {
     if (!formDepense.montant || !formDepense.description) { toast.error('Complétez les champs requis'); return }
+    if (!formDepense.tiers_nom) { toast.error("Indiquez à qui l'argent est remis"); return }
     if (!formDepense.categorie) { toast.error('Catégorie requise'); return }
     setLoadingDepense(true)
     try {
-      const r = await api.post('/caissier/depense', formDepense)
+      const r = await api.post('/caissier/depense', {...formDepense, beneficiaire: formDepense.tiers_nom, tiers_type:'fournisseur'})
       toast.success('Dépense enregistrée ✓')
       setDepenses(prev => [r.data, ...prev])
       setTotalDepenses(prev => prev + formDepense.montant)
-      setFormDepense({categorie:CATEGORIES_DEPENSES[0],description:'',montant:0,mode:'especes'})
+      setFormDepense({categorie:CATEGORIES_DEPENSES[0],description:'',montant:0,mode:'especes',tiers_nom:''})
     } catch (e: any) { toast.error(e?.response?.data?.detail||'Erreur enregistrement dépense') }
     finally { setLoadingDepense(false) }
   }
@@ -950,11 +951,18 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   {CATEGORIES_DEPENSES.map(c=><option key={c} value={c}>{c}</option>)}
                 </select>
               </div>
-              <div style={{marginBottom:12}}>
+              <div style={{marginBottom:10}}>
                 <label style={{display:'block',fontWeight:600,fontSize:13,color:'#374151',marginBottom:6}}>Description *</label>
                 <input value={formDepense.description} onChange={e=>setFormDepense(p=>({...p,description:e.target.value}))}
                   placeholder="Ex: Achat médicaments fournisseur"
                   style={{width:'100%',padding:'10px 12px',borderRadius:8,border:'1px solid #d1d5db',fontSize:14,boxSizing:'border-box' as const}}/>
+              </div>
+              <div style={{marginBottom:12}}>
+                <label style={{display:'block',fontWeight:700,fontSize:13,color:'#dc2626',marginBottom:6}}>🏢 Remis à — Bénéficiaire *</label>
+                <input value={formDepense.tiers_nom||''} onChange={e=>setFormDepense(p=>({...p,tiers_nom:e.target.value}))}
+                  placeholder="Nom du fournisseur, médecin, employé payé..."
+                  style={{width:'100%',padding:'10px 12px',borderRadius:8,border:'2px solid #fca5a5',fontSize:14,boxSizing:'border-box' as const}}/>
+                <div style={{fontSize:11,color:'#94a3b8',marginTop:3}}>À qui l'argent est physiquement remis</div>
               </div>
               <div style={{marginBottom:12}}>
                 <label style={{display:'block',fontWeight:600,fontSize:13,color:'#374151',marginBottom:6}}>Montant (HTG) *</label>

@@ -139,7 +139,7 @@ export default function AdminComptabilite() {
 
   const onSubmitJournal = async (data: any) => {
     try {
-      await api.post('/admin/mouvements', { ...data, montant: Number(data.montant), date_mouvement: new Date(data.date_mouvement).toISOString() })
+      await api.post('/admin/mouvements', { ...data, montant: Number(data.montant), date_mouvement: new Date(data.date_mouvement).toISOString(), tiers_nom: data.tiers_nom||undefined, tiers_type: data.tiers_type||undefined })
       toast.success('Entrée enregistrée')
       reset({ type:'recette', mode_paiement:'Espèces', date_mouvement: new Date().toISOString().slice(0,16), categorie:'' })
       setShowForm(false); setEcriture(null); loadJournal()
@@ -337,6 +337,33 @@ export default function AdminComptabilite() {
                   <div><label className="label">Mode paiement</label>
                     <select {...register('mode_paiement')} className="input">{MODES.map(m=><option key={m}>{m}</option>)}</select></div>
                 </div>
+                <div className="grid grid-cols-2 gap-4 mb-3">
+                  <div>
+                    <label className="label font-bold" style={{color: typeW==='depense'?'#dc2626':'#16a34a'}}>
+                      {typeW==='depense' ? '🏢 Payé à — Bénéficiaire / Fournisseur *' : '👤 Reçu de — Source / Payeur *'}
+                    </label>
+                    <input {...register('tiers_nom',{required:true})} className="input"
+                      placeholder={typeW==='depense' ? 'Ex: Pharmacie Centrale, Dr Jean, OFATMA...' : 'Ex: Patient Jean Pierre, Assurance CHIBAS...'}/>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Obligatoire — traçabilité comptable PCN</p>
+                  </div>
+                  <div>
+                    <label className="label">Type de tiers</label>
+                    <select {...register('tiers_type')} className="input">
+                      {typeW==='depense' ? <>
+                        <option value="fournisseur">🏢 Fournisseur / Société</option>
+                        <option value="medecin">👨‍⚕️ Médecin / Praticien</option>
+                        <option value="employe">👷 Employé / Personnel</option>
+                        <option value="institution">🏛 Institution / Gouvernement</option>
+                        <option value="autre">Autre</option>
+                      </> : <>
+                        <option value="patient">🧑 Patient</option>
+                        <option value="assurance">🏥 Assurance / Mutuelle</option>
+                        <option value="institution">🏛 Institution</option>
+                        <option value="autre">Autre</option>
+                      </>}
+                    </select>
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div><label className="label">Date & heure</label>
                     <input {...register('date_mouvement')} type="datetime-local" className="input"/></div>
@@ -526,6 +553,11 @@ export default function AdminComptabilite() {
                   <div><label className="label">Mode paiement</label>
                     <select {...regDec('mode_paiement')} className="input">{MODES.map(m=><option key={m}>{m}</option>)}</select></div>
                 </div>
+                <div className="mb-3">
+                  <label className="label font-bold text-red-600">🏢 Remis à (bénéficiaire) *</label>
+                  <input {...regDec('tiers_nom',{required:true})} className="input" placeholder="Nom du médecin, de la personne ou de la société"/>
+                  <p className="text-[10px] text-slate-400 mt-0.5">Qui a reçu physiquement cet argent ?</p>
+                </div>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div><label className="label">Statut</label>
                     <select {...regDec('statut')} className="input">
@@ -569,7 +601,7 @@ export default function AdminComptabilite() {
                 {decaissements.map((d:any)=>(
                   <tr key={d.id}>
                     <td className="text-xs text-slate-400">{fmtDate(d.date_decaissement)}</td>
-                    <td className="font-semibold text-sm">{d.medecin_nom}</td>
+                    <td className="font-semibold text-sm">{d.tiers_nom || d.medecin_nom}</td>
                     <td className="text-xs text-slate-600 max-w-[200px] truncate">{d.motif}</td>
                     <td className="text-xs text-slate-400">{d.mode_paiement}</td>
                     <td className="text-right font-extrabold text-red-500">-{fmt(d.montant)}</td>
