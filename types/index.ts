@@ -181,11 +181,16 @@ export interface Mouvement {
   categorie: string
   description: string
   montant: number
-  date_mouvement: string
+  date_mouvement: string | null
   mode_paiement: string
   reference: string | null
   notes: string | null
   created_at: string
+  tiers_nom?: string | null
+  tiers_type?: string | null
+  numero_piece?: string | null
+  compte_debit?: string | null
+  compte_credit?: string | null
 }
 
 export interface MouvementCreate {
@@ -193,10 +198,12 @@ export interface MouvementCreate {
   categorie: string
   description: string
   montant: number
-  date_mouvement: string
+  date_mouvement?: string
   mode_paiement: string
   reference?: string
   notes?: string
+  tiers_nom?: string
+  tiers_type?: string
 }
 
 // ─── Stats ────────────────────────────────────────────────────────────────────

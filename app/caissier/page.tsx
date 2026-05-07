@@ -341,12 +341,19 @@ export default function CaissierPage() {
   const enregistrerVisite = async () => {
     if (!formNouv.nom || !formNouv.prenom) { toast.error('Nom et prénom requis'); return }
     if (!formNouv.telephone) { toast.error('Téléphone requis'); return }
+    // Vérifier paiement si montant > 0
+    const paiNvInfo = (formNouv as any).paiementNvInfo
+    if (formNouv.montant > 0 && !paiNvInfo?.verifie) {
+      toast.error("Vérifiez le mode de paiement avant d'enregistrer")
+      return
+    }
     try {
       const r = await api.post('/caissier/enregistrer-visite', {
         ...formNouv,
         service: formNouv.service,
         montant: formNouv.montant,
-        mode_paiement: formNouv.mode_paiement,
+        mode_paiement: paiNvInfo?.mode || formNouv.mode_paiement || 'especes',
+        reference: paiNvInfo?.reference || '',
         priorite: formNouv.priorite,
         medecin_nom: (formNouv as any).praticien || '',
         praticien: (formNouv as any).praticien || '',
