@@ -307,16 +307,21 @@ export default function CaissierPage() {
   const [stocksPharmacie, setStocksPharmacie] = useState<any[]>([])
   const [previewNumero, setPreviewNumero] = useState<string>('')
 
-  // Affiche le prochain ID dès que le nom est saisi — endpoint dédié pour fiabilité
+  // Charger le prochain numéro immédiatement au montage du composant
   useEffect(() => {
-    if (formNouv.nom && formNouv.prenom) {
+    api.get('/caissier/prochain-numero').then(r => {
+      setPreviewNumero(r.data?.prochain_numero || '#RB-????')
+    }).catch(() => setPreviewNumero('#RB-????'))
+  }, [])
+
+  // Recalculer si un patient vient d'être enregistré (queueResult change)
+  useEffect(() => {
+    if (queueResult) {
       api.get('/caissier/prochain-numero').then(r => {
         setPreviewNumero(r.data?.prochain_numero || '#RB-????')
-      }).catch(() => setPreviewNumero('#RB-????'))
-    } else {
-      setPreviewNumero('')
+      }).catch(() => {})
     }
-  }, [formNouv.nom, formNouv.prenom])
+  }, [queueResult])
   const [searchQuery, setSearchQuery] = useState('')
   const [searchResults, setSearchResults] = useState<any[]>([])
 
@@ -1008,12 +1013,12 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   <h2 style={{fontWeight:800,fontSize:'1.05rem',color:'#0f172a',margin:0}}>👤 Enregistrer un patient</h2>
                   <p style={{color:'#64748b',fontSize:12,margin:'4px 0 0'}}>Le ticket est envoyé à l'infirmière automatiquement.</p>
                 </div>
-                {previewNumero && (
-                  <div style={{background:'linear-gradient(135deg,#0f172a,#1641C8)',borderRadius:10,padding:'8px 14px',textAlign:'center'}}>
-                    <div style={{color:'rgba(255,255,255,0.5)',fontSize:9,textTransform:'uppercase',letterSpacing:1}}>ID attribué</div>
-                    <div style={{color:'white',fontFamily:'monospace',fontWeight:900,fontSize:18,letterSpacing:1}}>{previewNumero}</div>
+                <div style={{background:'linear-gradient(135deg,#0f172a,#1641C8)',borderRadius:10,padding:'8px 14px',textAlign:'center',minWidth:120}}>
+                  <div style={{color:'rgba(255,255,255,0.5)',fontSize:9,textTransform:'uppercase',letterSpacing:1}}>ID attribué</div>
+                  <div style={{color: previewNumero && previewNumero !== '#RB-????'?'white':'rgba(255,255,255,0.4)',fontFamily:'monospace',fontWeight:900,fontSize:18,letterSpacing:1}}>
+                    {previewNumero || '⏳'}
                   </div>
-                )}
+                </div>
               </div>
 
               {/* Urgence */}
@@ -1539,26 +1544,44 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                 )
               })()}
               {/* Montant */}
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:10}}>
-                <div>
-                  <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:4}}>Montant (HTG)</label>
-                  <input type="number" value={formNouv.montant||''} onChange={e=>setFormNouv(p=>({...p,montant:parseInt(e.target.value)||0}))}
-                    style={{width:'100%',padding:'9px 11px',borderRadius:8,border:'1px solid #d1d5db',fontSize:14,fontWeight:700,boxSizing:'border-box' as const}}/>
-                </div>
-                <div>
-                  <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:4}}>Mode paiement</label>
-                  <select value={formNouv.mode_paiement} onChange={e=>setFormNouv(p=>({...p,mode_paiement:e.target.value,paiementNvVerifie:false}))}
-                    style={{width:'100%',padding:'9px 11px',borderRadius:8,border:'1px solid #d1d5db',fontSize:13,background:'white'}}>
-                    {['especes','moncash','natcash','carte','zelle'].map(m=><option key={m} value={m}>{m==='especes'?'Espèces':m==='moncash'?'MonCash':m==='natcash'?'NatCash':m==='carte'?'Carte bancaire':'Zelle (USD)'}</option>)}
-                  </select>
-                </div>
+                            {/* Montant */}
+              <div style={{marginBottom:10}}>
+                <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:4}}>Montant (HTG)</label>
+                <input type="number" value={formNouv.montant||''} onChange={e=>setFormNouv(p=>({...p,montant:parseInt(e.target.value)||0}))}
+                  style={{width:'100%',padding:'9px 11px',borderRadius:8,border:'1px solid #d1d5db',fontSize:15,fontWeight:700,boxSizing:'border-box' as const}}/>
               </div>
 
-              <button onClick={enregistrerVisite} disabled={!formNouv.nom||!formNouv.prenom||!formNouv.telephone} style={{
-                width:'100%',background:'linear-gradient(135deg,#1641C8,#0d9488)',
-                color:'white',border:'none',borderRadius:12,padding:'13px',fontWeight:700,cursor:'pointer',fontSize:14,
-                opacity:(!formNouv.nom||!formNouv.prenom||!formNouv.telephone)?0.5:1,marginTop:4
-              }}>✓ Enregistrer &amp; Envoyer à l'infirmière</button>
+              {/* Mode de paiement — flux complet selon le mode choisi */}
+              <div style={{marginBottom:12}}>
+                <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:6}}>Mode de paiement</label>
+                <PaiementFlow
+                  montant={formNouv.montant || 0}
+                  tauxChange={tauxChange}
+                  onVerifie={info => setFormNouv(p => ({...p, mode_paiement: info.mode, paiementNvInfo: info}))}
+                  onReset={() => setFormNouv(p => ({...p, paiementNvInfo: null}))}
+                  compact={true}
+                />
+              </div>
+
+                            {(() => {
+                const paiNv = (formNouv as any).paiementNvInfo
+                const montantOk = formNouv.montant === 0 || paiNv?.verifie
+                const champOk   = !formNouv.nom||!formNouv.prenom||!formNouv.telephone
+                const disabled  = champOk || !montantOk
+                return (
+                  <button onClick={enregistrerVisite} disabled={disabled} style={{
+                    width:'100%',background:'linear-gradient(135deg,#1641C8,#0d9488)',
+                    color:'white',border:'none',borderRadius:12,padding:'13px',fontWeight:700,cursor:'pointer',fontSize:14,
+                    opacity: disabled ? 0.4 : 1, marginTop:4
+                  }}>
+                    {champOk
+                      ? "Complétez les champs requis"
+                      : !montantOk
+                        ? "Vérifiez le paiement"
+                        : "✓ Enregistrer & Envoyer à l'infirmière"}
+                  </button>
+                )
+              })()}
 
               <div style={{marginTop:10,textAlign:'center'}}>
                 <button onClick={retrouverDernierPatient} style={{background:'none',border:'none',color:'#94a3b8',fontSize:12,cursor:'pointer',textDecoration:'underline'}}>
