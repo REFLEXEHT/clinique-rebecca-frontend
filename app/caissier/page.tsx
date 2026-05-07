@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 import { api, aiApi } from '@/lib/api'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
+import PaiementFlow, { type PaiementInfo } from '@/components/ui/PaiementFlow'
 import { LogOut, Printer, Search, Plus, TrendingUp, ArrowDownCircle, Eye } from 'lucide-react'
 
 const SERVICES_TARIFS = [
@@ -292,6 +293,8 @@ export default function CaissierPage() {
   }
 
   const [loadingDepense, setLoadingDepense] = useState(false)
+  const [rdvPaiementId,   setRdvPaiementId]   = useState<number|null>(null)
+  const [rdvPaiementInfo, setRdvPaiementInfo] = useState<PaiementInfo|null>(null)
   const [queueResult, setQueueResult] = useState<any>(null)
   const [tarifsLabo, setTarifsLabo] = useState<any[]>([])
   const [tarifs, setTarifs] = useState<any[]>([])       // TarifMedecin: medecin_nom + specialite + prix_consultation
@@ -1666,7 +1669,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                 </thead>
                 <tbody>
                   {registre.map((r:any)=>(
-                    <tr key={r.id} style={{borderBottom:'1px solid #f8fafc'}}>
+                    <tr key={r.id} style={{borderBottom:'1px solid #f8fafc',position:'relative'}}>
                       <td style={{padding:'10px 14px',fontWeight:600,whiteSpace:'nowrap'}}>{new Date(r.date_rdv).toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
                       <td style={{padding:'10px 14px'}}><div style={{fontWeight:600}}>{r.patient_nom}</div><div style={{fontSize:11,color:'#94a3b8'}}>{r.motif}</div></td>
                       <td style={{padding:'10px 14px',color:'#64748b'}}>{r.medecin_nom||'—'}</td>
@@ -1678,18 +1681,71 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                         </span>
                       </td>
                       <td style={{padding:'10px 14px'}}>
-                        {(r.statut==='en_attente'||r.statut==='paiement_effectue')&&(
-                          <button onClick={()=>api.post(`/rdv/confirmer/${r.id}`,{}).then(()=>{toast.success('RDV confirmé');api.get('/registre-rdv?jours=30').then(res=>setRegistre(res.data?.rdvs||[]))})}
-                            style={{background:'#16a34a',color:'white',border:'none',borderRadius:8,padding:'5px 12px',fontWeight:700,cursor:'pointer',fontSize:12}}>
-                            ✓ Confirmer
-                          </button>
-                        )}
-                        {r.statut==='confirme'&&r.type_rdv==='presentiel'&&(
-                          <button onClick={()=>api.post(`/rdv/initiation-physique/${r.id}`,{}).then(res=>{toast.success(`Patient ${res.data.patient_numero} — Dossier créé`)})}
-                            style={{background:'#1641C8',color:'white',border:'none',borderRadius:8,padding:'5px 12px',fontWeight:700,cursor:'pointer',fontSize:12}}>
-                            🏥 Initier visite
-                          </button>
-                        )}
+                        <div style={{display:'flex',flexDirection:'column' as const,gap:4}}>
+                          {/* Bouton Payer — si pas encore payé */}
+                          {(r.statut==='en_attente')&&(
+                            <button onClick={()=>{setRdvPaiementId(r.id===rdvPaiementId?null:r.id);setRdvPaiementInfo(null)}}
+                              style={{background:'#d97706',color:'white',border:'none',borderRadius:7,padding:'5px 12px',fontWeight:700,cursor:'pointer',fontSize:12}}>
+                              💳 {rdvPaiementId===r.id?'Fermer':'Payer'}
+                            </button>
+                          )}
+                          {/* Badge payé */}
+                          {r.statut==='paiement_effectue'&&(
+                            <span style={{fontSize:11,color:'#16a34a',fontWeight:700}}>💳 Payé</span>
+                          )}
+                          {/* Panel paiement inline */}
+                          {rdvPaiementId===r.id&&r.statut==='en_attente'&&(
+                            <div style={{position:'absolute' as const,right:20,zIndex:200,background:'white',borderRadius:14,border:'2px solid #d97706',boxShadow:'0 8px 32px rgba(0,0,0,0.15)',padding:16,width:360,marginTop:4}}>
+                              <div style={{fontWeight:700,fontSize:13,marginBottom:10,color:'#0f172a'}}>
+                                💳 Paiement RDV — {r.patient_nom}
+                              </div>
+                              <PaiementFlow
+                                montant={r.montant||r.prix_rdv||0}
+                                tauxChange={tauxChange}
+                                onVerifie={info=>setRdvPaiementInfo(info)}
+                                onReset={()=>setRdvPaiementInfo(null)}
+                                compact={true}
+                              />
+                              <button
+                                disabled={!rdvPaiementInfo?.verifie}
+                                onClick={async()=>{
+                                  if(!rdvPaiementInfo) return
+                                  try{
+                                    await api.post(`/rdv/paiement-presentiel/${r.id}`,{
+                                      mode:rdvPaiementInfo.mode,
+                                      reference:rdvPaiementInfo.reference,
+                                      montant:rdvPaiementInfo.montant
+                                    })
+                                    toast.success('Paiement enregistré ✓')
+                                    setRdvPaiementId(null);setRdvPaiementInfo(null)
+                                    api.get('/registre-rdv?jours=30').then(res=>setRegistre(res.data?.rdvs||[]))
+                                  }catch(e:any){toast.error(e?.response?.data?.detail||'Erreur')}
+                                }}
+                                style={{width:'100%',marginTop:10,background:rdvPaiementInfo?.verifie?'#16a34a':'#94a3b8',
+                                  color:'white',border:'none',borderRadius:8,padding:'10px',fontWeight:700,cursor:'pointer',fontSize:13}}
+                              >
+                                {rdvPaiementInfo?.verifie ? '✓ Confirmer le paiement' : 'Vérifiez le paiement'}
+                              </button>
+                              <button onClick={()=>{setRdvPaiementId(null);setRdvPaiementInfo(null)}}
+                                style={{width:'100%',marginTop:6,background:'#f1f5f9',border:'none',borderRadius:8,padding:'7px',cursor:'pointer',fontSize:12,color:'#64748b'}}>
+                                Annuler
+                              </button>
+                            </div>
+                          )}
+                          {/* Bouton Confirmer — une fois payé */}
+                          {r.statut==='paiement_effectue'&&(
+                            <button onClick={()=>api.post(`/rdv/confirmer/${r.id}`,{}).then(()=>{toast.success('RDV confirmé');api.get('/registre-rdv?jours=30').then(res=>setRegistre(res.data?.rdvs||[]))})}
+                              style={{background:'#16a34a',color:'white',border:'none',borderRadius:7,padding:'5px 12px',fontWeight:700,cursor:'pointer',fontSize:12}}>
+                              ✓ Confirmer
+                            </button>
+                          )}
+                          {r.statut==='confirme'&&r.type_rdv==='presentiel'&&(
+                            <button onClick={()=>api.post(`/rdv/initiation-physique/${r.id}`,{}).then(res=>{toast.success(`Patient ${res.data.patient_numero} — Dossier créé`)})}
+                              style={{background:'#1641C8',color:'white',border:'none',borderRadius:7,padding:'5px 12px',fontWeight:700,cursor:'pointer',fontSize:12}}>
+                              🏥 Initier visite
+                            </button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}

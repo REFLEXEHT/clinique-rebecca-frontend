@@ -4,6 +4,7 @@ import { useForm } from 'react-hook-form'
 import toast from 'react-hot-toast'
 import { rdvApi, specialistesApi } from '@/lib/api'
 import { X } from 'lucide-react'
+import PaiementFlow, { type PaiementInfo } from '@/components/ui/PaiementFlow'
 
 const SPECIALITES = [
   'Médecine générale','Chirurgie générale','Neurochirurgie','Neurologie',
@@ -17,9 +18,6 @@ const HEURES = [
   '11:00','11:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30',
 ]
 
-const MODES_PAIEMENT = [
-  'À la clinique','Mobile Money (Moncash)','Natcash','Carte de crédit','Virement bancaire',
-]
 
 interface Medecin {
   id: number
@@ -61,6 +59,17 @@ export default function RdvModal({ open, onClose, defaultSpec }: Props) {
   const [medecinChoisi, setMedecinChoisi] = useState<Medecin | null>(null)
   const [profilOuvert, setProfilOuvert] = useState<Medecin | null>(null)
   const [specialiteChoisie, setSpecialiteChoisie] = useState(defaultSpec || '')
+  const [paiementInfo, setPaiementInfo] = useState<PaiementInfo | null>(null)
+  const [tauxChange,   setTauxChange]   = useState(130)
+
+  // Charger le taux USD→HTG du jour
+  useEffect(() => {
+    import('@/lib/api').then(({ api }) => {
+      api.get('/caissier/taux-change').then(r => {
+        if (r.data?.taux) setTauxChange(r.data.taux)
+      }).catch(() => {})
+    })
+  }, [])
 
   const { register, handleSubmit, watch, reset, setValue, formState: { errors } } = useForm<FormData>({
     defaultValues: {
@@ -70,8 +79,7 @@ export default function RdvModal({ open, onClose, defaultSpec }: Props) {
     }
   })
 
-  const modePaiement = watch('mode_paiement')
-  const showPayDetail = modePaiement !== 'À la clinique'
+
 
   // Quand la spécialité change → charger les médecins
   const chargerMedecins = async (spec: string) => {
@@ -119,6 +127,10 @@ export default function RdvModal({ open, onClose, defaultSpec }: Props) {
 
   const onSubmit = async (data: FormData) => {
     if (!medecinChoisi) { toast.error('Veuillez choisir un médecin'); return }
+    if (!paiementInfo?.verifie) {
+      toast.error("Vérifiez le paiement avant de confirmer le rendez-vous")
+      return
+    }
     setLoading(true)
     try {
       const dateHeure = new Date(`${data.date}T${data.heure}:00`)
@@ -133,8 +145,8 @@ export default function RdvModal({ open, onClose, defaultSpec }: Props) {
         date_rdv: dateHeure.toISOString(),
         type_rdv: data.type_rdv,
         motif: data.motif || undefined,
-        mode_paiement: data.mode_paiement,
-        reference_paiement: data.reference_paiement || undefined,
+        mode_paiement: paiementInfo.mode,
+        reference_paiement: paiementInfo.reference || undefined,
       })
       toast.success('✅ Rendez-vous envoyé ! Vous recevrez une confirmation.')
       onClose()
@@ -430,24 +442,20 @@ export default function RdvModal({ open, onClose, defaultSpec }: Props) {
                 </div>
 
                 {/* Paiement */}
-                <div style={{ background:'#f0f9ff', border:'1px solid #bae6fd', borderRadius:12, padding:14, marginBottom:20 }}>
-                  <div style={{ fontWeight:700, color:'#0369a1', fontSize:13, marginBottom:10 }}>
-                    <i className="fa-solid fa-credit-card" style={{ marginRight:6 }} />Mode de paiement
+                <div style={{ background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:12, padding:14, marginBottom:20 }}>
+                  <div style={{ fontWeight:700, color:'#374151', fontSize:13, marginBottom:10 }}>
+                    <i className="fa-solid fa-credit-card" style={{ marginRight:6 }} />Paiement
                   </div>
-                  <select {...register('mode_paiement')} style={{ width:'100%', padding:'10px 13px', borderRadius:10, border:'1px solid #bae6fd', fontSize:14, background:'white', marginBottom: showPayDetail ? 10 : 0 }}>
-                    {MODES_PAIEMENT.map(m => <option key={m} value={m}>{m}</option>)}
-                  </select>
-                  {showPayDetail && (
-                    <>
-                      <input {...register('reference_paiement', { required: showPayDetail })}
-                        placeholder="Numéro de référence / transaction *"
-                        style={{ width:'100%', padding:'10px 13px', borderRadius:10, border:`1px solid ${errors.reference_paiement?'#ef4444':'#bae6fd'}`, fontSize:14, boxSizing:'border-box' }} />
-                      {errors.reference_paiement && <p style={{ color:'#ef4444', fontSize:12, marginTop:4 }}>Référence requise pour paiement mobile</p>}
-                    </>
-                  )}
+                  <PaiementFlow
+                    montant={medecinChoisi?.prix_rdv || medecinChoisi?.prix_consultation || 0}
+                    tauxChange={tauxChange}
+                    onVerifie={info => setPaiementInfo(info)}
+                    onReset={() => setPaiementInfo(null)}
+                    compact={true}
+                  />
                 </div>
 
-                <button type="submit" disabled={loading} style={{
+                <button type="submit" disabled={loading || !paiementInfo?.verifie} style={{
                   width:'100%', background:'linear-gradient(135deg,#1641C8,#0d9488)',
                   color:'white', border:'none', borderRadius:12, padding:'14px 0',
                   fontWeight:700, fontSize:'1rem', cursor:loading?'not-allowed':'pointer',
@@ -455,7 +463,9 @@ export default function RdvModal({ open, onClose, defaultSpec }: Props) {
                 }}>
                   {loading
                     ? <><i className="fa-solid fa-spinner fa-spin" style={{ marginRight:8 }} />Envoi…</>
-                    : <><i className="fa-solid fa-calendar-check" style={{ marginRight:8 }} />Confirmer le rendez-vous</>
+                    : !paiementInfo?.verifie
+                      ? <><i className="fa-solid fa-lock" style={{ marginRight:8 }} />Vérifiez le paiement d'abord</>
+                      : <><i className="fa-solid fa-calendar-check" style={{ marginRight:8 }} />Confirmer le rendez-vous</>
                   }
                 </button>
               </form>
