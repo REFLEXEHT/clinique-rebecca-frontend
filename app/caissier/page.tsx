@@ -192,6 +192,7 @@ export default function CaissierPage() {
     api.get('/labo/tarifs').then(r => setTarifsLabo(r.data || [])).catch(() => {})
     api.get('/caissier/taux-change').then(r => setTauxChange(r.data?.taux_htg || 130)).catch(() => {})
     api.get('/specialistes').then(r => setSpecialistes(r.data || [])).catch(() => {})
+    api.get('/tarifs-medecins').then(r => setTarifs(r.data || [])).catch(() => {})
     api.get('/tarifs/gestes').then(r => setCatalogueGestes(r.data?.gestes || [])).catch(() => {})
     api.get('/dentiste/tarifs').then(r => setTarifsDentiste(r.data || [])).catch(() => {})
     api.get('/pharmacie/stocks').then(r => setStocksPharmacie((r.data || []).filter((s:any) => s.quantite > 0))).catch(() => {})
@@ -276,6 +277,7 @@ export default function CaissierPage() {
 
   const [queueResult, setQueueResult] = useState<any>(null)
   const [tarifsLabo, setTarifsLabo] = useState<any[]>([])
+  const [tarifs, setTarifs] = useState<any[]>([])       // TarifMedecin: medecin_nom + specialite + prix_consultation
   const [specialistes, setSpecialistes] = useState<any[]>([])
   const [tauxChange, setTauxChange] = useState<number>(130)
   const [nouveauTaux, setNouveauTaux] = useState<string>('')
@@ -771,7 +773,9 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                 </div>
               </div>
 
-              {/* SÉLECTION SERVICE — 3 niveaux cascadés */}
+              {/* ═══════════════════════════════════════════════════════════
+                  SÉLECTION SERVICE — logique: Type → Branche/Examen → Praticien → Prix
+                  ═══════════════════════════════════════════════════════════ */}
               {(() => {
                 const TYPES = [
                   {id:'clinique',    icon:'🏥', label:'Clinique Ext.'},
@@ -785,164 +789,321 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   {id:'sop',         icon:'🔪', label:'SOP'},
                   {id:'geste',       icon:'⚕', label:'Geste médical'},
                 ]
-                const typeChoisi = (formNouv as any).serviceType || ''
-                const sousCat = (formNouv as any).serviceSousCat || ''
-                const pharmSearch = (formNouv as any).pharmSearch || ''
+                const ST  = (formNouv as any).serviceType    || ''
+                const SC  = (formNouv as any).serviceSousCat || ''   // branche/spécialité choisie
+                const PS  = (formNouv as any).pharmSearch    || ''   // texte autocomplete
+                const LS  = (formNouv as any).laboSearch     || ''   // texte autocomplete labo
+                const PRIX_BASE = (formNouv as any).prixBase  || 0   // prix original avant override
+                const PRAT = (formNouv as any).praticien      || ''  // praticien saisi ou choisi
 
-                const setST = (t: string) => setFormNouv((p:any)=>({...p,serviceType:t,serviceSousCat:'',pharmSearch:'',service:'',montant:0}))
-                const setSC = (sc: string, prix?: number) => setFormNouv((p:any)=>({...p,serviceSousCat:sc,service:sc,montant:prix||0}))
+                // Helpers
+                const resetSvc = (type: string) =>
+                  setFormNouv((p:any) => ({...p,
+                    serviceType:type, serviceSousCat:'', pharmSearch:'', laboSearch:'',
+                    service:'', montant:0, prixBase:0, praticien:'', remisePct:0
+                  }))
+
+                const setSousCat = (sc: string) =>
+                  setFormNouv((p:any) => ({...p, serviceSousCat:sc, service:'', montant:0, prixBase:0, praticien:''}))
+
+                const setService = (nom: string, prix: number) =>
+                  setFormNouv((p:any) => ({...p, service:nom, montant:prix, prixBase:prix, remisePct:0}))
+
+                const setPraticien = (nom: string, prix?: number) =>
+                  setFormNouv((p:any) => ({
+                    ...p, praticien:nom,
+                    ...(prix != null ? { montant:prix, prixBase:prix, remisePct:0 } : {})
+                  }))
+
+                const applyOverride = (remisePct: number, prixDirect?: number) => {
+                  if (prixDirect != null) {
+                    setFormNouv((p:any) => ({...p, montant:prixDirect, remisePct:0}))
+                  } else {
+                    const base = (formNouv as any).prixBase || formNouv.montant
+                    setFormNouv((p:any) => ({...p, montant:Math.round(base*(1-remisePct/100)), remisePct}))
+                  }
+                }
+
+                // Branches / spécialités disponibles dans les tarifs médecins
+                const BRANCHES = [...new Set(tarifs.filter((t:any)=>t.actif).map((t:any)=>t.specialite))].sort()
+
+                // Médecins de la branche choisie
+                const MEDECINS_BRANCHE = SC
+                  ? tarifs.filter((t:any) => t.actif && t.specialite?.toLowerCase().includes(SC.toLowerCase()))
+                  : []
+
+                // Labo suggestions
+                const LABO_SUGG = LS.length >= 2
+                  ? tarifsLabo.filter((t:any) => t.libelle?.toLowerCase().includes(LS.toLowerCase())).slice(0,8)
+                  : []
+
+                // Pharmacie suggestions
+                const PHARMA_SUGG = PS.length >= 2
+                  ? stocksPharmacie.filter((s:any) => s.nom?.toLowerCase().includes(PS.toLowerCase())).slice(0,8)
+                  : []
+
+                const inlineInput: any = {
+                  width:'100%', padding:'8px 10px', borderRadius:7,
+                  border:'1px solid #d1d5db', fontSize:13, boxSizing:'border-box'
+                }
+                const selectStyle: any = {
+                  width:'100%', padding:'8px 10px', borderRadius:7,
+                  border:'1px solid #1641C8', fontSize:13, background:'white'
+                }
 
                 return (
                   <div style={{marginBottom:12}}>
                     <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:6}}>Service *</label>
-                    <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:4,marginBottom:typeChoisi?10:0}}>
-                      {TYPES.map(t=>(
-                        <button key={t.id} type="button" onClick={()=>setST(t.id)} style={{
-                          padding:'6px 3px',borderRadius:7,border:`2px solid ${typeChoisi===t.id?'#1641C8':'#e2e8f0'}`,
-                          background:typeChoisi===t.id?'#eff6ff':'#fafafa',cursor:'pointer',fontSize:10,fontWeight:600,
-                          color:typeChoisi===t.id?'#1641C8':'#64748b',textAlign:'center' as const,lineHeight:1.4
+
+                    {/* Étape 1 — Type de service */}
+                    <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:4,marginBottom:10}}>
+                      {TYPES.map(t => (
+                        <button key={t.id} type="button" onClick={() => resetSvc(t.id)} style={{
+                          padding:'6px 3px', borderRadius:7, cursor:'pointer', fontSize:10, fontWeight:600,
+                          textAlign:'center' as const, lineHeight:1.4,
+                          border:`2px solid ${ST===t.id?'#1641C8':'#e2e8f0'}`,
+                          background: ST===t.id?'#eff6ff':'#fafafa',
+                          color: ST===t.id?'#1641C8':'#64748b',
                         }}>{t.icon}<br/>{t.label}</button>
                       ))}
                     </div>
 
-                    {typeChoisi==='clinique' && (
+                    {/* ── CLINIQUE EXTERNE: Branche → Médecin de la branche → Prix ── */}
+                    {ST==='clinique' && (
                       <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
-                        <select value={formNouv.service} onChange={e=>{const t=SERVICES_TARIFS.find(x=>x.nom===e.target.value);setSC(e.target.value,t?.prix)}}
-                          style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
-                          <option value="">Spécialité / motif...</option>
-                          {SERVICES_TARIFS.filter(s=>s.cat==='Clinique Externe').map(s=><option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>)}
+                        {/* Étape 2: Choisir la branche/spécialité */}
+                        <select value={SC} onChange={e => setSousCat(e.target.value)} style={selectStyle}>
+                          <option value="">Branche / Spécialité...</option>
+                          {/* Branches issues des tarifs médecins */}
+                          {BRANCHES.map((b:any) => <option key={b} value={b}>{b}</option>)}
+                          {/* Fallback si pas de tarifs médecins */}
+                          {BRANCHES.length === 0 && ['Médecine interne','Gynécologie','Pédiatrie','Chirurgie','Orthopédie','Neurologie','Cardiologie','Dermatologie','ORL','Urologie','Psychiatrie'].map(b => (
+                            <option key={b} value={b}>{b}</option>
+                          ))}
                         </select>
-                        {formNouv.service && (
-                          <select value={(formNouv as any).medecin_choisi||''} onChange={e=>setFormNouv((p:any)=>({...p,medecin_choisi:e.target.value}))}
-                            style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #e2e8f0',fontSize:13,background:'white'}}>
-                            <option value="">Médecin (optionnel)</option>
-                            {specialistes.filter((s:any)=>s.actif).map((s:any)=><option key={s.id} value={s.nom}>{s.titre||'Dr'} {s.nom} — {s.specialite}</option>)}
-                          </select>
-                        )}
-                      </div>
-                    )}
 
-                    {typeChoisi==='maternite' && (
-                      <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
-                        <select value={formNouv.service} onChange={e=>{const t=SERVICES_TARIFS.find(x=>x.nom===e.target.value);setSC(e.target.value,t?.prix)}}
-                          style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
-                          <option value="">Prestation maternité...</option>
-                          {SERVICES_TARIFS.filter(s=>s.cat==='Maternité').map(s=><option key={s.nom} value={s.nom}>{s.nom}{s.prix>0?` — ${s.prix.toLocaleString()} HTG`:''}</option>)}
-                        </select>
-                        <select value={(formNouv as any).medecin_choisi||''} onChange={e=>setFormNouv((p:any)=>({...p,medecin_choisi:e.target.value}))}
-                          style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #e2e8f0',fontSize:13,background:'white'}}>
-                          <option value="">Médecin / sage-femme (optionnel)</option>
-                          {specialistes.filter((s:any)=>s.actif).map((s:any)=><option key={s.id} value={s.nom}>{s.titre||'Dr'} {s.nom} — {s.specialite}</option>)}
-                        </select>
-                      </div>
-                    )}
-
-                    {typeChoisi==='dentisterie' && (
-                      <select value={formNouv.service} onChange={e=>{
-                        const t=SERVICES_TARIFS.find(x=>x.nom===e.target.value)||tarifsDentiste.find((x:any)=>x.libelle===e.target.value)
-                        setSC(e.target.value,(t as any)?.prix||(t as any)?.montant)
-                      }} style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
-                        <option value="">Choisir l'acte...</option>
-                        {SERVICES_TARIFS.filter(s=>s.cat==='Dentisterie').map(s=><option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>)}
-                        {tarifsDentiste.length>0&&<option disabled>── Tarifs détaillés ──</option>}
-                        {tarifsDentiste.map((t:any)=><option key={t.id} value={t.libelle}>{t.libelle}{t.montant>0?` — ${t.montant.toLocaleString()} HTG`:''}</option>)}
-                      </select>
-                    )}
-
-                    {typeChoisi==='labo' && (
-                      <select value={formNouv.service} onChange={e=>{
-                        const t=tarifsLabo.find((x:any)=>x.libelle===e.target.value)
-                        setSC(e.target.value,t?.montant_usd?Math.round(t.montant_usd*tauxChange):t?.montant)
-                      }} style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
-                        <option value="">Choisir l'examen...</option>
-                        {tarifsLabo.map((t:any)=><option key={t.id} value={t.libelle}>{t.libelle}{t.montant_usd?` — $${t.montant_usd}`:t.montant?` — ${t.montant.toLocaleString()} HTG`:''}</option>)}
-                      </select>
-                    )}
-
-                    {(typeChoisi==='physio'||typeChoisi==='optometrie'||typeChoisi==='observation'||typeChoisi==='sop') && (
-                      <select value={formNouv.service} onChange={e=>{const t=SERVICES_TARIFS.find(x=>x.nom===e.target.value);setSC(e.target.value,t?.prix)}}
-                        style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
-                        <option value="">Choisir...</option>
-                        {SERVICES_TARIFS.filter(s=>(typeChoisi==='physio'&&s.cat==='Physiothérapie')||(typeChoisi==='optometrie'&&s.cat==='Optométrie')||(typeChoisi==='observation'&&(s.cat==='Observation'||s.cat==='Hospitalisation'))||(typeChoisi==='sop'&&s.cat==='SOP')).map(s=><option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>)}
-                      </select>
-                    )}
-
-                    {typeChoisi==='geste' && (
-                      <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
-                        <select value={sousCat} onChange={e=>setFormNouv((p:any)=>({...p,serviceSousCat:e.target.value,service:'',montant:0}))}
-                          style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,background:'white'}}>
-                          <option value="">Spécialité...</option>
-                          {[...new Set(catalogueGestes.map((g:any)=>g.specialite))].sort().map((s:any)=><option key={s} value={s}>{s}</option>)}
-                        </select>
-                        {sousCat && (
-                          <select value={formNouv.service} onChange={e=>{
-                            const g=catalogueGestes.find((x:any)=>x.libelle===e.target.value)
-                            const htg=g&&g.prix_usd>0?Math.round((g.prix_clinique_usd||g.prix_usd)*tauxChange):g?.prix_htg_ref||0
-                            setSC(e.target.value,htg)
-                          }} style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'2px solid #1641C8',fontSize:13,background:'white'}}>
-                            <option value="">Geste...</option>
-                            {catalogueGestes.filter((g:any)=>g.specialite===sousCat).map((g:any)=>{
-                              const htg=g.prix_usd>0?Math.round((g.prix_clinique_usd||g.prix_usd)*tauxChange):0
-                              return <option key={g.id} value={g.libelle}>{g.libelle}{htg>0?` — $${g.prix_usd} (${htg.toLocaleString()} HTG)`:g.prix_htg_ref?` — ${g.prix_htg_ref.toLocaleString()} HTG ref.`:''}</option>
-                            })}
-                          </select>
-                        )}
-                      </div>
-                    )}
-
-                    {typeChoisi==='pharmacie' && (
-                      <div style={{position:'relative'}}>
-                        <input value={pharmSearch} onChange={e=>setFormNouv((p:any)=>({...p,pharmSearch:e.target.value,service:'',montant:0}))}
-                          placeholder="Saisir le nom du médicament..."
-                          style={{width:'100%',padding:'8px 10px',borderRadius:7,border:'1px solid #1641C8',fontSize:13,boxSizing:'border-box' as const}}/>
-                        {pharmSearch.length>=2 && (
-                          <div style={{position:'absolute',top:'100%',left:0,right:0,background:'white',border:'1px solid #e2e8f0',borderRadius:8,boxShadow:'0 4px 16px rgba(0,0,0,0.12)',zIndex:100,maxHeight:180,overflowY:'auto'}}>
-                            {stocksPharmacie.filter((s:any)=>s.nom?.toLowerCase().includes(pharmSearch.toLowerCase())).slice(0,8).map((s:any)=>(
-                              <div key={s.id} onClick={()=>setFormNouv((p:any)=>({...p,pharmSearch:s.nom,service:s.nom,montant:s.prix_unitaire||0}))}
-                                style={{padding:'7px 12px',cursor:'pointer',fontSize:12,borderBottom:'1px solid #f1f5f9',display:'flex',justifyContent:'space-between'}}>
-                                <span>{s.nom} <span style={{color:'#94a3b8',fontSize:10}}>({s.quantite} {s.unite})</span></span>
-                                <span style={{color:'#0d9488',fontWeight:700}}>{s.prix_unitaire?.toLocaleString()||0} HTG</span>
-                              </div>
+                        {/* Étape 3: Médecin de cette branche (avec prix) */}
+                        {SC && MEDECINS_BRANCHE.length > 0 && (
+                          <select value={PRAT} onChange={e => {
+                            const t = tarifs.find((x:any) => x.medecin_nom === e.target.value)
+                            setPraticien(e.target.value, t?.prix_consultation || 0)
+                            setFormNouv((p:any) => ({...p, service: `${SC} — ${e.target.value}`}))
+                          }} style={selectStyle}>
+                            <option value="">Choisir le médecin...</option>
+                            {MEDECINS_BRANCHE.map((t:any) => (
+                              <option key={t.id} value={t.medecin_nom}>
+                                {t.medecin_nom}{t.prix_consultation > 0 ? ` — ${t.prix_consultation.toLocaleString()} HTG` : ''}
+                              </option>
                             ))}
-                            {stocksPharmacie.filter((s:any)=>s.nom?.toLowerCase().includes(pharmSearch.toLowerCase())).length===0 && (
-                              <div style={{padding:'8px 12px',fontSize:11,color:'#94a3b8'}}>
-                                Non trouvé en stock
-                                <button onClick={()=>setFormNouv((p:any)=>({...p,service:pharmSearch,montant:0}))} style={{display:'block',marginTop:3,background:'#f1f5f9',border:'none',borderRadius:5,padding:'3px 8px',cursor:'pointer',fontSize:11}}>Utiliser "{pharmSearch}" →</button>
-                              </div>
-                            )}
+                          </select>
+                        )}
+
+                        {/* Si pas de tarif médecin: champ libre praticien + prix manuel */}
+                        {SC && MEDECINS_BRANCHE.length === 0 && (
+                          <input value={PRAT} onChange={e => {
+                            setPraticien(e.target.value)
+                            setFormNouv((p:any) => ({...p, service:`${SC} — ${e.target.value}`}))
+                          }} placeholder="Nom du médecin (optionnel)" style={inlineInput} />
+                        )}
+
+                        {/* Si médecin choisi mais pas dans la liste: champ libre */}
+                        {SC && (
+                          <input value={PRAT} onChange={e => {
+                            setPraticien(e.target.value)
+                            setFormNouv((p:any) => ({...p, service:`${SC}${e.target.value?` — ${e.target.value}`:''}`}))
+                          }} placeholder="Ou saisir un autre praticien..." style={{...inlineInput,borderColor:'#e2e8f0'}} />
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── MATERNITÉ ── */}
+                    {ST==='maternite' && (
+                      <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
+                        <select value={formNouv.service} onChange={e => {
+                          const t = SERVICES_TARIFS.find((x:any) => x.nom===e.target.value)
+                          setService(e.target.value, t?.prix||0)
+                        }} style={selectStyle}>
+                          <option value="">Prestation maternité...</option>
+                          {SERVICES_TARIFS.filter((s:any) => s.cat==='Maternité').map((s:any) => (
+                            <option key={s.nom} value={s.nom}>{s.nom}{s.prix>0?` — ${s.prix.toLocaleString()} HTG`:''}</option>
+                          ))}
+                        </select>
+                        <input value={PRAT} onChange={e => setPraticien(e.target.value)}
+                          placeholder="Médecin / sage-femme (optionnel)" style={inlineInput} />
+                        {/* Liste médecins gynéco si disponibles */}
+                        {tarifs.filter((t:any)=>t.actif&&/gyn|obst|matern/i.test(t.specialite||'')).length > 0 && (
+                          <select value={PRAT} onChange={e => setPraticien(e.target.value)} style={{...inlineInput,borderColor:'#e2e8f0'}}>
+                            <option value="">Ou choisir parmi la liste...</option>
+                            {tarifs.filter((t:any)=>t.actif&&/gyn|obst|matern/i.test(t.specialite||'')).map((t:any) => (
+                              <option key={t.id} value={t.medecin_nom}>{t.medecin_nom}</option>
+                            ))}
+                          </select>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── DENTISTERIE ── */}
+                    {ST==='dentisterie' && (
+                      <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
+                        <select value={formNouv.service} onChange={e => {
+                          const t = SERVICES_TARIFS.find((x:any)=>x.nom===e.target.value)||tarifsDentiste.find((x:any)=>x.libelle===e.target.value)
+                          setService(e.target.value, (t as any)?.prix||(t as any)?.montant||0)
+                        }} style={selectStyle}>
+                          <option value="">Acte dentaire...</option>
+                          {SERVICES_TARIFS.filter((s:any)=>s.cat==='Dentisterie').map((s:any)=>(
+                            <option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>
+                          ))}
+                          {tarifsDentiste.length>0&&<option disabled>── Tarifs complets ──</option>}
+                          {tarifsDentiste.map((t:any)=>(
+                            <option key={t.id} value={t.libelle}>{t.libelle}{t.montant>0?` — ${t.montant.toLocaleString()} HTG`:''}</option>
+                          ))}
+                        </select>
+                        <input value={PRAT} onChange={e => setPraticien(e.target.value)}
+                          placeholder="Dentiste / praticien (optionnel)" style={inlineInput} />
+                      </div>
+                    )}
+
+                    {/* ── PHYSIO / OPTOMÉTRIE / OBSERVATION / SOP ── */}
+                    {(ST==='physio'||ST==='optometrie'||ST==='observation'||ST==='sop') && (
+                      <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
+                        <select value={formNouv.service} onChange={e => {
+                          const t = SERVICES_TARIFS.find((x:any)=>x.nom===e.target.value)
+                          setService(e.target.value, t?.prix||0)
+                        }} style={selectStyle}>
+                          <option value="">Prestation...</option>
+                          {SERVICES_TARIFS.filter((s:any) =>
+                            (ST==='physio'&&s.cat==='Physiothérapie')||(ST==='optometrie'&&s.cat==='Optométrie')||
+                            (ST==='observation'&&(s.cat==='Observation'||s.cat==='Hospitalisation'))||(ST==='sop'&&s.cat==='SOP')
+                          ).map((s:any)=>(
+                            <option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>
+                          ))}
+                        </select>
+                        <input value={PRAT} onChange={e => setPraticien(e.target.value)}
+                          placeholder="Praticien responsable (optionnel)" style={inlineInput} />
+                      </div>
+                    )}
+
+                    {/* ── LABORATOIRE: autocomplete examens ── */}
+                    {ST==='labo' && (
+                      <div style={{position:'relative'}}>
+                        <input value={LS} onChange={e => setFormNouv((p:any)=>({...p,laboSearch:e.target.value,service:'',montant:0,prixBase:0}))}
+                          placeholder="Saisir le nom de l'examen..." style={selectStyle} autoComplete="off"/>
+                        {LABO_SUGG.length > 0 && (
+                          <div style={{position:'absolute',top:'100%',left:0,right:0,background:'white',border:'1px solid #e2e8f0',borderRadius:8,boxShadow:'0 4px 16px rgba(0,0,0,0.12)',zIndex:100,maxHeight:200,overflowY:'auto'}}>
+                            {LABO_SUGG.map((t:any) => {
+                              const prix = t.montant_usd ? Math.round(t.montant_usd*tauxChange) : (t.montant||0)
+                              return (
+                                <div key={t.id} onClick={() => {
+                                  setFormNouv((p:any)=>({...p,laboSearch:t.libelle,service:t.libelle,montant:prix,prixBase:prix,remisePct:0}))
+                                }} style={{padding:'8px 12px',cursor:'pointer',fontSize:13,borderBottom:'1px solid #f1f5f9',display:'flex',justifyContent:'space-between'}}>
+                                  <span>{t.libelle}</span>
+                                  {prix > 0 && <span style={{color:'#0d9488',fontWeight:700}}>{prix.toLocaleString()} HTG</span>}
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
+                        {LS.length >= 2 && LABO_SUGG.length === 0 && (
+                          <div style={{marginTop:4,padding:'6px 10px',background:'#fef9c3',borderRadius:7,fontSize:12,color:'#92400e',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                            <span>"{LS}" non trouvé dans la liste</span>
+                            <button onClick={() => setService(LS, 0)} style={{background:'#d97706',color:'white',border:'none',borderRadius:5,padding:'3px 8px',cursor:'pointer',fontSize:11,fontWeight:700}}>Utiliser quand même</button>
                           </div>
                         )}
                       </div>
                     )}
 
-                    {/* Prix override pour gestes médicaux */}
-                    {typeChoisi==='geste' && formNouv.service && (
-                      <div style={{marginTop:6,background:'#f8fafc',borderRadius:8,padding:'10px 12px',border:'1px solid #e2e8f0'}}>
-                        <div style={{fontSize:11,color:'#64748b',marginBottom:6}}>Ajustement du prix (optionnel)</div>
-                        <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                          <label style={{fontSize:12,color:'#374151',whiteSpace:'nowrap' as const}}>Remise %</label>
-                          <input type="number" min="0" max="100" placeholder="0"
-                            value={(formNouv as any).remisePct||''}
-                            onChange={e=>{
-                              const pct=parseInt(e.target.value)||0
-                              const base=(formNouv as any).montantBase||formNouv.montant
-                              setFormNouv((p:any)=>({...p,remisePct:pct,montantBase:base,montant:Math.round(base*(1-pct/100))}))
-                            }}
-                            style={{width:60,padding:'5px 8px',borderRadius:6,border:'1px solid #d1d5db',fontSize:12,textAlign:'right' as const}}/>
-                          <span style={{color:'#94a3b8',fontSize:11}}>ou</span>
-                          <label style={{fontSize:12,color:'#374151',whiteSpace:'nowrap' as const}}>Prix direct HTG</label>
-                          <input type="number" placeholder="Saisir"
-                            value={formNouv.montant||''}
-                            onChange={e=>setFormNouv((p:any)=>({...p,montant:parseInt(e.target.value)||0,remisePct:0}))}
-                            style={{flex:1,padding:'5px 8px',borderRadius:6,border:'1px solid #d1d5db',fontSize:12,textAlign:'right' as const}}/>
-                          <span style={{fontSize:11,color:'#374151'}}>HTG</span>
+                    {/* ── PHARMACIE: autocomplete médicaments ── */}
+                    {ST==='pharmacie' && (
+                      <div style={{position:'relative'}}>
+                        <input value={PS} onChange={e => setFormNouv((p:any)=>({...p,pharmSearch:e.target.value,service:'',montant:0,prixBase:0}))}
+                          placeholder="Saisir le nom du médicament..." style={selectStyle} autoComplete="off"/>
+                        {PHARMA_SUGG.length > 0 && (
+                          <div style={{position:'absolute',top:'100%',left:0,right:0,background:'white',border:'1px solid #e2e8f0',borderRadius:8,boxShadow:'0 4px 16px rgba(0,0,0,0.12)',zIndex:100,maxHeight:200,overflowY:'auto'}}>
+                            {PHARMA_SUGG.map((s:any) => (
+                              <div key={s.id} onClick={() => setService(s.nom, s.prix_unitaire||0)}
+                                style={{padding:'8px 12px',cursor:'pointer',fontSize:13,borderBottom:'1px solid #f1f5f9',display:'flex',justifyContent:'space-between'}}>
+                                <span>{s.nom} <span style={{color:'#94a3b8',fontSize:11}}>({s.quantite} {s.unite})</span></span>
+                                {s.prix_unitaire > 0 && <span style={{color:'#0d9488',fontWeight:700}}>{s.prix_unitaire.toLocaleString()} HTG</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        {PS.length >= 2 && PHARMA_SUGG.length === 0 && (
+                          <div style={{marginTop:4,padding:'6px 10px',background:'#fef9c3',borderRadius:7,fontSize:12,color:'#92400e',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                            <span>"{PS}" non en stock</span>
+                            <button onClick={() => setService(PS, 0)} style={{background:'#d97706',color:'white',border:'none',borderRadius:5,padding:'3px 8px',cursor:'pointer',fontSize:11,fontWeight:700}}>Utiliser quand même</button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* ── GESTE MÉDICAL: spécialité → geste du catalogue ── */}
+                    {ST==='geste' && (
+                      <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
+                        <select value={SC} onChange={e => setSousCat(e.target.value)} style={selectStyle}>
+                          <option value="">Spécialité médicale...</option>
+                          {[...new Set(catalogueGestes.map((g:any)=>g.specialite))].sort().map((s:any) => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                        {SC && (
+                          <select value={formNouv.service} onChange={e => {
+                            const g = catalogueGestes.find((x:any)=>x.libelle===e.target.value)
+                            const htg = g && g.prix_usd > 0 ? Math.round((g.prix_clinique_usd||g.prix_usd)*tauxChange) : (g?.prix_htg_ref||0)
+                            setService(e.target.value, htg)
+                          }} style={selectStyle}>
+                            <option value="">Geste / acte...</option>
+                            {catalogueGestes.filter((g:any)=>g.specialite===SC).map((g:any) => {
+                              const htg = g.prix_usd>0 ? Math.round((g.prix_clinique_usd||g.prix_usd)*tauxChange) : 0
+                              return (
+                                <option key={g.id} value={g.libelle}>
+                                  {g.libelle}{htg>0?` — $${g.prix_usd} (${htg.toLocaleString()} HTG)`:g.prix_htg_ref?` — ${g.prix_htg_ref.toLocaleString()} HTG ref.`:''}
+                                </option>
+                              )
+                            })}
+                          </select>
+                        )}
+                        <input value={PRAT} onChange={e => setPraticien(e.target.value)}
+                          placeholder="Praticien responsable (optionnel)" style={inlineInput} />
+                      </div>
+                    )}
+
+                    {/* ── PRIX OVERRIDE (tous services sauf pharmacie/labo) ── */}
+                    {formNouv.service && ST !== 'pharmacie' && (
+                      <div style={{marginTop:8,background:'#f8fafc',borderRadius:8,padding:'10px 12px',border:'1px solid #e2e8f0'}}>
+                        <div style={{fontSize:11,color:'#94a3b8',marginBottom:6,fontWeight:600}}>Ajustement du prix</div>
+                        <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap' as const}}>
+                          <span style={{fontSize:12,color:'#374151'}}>Remise</span>
+                          <input type="number" min="0" max="100" placeholder="0" value={(formNouv as any).remisePct||''}
+                            onChange={e => applyOverride(parseInt(e.target.value)||0)}
+                            style={{width:56,padding:'5px 7px',borderRadius:6,border:'1px solid #d1d5db',fontSize:12,textAlign:'right' as const}}/>
+                          <span style={{fontSize:12,color:'#374151'}}>%</span>
+                          <span style={{color:'#cbd5e1',fontSize:12}}>|</span>
+                          <span style={{fontSize:12,color:'#374151'}}>Nouveau prix</span>
+                          <input type="number" placeholder={String(PRIX_BASE||formNouv.montant||0)} value={formNouv.montant||''}
+                            onChange={e => applyOverride(0, parseInt(e.target.value)||0)}
+                            style={{width:90,padding:'5px 7px',borderRadius:6,border:'1px solid #d1d5db',fontSize:12,textAlign:'right' as const}}/>
+                          <span style={{fontSize:12,color:'#374151'}}>HTG</span>
+                          {PRIX_BASE > 0 && formNouv.montant !== PRIX_BASE && (
+                            <button onClick={() => setFormNouv((p:any)=>({...p,montant:PRIX_BASE,remisePct:0}))}
+                              style={{background:'#f1f5f9',border:'none',borderRadius:5,padding:'4px 8px',cursor:'pointer',fontSize:11,color:'#64748b'}}>
+                              Réinitialiser ({PRIX_BASE.toLocaleString()} HTG)
+                            </button>
+                          )}
                         </div>
                       </div>
                     )}
+
+                    {/* Confirmation */}
                     {formNouv.service && (
-                      <div style={{marginTop:6,padding:'5px 10px',background:'#f0fdf4',border:'1px solid #86efac',borderRadius:7,fontSize:12,color:'#16a34a',fontWeight:600,display:'flex',justifyContent:'space-between'}}>
-                        <span>✓ {formNouv.service}</span>
-                        {formNouv.montant>0 && <span style={{fontFamily:'monospace'}}>{formNouv.montant.toLocaleString()} HTG</span>}
+                      <div style={{marginTop:6,padding:'6px 12px',background:'#f0fdf4',border:'1px solid #86efac',borderRadius:7,fontSize:12,color:'#16a34a',fontWeight:600,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                        <span>✓ {formNouv.service}{PRAT?` · ${PRAT}`:''}</span>
+                        {formNouv.montant > 0 && (
+                          <span style={{fontFamily:'monospace'}}>
+                            {formNouv.montant.toLocaleString()} HTG
+                            {(formNouv as any).remisePct > 0 && <span style={{color:'#d97706',marginLeft:4}}>(-{(formNouv as any).remisePct}%)</span>}
+                          </span>
+                        )}
                       </div>
                     )}
                   </div>
