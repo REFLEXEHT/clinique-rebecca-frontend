@@ -6,14 +6,17 @@ import { api } from '@/lib/api'
 import { Plus, Trash2, Brain, TrendingUp, TrendingDown, FileText, Users, Building, Calculator, ChevronDown, RefreshCw, CheckCircle, AlertTriangle } from 'lucide-react'
 
 const ONGLETS = [
-  { id: 'journal', label: 'Journal', icon: 'fa-list' },
-  { id: 'actes', label: 'Actes & Répartition', icon: 'fa-stethoscope' },
-  { id: 'decaissements', label: 'Décaissements', icon: 'fa-money-bill-transfer' },
-  { id: 'exploitants', label: 'Exploitants', icon: 'fa-building' },
-  { id: 'optometrie', label: 'Optométrie', icon: 'fa-glasses' },
-  { id: 'bilan', label: 'Bilan mensuel', icon: 'fa-chart-bar' },
-  { id: 'cumul', label: 'Rapport cumulatif', icon: 'fa-chart-line' },
-  { id: 'config', label: 'Configuration', icon: 'fa-gear' },
+  { id: 'journal',     label: 'Journal',       icon: 'fa-list' },
+  { id: 'actes',       label: 'Actes & Répart.', icon: 'fa-stethoscope' },
+  { id: 'decaissements',label:'Décaissements', icon: 'fa-money-bill-transfer' },
+  { id: 'exploitants', label: 'Exploitants',   icon: 'fa-building' },
+  { id: 'optometrie',  label: 'Optométrie',    icon: 'fa-glasses' },
+  { id: 'bilan',       label: 'Bilan',         icon: 'fa-chart-bar' },
+  { id: 'cumul',       label: 'Cumulatif',     icon: 'fa-chart-line' },
+  { id: 'grand_livre', label: 'Grand Livre',   icon: 'fa-book' },
+  { id: 'balance',     label: 'Balance',       icon: 'fa-scale-balanced' },
+  { id: 'ai_compta',   label: '🤖 Rapport IA', icon: 'fa-robot' },
+  { id: 'config',      label: 'Configuration', icon: 'fa-gear' },
 ]
 
 const CATS_REC = ['Consultations','Laboratoire','Pharmacie','Dentisterie','Physiothérapie','Accouchement','Loyer salle','Autre']
@@ -56,6 +59,14 @@ export default function AdminComptabilite() {
   const [cumul, setCumul] = useState<any>(null)
   const [regles, setRegles] = useState<any[]>([])
   const [tarifs, setTarifs] = useState<any[]>([])
+  const [grandLivre, setGrandLivre] = useState<any>(null)
+  const [balance, setBalance] = useState<any>(null)
+  const [aiRapport, setAiRapport] = useState<string>('')
+  const [aiDonnees, setAiDonnees] = useState<any>(null)
+  const [aiLoading, setAiLoading] = useState(false)
+  const [aiType, setAiType] = useState('mensuel')
+  const [glCompte, setGlCompte] = useState('')
+  const [glLoading, setGlLoading] = useState(false)
   const [contratOptomet, setContratOptomet] = useState<any>(null)
   const [showForm, setShowForm] = useState(false)
   const [showActeForm, setShowActeForm] = useState(false)
@@ -838,7 +849,243 @@ export default function AdminComptabilite() {
       )}
 
       {/* ── CONFIGURATION ── */}
-      {onglet === 'config' && (
+      {/* ── GRAND LIVRE ── */}
+      {onglet === 'grand_livre' && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-extrabold text-[15px] flex items-center gap-2">
+              <i className="fa-solid fa-book text-[#1641C8]"/>Grand Livre PCN — {MOIS_NOMS[moisBilan]} {anneeBilan}
+            </h2>
+            <div className="flex gap-2 items-center">
+              <input value={glCompte} onChange={e=>setGlCompte(e.target.value)} placeholder="Filtrer par compte (ex: 511)" className="input w-36 py-1.5 text-xs"/>
+              <button disabled={glLoading} onClick={async()=>{
+                setGlLoading(true)
+                try {
+                  const r = await api.get('/admin/grand-livre',{params:{mois:moisBilan,annee:anneeBilan,compte:glCompte||undefined}})
+                  setGrandLivre(r.data)
+                } catch(e:any){toast.error(e?.response?.data?.detail||'Erreur')}
+                finally{setGlLoading(false)}
+              }} className="btn-primary py-2">{glLoading?'⏳ Chargement...':'🔍 Charger le Grand Livre'}</button>
+              {grandLivre && <button onClick={()=>window.print()} className="btn-ghost py-2"><i className="fa-solid fa-print mr-1"/>Imprimer</button>}
+            </div>
+          </div>
+
+          {grandLivre && (
+            <div id="grand-livre-print">
+              {/* KPIs */}
+              <div className="grid grid-cols-3 gap-4 mb-5">
+                <div className="kpi-card"><div className="text-xl font-black text-green-600">+{(grandLivre.total_recettes||0).toLocaleString('fr')} HTG</div><div className="text-xs text-slate-500">Total Produits (Cl. 7)</div></div>
+                <div className="kpi-card"><div className="text-xl font-black text-red-500">-{(grandLivre.total_charges||0).toLocaleString('fr')} HTG</div><div className="text-xs text-slate-500">Total Charges (Cl. 6)</div></div>
+                <div className="kpi-card"><div className={`text-xl font-black ${grandLivre.total_recettes-grandLivre.total_charges>=0?'text-[#1641C8]':'text-red-600'}`}>{((grandLivre.total_recettes||0)-(grandLivre.total_charges||0)).toLocaleString('fr')} HTG</div><div className="text-xs text-slate-500">Résultat ({grandLivre.nb_ecritures} écritures)</div></div>
+              </div>
+
+              {/* Balance par compte */}
+              {grandLivre.comptes?.length > 0 && (
+                <div className="card mb-5 overflow-hidden">
+                  <div className="px-5 py-3 bg-[#0f172a] text-white font-bold text-sm">Soldes par compte PCN</div>
+                  <table className="tbl w-full">
+                    <thead><tr><th>Compte</th><th className="text-right">Total Débit</th><th className="text-right">Total Crédit</th><th className="text-right">Solde</th><th>Nb écritures</th></tr></thead>
+                    <tbody>
+                      {grandLivre.comptes.sort((a:any,b:any)=>a.compte.localeCompare(b.compte)).map((c:any)=>(
+                        <tr key={c.compte} className={`${c.compte.startsWith('7')?'bg-green-50':c.compte.startsWith('6')?'bg-red-50':c.compte.startsWith('5')?'bg-blue-50':''}`}>
+                          <td className="font-mono font-bold text-[#1641C8]">{c.compte}</td>
+                          <td className="text-right font-mono text-green-700">{c.total_debit.toLocaleString('fr')}</td>
+                          <td className="text-right font-mono text-red-600">{c.total_credit.toLocaleString('fr')}</td>
+                          <td className={`text-right font-extrabold font-mono ${c.solde>=0?'text-green-700':'text-red-600'}`}>{c.solde>=0?'+':''}{c.solde.toLocaleString('fr')}</td>
+                          <td className="text-center text-xs text-slate-400">{c.nb_ecritures}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Journal détaillé */}
+              <div className="card overflow-hidden">
+                <div className="px-5 py-3 bg-slate-50 font-bold text-sm flex items-center justify-between">
+                  <span>Écritures détaillées ({grandLivre.ecritures?.length} lignes)</span>
+                </div>
+                <div style={{maxHeight:400,overflowY:'auto'}}>
+                  <table className="tbl w-full">
+                    <thead style={{position:'sticky',top:0,background:'white',zIndex:1}}><tr><th>Pièce</th><th>Date</th><th>Jnl</th><th>Débit</th><th>Crédit</th><th>Description</th><th className="text-right">Montant</th><th>Ref.</th></tr></thead>
+                    <tbody>
+                      {grandLivre.ecritures?.map((e:any)=>(
+                        <tr key={e.id} className={`${e.type==='recette'?'':'bg-red-50/30'}`}>
+                          <td className="font-mono text-[10px] text-[#1641C8]">{e.numero_piece}</td>
+                          <td className="text-[10px] text-slate-400">{e.date}</td>
+                          <td><span className="badge badge-gray text-[9px]">{e.journal}</span></td>
+                          <td className="font-mono text-[11px] text-green-700 font-bold">{e.compte_debit}</td>
+                          <td className="font-mono text-[11px] text-red-500 font-bold">{e.compte_credit}</td>
+                          <td className="text-xs max-w-[200px] truncate">{e.description}</td>
+                          <td className={`text-right font-mono text-sm font-bold ${e.type==='recette'?'text-green-600':'text-red-500'}`}>{e.montant.toLocaleString('fr')}</td>
+                          <td className="text-[10px] text-slate-400 max-w-[80px] truncate">{e.reference||'—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+          {!grandLivre && !glLoading && (
+            <div className="card p-12 text-center text-slate-300">
+              <i className="fa-solid fa-book text-5xl mb-4"/>
+              <p className="text-sm">Cliquez sur "Charger le Grand Livre" pour afficher toutes les écritures PCN</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── BALANCE DE VÉRIFICATION ── */}
+      {onglet === 'balance' && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-extrabold text-[15px] flex items-center gap-2">
+              <i className="fa-solid fa-scale-balanced text-[#1641C8]"/>Balance de vérification — {MOIS_NOMS[moisBilan]} {anneeBilan}
+            </h2>
+            <div className="flex gap-2">
+              <button onClick={async()=>{
+                try{
+                  const r = await api.get('/admin/balance-verification',{params:{mois:moisBilan,annee:anneeBilan}})
+                  setBalance(r.data)
+                  if(r.data.equilibre) toast.success('Balance équilibrée ✓')
+                  else toast.error('⚠️ Déséquilibre détecté!')
+                }catch(e:any){toast.error(e?.response?.data?.detail||'Erreur')}
+              }} className="btn-primary py-2"><i className="fa-solid fa-calculator mr-2"/>Vérifier la balance</button>
+              {balance && <button onClick={()=>window.print()} className="btn-ghost py-2"><i className="fa-solid fa-print mr-1"/>Imprimer</button>}
+            </div>
+          </div>
+
+          {balance && (
+            <div id="balance-print">
+              {/* Statut global */}
+              <div className={`card p-5 mb-5 border-2 ${balance.equilibre?'border-green-300 bg-green-50':'border-red-300 bg-red-50'}`}>
+                <div className="flex items-center gap-4">
+                  <span className="text-4xl">{balance.equilibre?'✅':'⚠️'}</span>
+                  <div>
+                    <div className={`font-extrabold text-lg ${balance.equilibre?'text-green-700':'text-red-600'}`}>{balance.message}</div>
+                    <div className="text-sm text-slate-600 mt-1">{balance.nb_ecritures} écritures · Total Débit = Total Crédit = {balance.total_debit.toLocaleString('fr')} HTG</div>
+                    {!balance.equilibre && <div className="text-sm font-bold text-red-600 mt-1">Écart: {balance.ecart.toLocaleString('fr')} HTG — Vérification comptable requise</div>}
+                  </div>
+                </div>
+              </div>
+
+              {/* Par classe PCN */}
+              <div className="card overflow-hidden mb-5">
+                <div className="px-5 py-3 bg-[#0f172a] text-white font-bold text-sm">Soldes par classe PCN</div>
+                <table className="tbl w-full">
+                  <thead><tr><th>Classe PCN</th><th>Libellé</th><th className="text-right">Total Débit</th><th className="text-right">Total Crédit</th><th className="text-right">Solde</th></tr></thead>
+                  <tbody>
+                    {balance.par_classe?.map((c:any)=>{
+                      const libelles: Record<string,string> = {'1':'Capitaux permanents','2':'Immobilisations','3':'Stocks','4':'Tiers','5':'Trésorerie','6':'Charges','7':'Produits','8':'Résultats','?':'Non classifié'}
+                      const solde = (c.debit||0)-(c.credit||0)
+                      return (
+                        <tr key={c.classe} className={`${c.classe==='7'?'bg-green-50':c.classe==='6'?'bg-red-50':c.classe==='5'?'bg-blue-50':''}`}>
+                          <td className="font-mono font-extrabold text-[#1641C8]">Classe {c.classe}</td>
+                          <td className="text-sm text-slate-600">{libelles[c.classe]||'—'}</td>
+                          <td className="text-right font-mono text-green-700">{(c.debit||0).toLocaleString('fr')} HTG</td>
+                          <td className="text-right font-mono text-red-500">{(c.credit||0).toLocaleString('fr')} HTG</td>
+                          <td className={`text-right font-extrabold font-mono ${solde>=0?'text-slate-800':'text-red-600'}`}>{solde>=0?'+':''}{solde.toLocaleString('fr')} HTG</td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="bg-slate-100 font-extrabold">
+                      <td colSpan={2} className="px-4 py-3">TOTAL GÉNÉRAL</td>
+                      <td className="text-right px-4 py-3 font-mono text-green-700">{balance.total_debit.toLocaleString('fr')} HTG</td>
+                      <td className="text-right px-4 py-3 font-mono text-red-500">{balance.total_credit.toLocaleString('fr')} HTG</td>
+                      <td className="text-right px-4 py-3 font-mono text-[#1641C8]">0 HTG</td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+          )}
+          {!balance && (
+            <div className="card p-12 text-center text-slate-300">
+              <i className="fa-solid fa-scale-balanced text-5xl mb-4"/>
+              <p className="text-sm">Cliquez sur "Vérifier la balance" pour contrôler la partie double</p>
+              <p className="text-xs mt-1 text-slate-400">Norme PCN Haïti — Débit = Crédit toujours</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── RAPPORT IA COMPTABLE ── */}
+      {onglet === 'ai_compta' && (
+        <div>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-extrabold text-[15px] flex items-center gap-2">
+              <span>🤖</span>Assistant comptable IA — {MOIS_NOMS[moisBilan]} {anneeBilan}
+            </h2>
+            <div className="flex gap-2 items-center">
+              <select value={aiType} onChange={e=>setAiType(e.target.value)} className="input w-48 py-1.5 text-xs">
+                <option value="mensuel">📊 Rapport mensuel complet</option>
+                <option value="flux_tresorerie">💰 Flux de trésorerie</option>
+                <option value="bilan_patrimonial">🏦 Bilan patrimonial</option>
+                <option value="annuel">📈 Synthèse annuelle</option>
+              </select>
+              <button disabled={aiLoading} onClick={async()=>{
+                setAiLoading(true); setAiRapport(''); setAiDonnees(null)
+                try{
+                  const r = await api.post('/admin/comptable-ai',{mois:moisBilan,annee:anneeBilan,type:aiType})
+                  setAiRapport(r.data.rapport)
+                  setAiDonnees(r.data.donnees)
+                  toast.success('Rapport IA généré ✓')
+                }catch(e:any){toast.error(e?.response?.data?.detail||'Erreur IA')}
+                finally{setAiLoading(false)}
+              }} className="btn-primary py-2">
+                {aiLoading?'⏳ Analyse en cours...':'🤖 Générer le rapport IA'}
+              </button>
+              {aiRapport && <button onClick={()=>window.print()} className="btn-ghost py-2"><i className="fa-solid fa-print mr-1"/>Imprimer</button>}
+            </div>
+          </div>
+
+          {/* Données collectées */}
+          {aiDonnees && (
+            <div className="grid grid-cols-4 gap-4 mb-5">
+              <div className="kpi-card"><div className="text-xl font-black text-green-600">+{aiDonnees.total_produits.toLocaleString('fr')} HTG</div><div className="text-xs text-slate-500">Total Produits</div></div>
+              <div className="kpi-card"><div className="text-xl font-black text-red-500">-{aiDonnees.total_charges.toLocaleString('fr')} HTG</div><div className="text-xs text-slate-500">Total Charges</div></div>
+              <div className="kpi-card"><div className={`text-xl font-black ${aiDonnees.resultat_net>=0?'text-[#1641C8]':'text-red-600'}`}>{aiDonnees.resultat_net>=0?'+':''}{aiDonnees.resultat_net.toLocaleString('fr')} HTG</div><div className="text-xs text-slate-500">Résultat Net</div></div>
+              <div className="kpi-card"><div className="text-xl font-black text-purple-600">{aiDonnees.nb_patients}</div><div className="text-xs text-slate-500">Patients ({aiDonnees.nb_transactions} trans.)</div></div>
+            </div>
+          )}
+
+          {/* Rapport IA */}
+          {aiRapport ? (
+            <div id="rapport-ai-print" className="card p-6">
+              <div className="flex items-center justify-between mb-4 border-b pb-3">
+                <div>
+                  <div className="font-extrabold text-[#1641C8] text-base">CLINIQUE DE LA REBECCA</div>
+                  <div className="text-xs text-slate-500">Rapport comptable IA — {MOIS_NOMS[moisBilan]} {anneeBilan}</div>
+                </div>
+                <div className="text-xs text-slate-400">Généré le {new Date().toLocaleDateString('fr-FR')}</div>
+              </div>
+              <div style={{whiteSpace:'pre-wrap',lineHeight:1.8,fontSize:14,color:'#1e293b'}}>{aiRapport}</div>
+              <div className="mt-4 pt-3 border-t text-[10px] text-slate-400 text-center">
+                Rapport généré par assistant IA — Clinique de la Rebecca · Vérification comptable recommandée avant toute décision
+              </div>
+            </div>
+          ) : !aiLoading && (
+            <div className="card p-12 text-center text-slate-300">
+              <span className="text-5xl">🤖</span>
+              <p className="text-sm mt-4">Sélectionnez le type de rapport et cliquez sur "Générer"</p>
+              <p className="text-xs mt-1 text-slate-400">L'IA analyse l'ensemble des données financières: recettes, charges, trésorerie, activité clinique</p>
+              <p className="text-xs text-slate-400">Conformité PCN Haïti + IFRS pour PME</p>
+            </div>
+          )}
+          {aiLoading && (
+            <div className="card p-12 text-center">
+              <div className="text-4xl mb-4">⏳</div>
+              <p className="text-sm font-bold text-[#1641C8]">Analyse comptable en cours...</p>
+              <p className="text-xs text-slate-400 mt-2">L'assistant collecte et analyse toutes les données financières du mois</p>
+            </div>
+          )}
+        </div>
+      )}
+
+            {onglet === 'config' && (
         <div>
           <h2 className="font-extrabold text-[15px] mb-2">Configuration — Règles de répartition</h2>
           <p className="text-slate-400 text-xs mb-5">Ces règles sont appliquées automatiquement lors de l'enregistrement de chaque acte médical.</p>

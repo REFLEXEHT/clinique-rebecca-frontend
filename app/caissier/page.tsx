@@ -366,44 +366,113 @@ export default function CaissierPage() {
 
   const imprimerFacture = (data: any) => {
     const patient = data.patient || {}
+    const now = new Date().toLocaleString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
+    const modeLabel: Record<string,string> = {especes:'💵 Espèces',moncash:'📱 MonCash',natcash:'📲 NatCash',carte:'💳 Carte bancaire',zelle:'🇺🇸 Zelle USD'}
+    const mode = data.mode_paiement || 'especes'
     const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Facture ${patient.numero}</title>
+<html><head><meta charset="utf-8"><title>Reçu ${patient.numero||''}</title>
 <style>
-  body{font-family:Arial,sans-serif;max-width:400px;margin:0 auto;padding:20px;font-size:13px}
-  .header{text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:15px}
-  .logo{font-size:20px;font-weight:900;color:#1641C8}
-  .ticket{font-size:40px;font-weight:900;text-align:center;color:#1641C8;letter-spacing:3px;margin:10px 0}
-  .row{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px dotted #ccc}
-  .total{font-size:18px;font-weight:900;text-align:right;margin-top:10px;padding:8px 0;border-top:2px solid #000}
-  .footer{text-align:center;margin-top:15px;font-size:11px;color:#666}
-  .id{font-size:32px;font-weight:900;font-family:monospace;text-align:center;background:#f0f9ff;padding:8px;border-radius:8px;margin:10px 0}
-  @media print{button{display:none}}
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,sans-serif;width:80mm;max-width:80mm;margin:0 auto;padding:8px;font-size:12px;color:#111}
+  .logo{font-size:15px;font-weight:900;color:#1641C8;text-align:center;margin-bottom:2px}
+  .sub{font-size:9px;color:#666;text-align:center;margin-bottom:8px}
+  .sep{border:none;border-top:1px dashed #ccc;margin:6px 0}
+  .id-box{text-align:center;background:#0f172a;color:white;border-radius:6px;padding:6px;margin:6px 0}
+  .id-num{font-size:22px;font-weight:900;font-family:monospace;letter-spacing:2px}
+  .id-lbl{font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px}
+  .ticket-box{text-align:center;background:#dbeafe;border:2px solid #1641C8;border-radius:6px;padding:8px;margin:6px 0}
+  .ticket-num{font-size:32px;font-weight:900;color:#1641C8;font-family:monospace;letter-spacing:3px}
+  .ticket-lbl{font-size:9px;color:#64748b;font-weight:700;text-transform:uppercase}
+  .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted #e5e7eb;font-size:11px}
+  .row-key{color:#64748b}
+  .row-val{font-weight:700;text-align:right;max-width:55mm;word-wrap:break-word}
+  .total-box{background:#f0fdf4;border:2px solid #16a34a;border-radius:6px;padding:8px;text-align:center;margin:8px 0}
+  .total-htg{font-size:20px;font-weight:900;color:#16a34a;font-family:monospace}
+  .total-lbl{font-size:9px;color:#16a34a;font-weight:700;text-transform:uppercase}
+  .footer{text-align:center;font-size:9px;color:#94a3b8;margin-top:8px;line-height:1.5}
+  .btn-print{display:block;width:100%;padding:8px;background:#1641C8;color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;margin-top:10px}
+  @media print{.btn-print{display:none!important} body{padding:0}}
 </style>
 </head><body>
-<div class="header">
-  <div class="logo">🏥 Clinique de la Rebecca</div>
-  <div style="font-size:11px;color:#666">Pétion-Ville, Haïti · Tel: (509) 4858-5757</div>
-  <div style="font-size:11px;margin-top:4px">Reçu de paiement</div>
-  <div style="font-size:11px">${new Date().toLocaleString('fr-FR')}</div>
+<div class="logo">🏥 CLINIQUE DE LA REBECCA</div>
+<div class="sub">#44 Rue Rebecca, Pétion-Ville · (509) 4858-5757<br>${now}</div>
+<hr class="sep">
+<div class="id-box">
+  <div class="id-lbl">Dossier Patient</div>
+  <div class="id-num">${patient.numero || '—'}</div>
 </div>
-<div class="id">${patient.numero || '#—'}</div>
-<div class="ticket">#${data.ticket || '—'}</div>
-<table style="width:100%">
-  <tr class="row"><td>Patient</td><td><strong>${patient.nom || ''}</strong></td></tr>
-  <tr class="row"><td>Téléphone</td><td>${patient.telephone || '—'}</td></tr>
-  <tr class="row"><td>Service</td><td><strong>${data.service || '—'}</strong></td></tr>
-  <tr class="row"><td>Mode paiement</td><td>${data.mode_paiement || 'Espèces'}</td></tr>
-  ${data.montant > 0 ? `<tr><td colspan="2" class="total">Total: ${data.montant?.toLocaleString('fr-FR')} HTG</td></tr>` : ''}
-</table>
+<div class="ticket-box">
+  <div class="ticket-lbl">🎫 Ticket Infirmière</div>
+  <div class="ticket-num">#${data.ticket || '—'}</div>
+</div>
+<hr class="sep">
+<div class="row"><span class="row-key">Patient</span><span class="row-val">${(patient.nom||'').toUpperCase()}</span></div>
+<div class="row"><span class="row-key">Téléphone</span><span class="row-val">${patient.telephone||'—'}</span></div>
+<div class="row"><span class="row-key">Service</span><span class="row-val">${data.service||'—'}</span></div>
+${data.medecin_nom?`<div class="row"><span class="row-key">Praticien</span><span class="row-val">${data.medecin_nom}</span></div>`:''}
+<div class="row"><span class="row-key">Priorité</span><span class="row-val">${data.priorite==='urgent'?'🔴 URGENT':'🟢 Normal'}</span></div>
+<div class="row"><span class="row-key">Mode paiement</span><span class="row-val">${modeLabel[mode]||mode}</span></div>
+${data.rdv_id?`<div class="row"><span class="row-key">RDV #</span><span class="row-val">${data.rdv_id}</span></div>`:''}
+${data.montant>0?`
+<hr class="sep">
+<div class="total-box">
+  <div class="total-lbl">Montant payé</div>
+  <div class="total-htg">${Number(data.montant).toLocaleString('fr-FR')} HTG</div>
+</div>`:'<div style="text-align:center;font-size:10px;color:#d97706;margin:8px 0;font-weight:700">⚠️ Paiement à effectuer à la caisse</div>'}
+<hr class="sep">
 <div class="footer">
   Présentez ce ticket à l'infirmière<br>
-  Clinique de la Rebecca — Tous droits réservés<br>
-  ${data.rdv_id ? 'RDV #' + data.rdv_id : ''}
+  Conservez ce reçu comme justificatif de paiement<br>
+  Merci de votre confiance — Clinique de la Rebecca
 </div>
-<br><button onclick="window.print()" style="width:100%;padding:10px;background:#1641C8;color:white;border:none;border-radius:8px;font-size:14px;cursor:pointer;font-weight:700">🖨 Imprimer</button>
+<button class="btn-print" onclick="window.print()">🖨 Imprimer ce reçu</button>
 </body></html>`
-    const w = window.open('', '_blank', 'width=450,height=600')
-    if (w) { w.document.write(html); w.document.close(); w.focus(); setTimeout(()=>w.print(), 300) }
+    const w = window.open('', '_blank', 'width=400,height=700')
+    if (w) { w.document.write(html); w.document.close(); w.focus(); setTimeout(()=>w.print(), 400) }
+  }
+
+  const imprimerRecuPaiement = (paiement: any) => {
+    const now = new Date().toLocaleString('fr-FR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
+    const modeLabel: Record<string,string> = {especes:'💵 Espèces',moncash:'📱 MonCash',natcash:'📲 NatCash',carte:'💳 Carte',zelle:'🇺🇸 Zelle'}
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Reçu ${paiement.recu_numero||''}</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:Arial,sans-serif;width:80mm;max-width:80mm;margin:0 auto;padding:10px;font-size:12px}
+  .logo{font-size:15px;font-weight:900;color:#1641C8;text-align:center}
+  .sub{font-size:9px;color:#666;text-align:center;margin-bottom:8px}
+  .sep{border:none;border-top:1px dashed #ccc;margin:6px 0}
+  .recu-num{text-align:center;font-family:monospace;font-size:13px;font-weight:900;color:#1641C8;background:#eff6ff;border-radius:6px;padding:5px;margin:8px 0}
+  .row{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px dotted #e5e7eb;font-size:11px}
+  .total-box{background:#f0fdf4;border:2px solid #16a34a;border-radius:8px;padding:10px;text-align:center;margin:8px 0}
+  .total-htg{font-size:22px;font-weight:900;color:#16a34a;font-family:monospace}
+  .footer{text-align:center;font-size:9px;color:#94a3b8;margin-top:8px;line-height:1.6}
+  .btn-print{display:block;width:100%;padding:8px;background:#1641C8;color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;margin-top:10px}
+  @media print{.btn-print{display:none!important}}
+</style></head><body>
+<div class="logo">🏥 CLINIQUE DE LA REBECCA</div>
+<div class="sub">#44 Rue Rebecca, Pétion-Ville · (509) 4858-5757</div>
+<div class="sub">📋 REÇU DE PAIEMENT · ${now}</div>
+<div class="recu-num">🧾 ${paiement.recu_numero||paiement.numero_piece||'—'}</div>
+<hr class="sep">
+<div class="row"><span style="color:#64748b">Service</span><strong>${paiement.service||paiement.description||'—'}</strong></div>
+<div class="row"><span style="color:#64748b">Mode</span><strong>${modeLabel[paiement.mode_paiement||'especes']||paiement.mode_paiement||'Espèces'}</strong></div>
+${paiement.reference?`<div class="row"><span style="color:#64748b">Référence</span><strong style="font-family:monospace;font-size:10px">${paiement.reference}</strong></div>`:''}
+<hr class="sep">
+<div class="total-box">
+  <div style="font-size:9px;color:#16a34a;font-weight:700;text-transform:uppercase;margin-bottom:2px">Montant encaissé</div>
+  <div class="total-htg">${Number(paiement.montant||0).toLocaleString('fr-FR')} HTG</div>
+</div>
+<hr class="sep">
+<div class="footer">
+  Ce reçu constitue votre justificatif officiel de paiement<br>
+  Clinique de la Rebecca — Pétion-Ville, Haïti<br>
+  Tél: (509) 4858-5757
+</div>
+<button class="btn-print" onclick="window.print()">🖨 Imprimer le reçu</button>
+</body></html>`
+    const w = window.open('', '_blank', 'width=400,height=600')
+    if (w) { w.document.write(html); w.document.close(); w.focus(); setTimeout(()=>w.print(), 400) }
   }
 
   const rechercherPatient = async () => {
@@ -892,8 +961,8 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                 {paiements.length===0 ? (
                   <p style={{color:'#94a3b8',textAlign:'center',padding:20,fontSize:13}}>Aucune transaction</p>
                 ) : paiements.map((p:any,i:number)=>(
-                  <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid #f1f5f9',fontSize:12}}>
-                    <div>
+                  <div key={i} style={{display:'flex',justifyContent:'space-between',padding:'8px 0',borderBottom:'1px solid #f1f5f9',fontSize:12,alignItems:'center'}}>
+                    <div style={{flex:1}}>
                       <div style={{fontWeight:600,fontSize:13}}>{p.patient_nom||`Patient #${p.patient_id}`}</div>
                       <div style={{color:'#64748b'}}>{p.service}</div>
                     </div>
@@ -901,6 +970,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       <div style={{fontWeight:700,color:'#16a34a'}}>{(p.montant||0).toLocaleString()} HTG</div>
                       <div style={{color:'#94a3b8'}}>{p.mode_paiement}</div>
                     </div>
+                    <button onClick={()=>imprimerRecuPaiement(p)} title="Imprimer reçu" style={{background:'#eff6ff',border:'none',borderRadius:6,padding:'4px 8px',cursor:'pointer',fontSize:11,color:'#1641C8',marginLeft:8}}>🖨</button>
                   </div>
                 ))}
               </div>
