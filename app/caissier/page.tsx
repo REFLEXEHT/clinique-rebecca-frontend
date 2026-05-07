@@ -1100,8 +1100,8 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                 </div>
                 <div style={{background:'linear-gradient(135deg,#0f172a,#1641C8)',borderRadius:10,padding:'8px 14px',textAlign:'center',minWidth:120}}>
                   <div style={{color:'rgba(255,255,255,0.5)',fontSize:9,textTransform:'uppercase',letterSpacing:1}}>ID attribué</div>
-                  <div style={{color: previewNumero && previewNumero !== '#RB-????'?'white':'rgba(255,255,255,0.4)',fontFamily:'monospace',fontWeight:900,fontSize:18,letterSpacing:1}}>
-                    {previewNumero || '⏳'}
+                  <div style={{color:'white',fontFamily:'monospace',fontWeight:900,fontSize:18,letterSpacing:1}}>
+                    {previewNumero || '#RB-...'}
                   </div>
                 </div>
               </div>
@@ -1616,7 +1616,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                     {/* Confirmation sélection */}
                     {formNouv.service && (
                       <div style={{marginTop:6,padding:'6px 12px',background:'#f0fdf4',border:'1px solid #86efac',borderRadius:7,fontSize:12,color:'#16a34a',fontWeight:600,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                        <span>✓ {formNouv.service}{PRAT && PRAT !== '__autre__' ? ` · ${PRAT}` : ''}</span>
+                        <span>✓ {formNouv.service}</span>
                         {formNouv.montant > 0 && (
                           <span style={{fontFamily:'monospace'}}>
                             {formNouv.montant.toLocaleString()} HTG
