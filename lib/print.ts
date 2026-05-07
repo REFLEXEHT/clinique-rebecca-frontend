@@ -8,7 +8,6 @@ const CLINIQUE = {
   adresse:   '#44 Rue Rebecca, Pétion-Ville, Haïti',
   tel:       '(509) 4858-5757',
   email:     'clinique.rebecca@gmail.com',
-  nif:       'NIF: 006-240-1234-5',
   logo:      '🏥',
 }
 
@@ -68,7 +67,6 @@ function clinicHeader(titre: string, refDoc?: string) {
 <div class="header">
   <div class="clinic-name">${CLINIQUE.logo} ${CLINIQUE.nom}</div>
   <div class="clinic-sub">${CLINIQUE.adresse} · ${CLINIQUE.tel} · ${CLINIQUE.email}</div>
-  <div class="clinic-sub">${CLINIQUE.nif}</div>
   <div class="doc-title">${titre}</div>
   ${refDoc ? `<div class="doc-ref">${refDoc}</div>` : ''}
 </div>`
@@ -247,7 +245,6 @@ export function imprimerFactureOfficielle(data: {
       <div class="section-title">Prestataire</div>
       <div class="row"><span class="row-key">Établissement</span><span class="row-val">${CLINIQUE.nom}</span></div>
       <div class="row"><span class="row-key">Adresse</span><span class="row-val">${CLINIQUE.adresse}</span></div>
-      <div class="row"><span class="row-key">NIF</span><span class="row-val">${CLINIQUE.nif}</span></div>
       ${data.medecin_nom ? `<div class="row"><span class="row-key">Praticien</span><span class="row-val">${data.medecin_nom}</span></div>` : ''}
     </div>
   </div>
@@ -516,7 +513,6 @@ ${BASE_STYLE}
         <div class="clinic-name">${CLINIQUE.nom}</div>
         <div class="clinic-sub">${CLINIQUE.adresse}</div>
         <div class="clinic-sub">Tél: ${CLINIQUE.tel} · ${CLINIQUE.email}</div>
-        <div class="clinic-sub">${CLINIQUE.nif}</div>
       </div>
     </div>
     <div style="border-top:2px solid #16a34a;padding-top:10px;text-align:center">
@@ -649,7 +645,6 @@ ${BASE_STYLE}
         <div class="clinic-name">${CLINIQUE.nom}</div>
         <div class="clinic-sub">${CLINIQUE.adresse}</div>
         <div class="clinic-sub">Tél: ${CLINIQUE.tel} · ${CLINIQUE.email}</div>
-        <div class="clinic-sub">${CLINIQUE.nif}</div>
       </div>
     </div>
     <div style="border-top:3px solid #1641C8;padding-top:10px;text-align:center">
