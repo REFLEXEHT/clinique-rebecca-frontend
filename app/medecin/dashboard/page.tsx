@@ -959,7 +959,13 @@ export default function MedecinDashboard() {
             DEMANDE D'ACCÈS DOSSIER (via autorisation admin)
         ══════════════════════════════════════════════════════════════ */}
         {onglet === 'demande-acces' && (
-          <DemandeAccesSection />
+          <AccesDossierDirect
+            onOuvrirDossier={(dossier: any, id: any) => {
+              setSelected(dossier)
+              setDossierId(id)
+              setOnglet('consultations')
+            }}
+          />
         )}
 
         {/* ── VÉRIFICATION PAIEMENT ──────────────────────────────── */}
@@ -976,75 +982,109 @@ export default function MedecinDashboard() {
   )
 }
 
-function DemandeAccesSection() {
-  const [patientNumero, setPatientNumero] = React.useState('')
-  const [motif,         setMotif]         = React.useState('')
-  const [urgence,       setUrgence]       = React.useState(false)
-  const [mesDemandes,   setMesDemandes]   = React.useState<any[]>([])
-  const [loading,       setLoading]       = React.useState(false)
-  const [dossierAcces,  setDossierAcces]  = React.useState<any>(null)
-  const [recherche,     setRecherche]     = React.useState('')
+function AccesDossierDirect({ onOuvrirDossier }: { onOuvrirDossier: (dossier: any, id: any) => void }) {
+  const [q,           setQ]           = React.useState('')
+  const [results,     setResults]     = React.useState<any[]>([])
+  const [loading,     setLoading]     = React.useState(false)
+  const [errMsg,      setErrMsg]      = React.useState('')
 
-  React.useEffect(() => {
-    import('@/lib/api').then(({ api }) => {
-      api.get('/medecin/mes-demandes-acces').then(r => setMesDemandes(r.data || [])).catch(() => {})
-    })
-  }, [])
-
-  const soumettre = async () => {
-    if (!patientNumero.trim() || !motif.trim()) { alert('Numéro patient et motif requis'); return }
-    setLoading(true)
+  const chercher = async () => {
+    if (!q.trim() || q.trim().length < 2) { setErrMsg('Saisissez au moins 2 caractères'); return }
+    setLoading(true); setErrMsg(''); setResults([])
     try {
       const { api } = await import('@/lib/api')
-      await api.post('/medecin/demande-acces-dossier', { patient_numero: patientNumero.trim(), motif, urgence })
-      alert("Demande envoyée à l'administrateur. Vous serez notifié de la décision.")
-      setPatientNumero(''); setMotif(''); setUrgence(false)
+      const r = await api.get('/medecin/chercher-patient', { params: { q: q.trim() } })
+      const pts = r.data?.patients || []
+      setResults(pts)
+      if (pts.length === 0) setErrMsg('Aucun patient trouvé')
     } catch (e: any) {
-      alert(e?.response?.data?.detail || 'Erreur lors de la demande')
+      setErrMsg(e?.response?.data?.detail || 'Erreur de recherche')
     } finally { setLoading(false) }
   }
 
+  const ouvrirDossier = async (patient: any) => {
+    try {
+      const { api } = await import('@/lib/api')
+      const endpoint = patient.dossier_id
+        ? `/medecin/dossier/${patient.dossier_id}`
+        : `/medecin/dossier-par-patient/${patient.numero}`
+      const r = await api.get(endpoint)
+      const dossier = r.data?.dossier || r.data
+      onOuvrirDossier(dossier, patient.dossier_id || dossier?.id)
+    } catch (e: any) {
+      alert(e?.response?.data?.detail || 'Impossible de charger le dossier')
+    }
+  }
+
   return (
-    <div style={{ maxWidth: 640 }}>
-      <h2 style={{ fontWeight: 900, fontSize: '1.1rem', marginBottom: 16 }}>🔐 Demande d'accès dossier</h2>
-      <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 12, padding: '12px 16px', marginBottom: 20, fontSize: 13, color: '#92400e' }}>
-        ⚠️ Pour les dossiers hors file d'attente (second avis, urgence), une demande explicite est requise.
-      </div>
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 20 }}>
-        <input value={patientNumero} onChange={e => setPatientNumero(e.target.value)} placeholder="#RB-0042"
-          style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 14, fontFamily: 'monospace' }} />
-        <textarea value={motif} onChange={e => setMotif(e.target.value)} rows={3} placeholder="Motif de la demande d'accès..."
-          style={{ padding: '10px 14px', borderRadius: 8, border: '1px solid #d1d5db', fontSize: 14, resize: 'vertical' }} />
-        <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 13 }}>
-          <input type="checkbox" checked={urgence} onChange={e => setUrgence(e.target.checked)} />
-          Urgence médicale
-        </label>
-        <button onClick={soumettre} disabled={loading} style={{ background: '#1641C8', color: 'white', border: 'none', borderRadius: 8, padding: '10px 20px', fontWeight: 700, cursor: 'pointer' }}>
-          {loading ? 'Envoi...' : 'Soumettre la demande'}
+    <div style={{ maxWidth: 680 }}>
+      <h2 style={{ fontWeight: 900, fontSize: '1.1rem', marginBottom: 8 }}>🔍 Accès dossier patient</h2>
+      <p style={{ color: '#64748b', fontSize: 13, marginBottom: 16 }}>
+        Recherchez un patient par son numéro <strong>#RB-XXXX</strong>, son nom ou son prénom.
+        En tant que médecin, vous avez accès direct sans demande préalable.
+      </p>
+      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
+        <input
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && chercher()}
+          placeholder="#RB-0042, Jean Pierre, 36186469..."
+          style={{ flex: 1, padding: '11px 14px', borderRadius: 10, border: '2px solid #1641C8', fontSize: 14 }}
+          autoFocus
+        />
+        <button onClick={chercher} disabled={loading} style={{
+          background: '#1641C8', color: 'white', border: 'none', borderRadius: 10,
+          padding: '11px 22px', fontWeight: 700, cursor: 'pointer', fontSize: 14,
+          opacity: loading ? 0.7 : 1
+        }}>
+          {loading ? '⏳' : '🔍 Chercher'}
         </button>
       </div>
-      {dossierAcces && (
-        <div style={{ background: '#f0fdf4', borderRadius: 10, padding: 14, border: '1px solid #86efac', fontSize: 13 }}>
-          ✓ Accès autorisé — expire dans {dossierAcces.duree_restante_h}h<br/>
-          Patient : <strong>{dossierAcces.patient?.nom}</strong> · {dossierAcces.dossiers?.length} dossier(s)
+
+      {errMsg && (
+        <div style={{ background: '#fef9c3', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#92400e', marginBottom: 12 }}>
+          {errMsg}
         </div>
       )}
-      {mesDemandes.length > 0 && (
-        <div style={{ marginTop: 20 }}>
-          <h3 style={{ fontWeight: 700, fontSize: 14, marginBottom: 10 }}>Mes demandes récentes</h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {mesDemandes.slice(0, 5).map((d: any, i: number) => (
-              <div key={i} style={{ background: 'white', borderRadius: 8, padding: '10px 14px', border: '1px solid #e2e8f0', fontSize: 12, display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ fontFamily: 'monospace' }}>{d.patient_numero}</span>
-                <span style={{ color: d.statut === 'approuve' ? '#16a34a' : d.statut === 'refuse' ? '#dc2626' : '#d97706', fontWeight: 700 }}>
-                  {d.statut === 'approuve' ? '✓ Approuvé' : d.statut === 'refuse' ? '✕ Refusé' : '⏳ En attente'}
-                </span>
+
+      {results.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+          {results.map((p: any) => (
+            <div key={p.id} style={{
+              background: 'white', borderRadius: 12, padding: '14px 16px',
+              border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 14
+            }}>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 800, fontSize: 15, color: '#0f172a' }}>
+                  {p.nom} {p.prenom}
+                  <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#1641C8', marginLeft: 10 }}>{p.numero}</span>
+                </div>
+                <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                  {p.age ? `${p.age} ans · ` : ''}{p.telephone || ''}
+                  {p.statut_dossier && (
+                    <span style={{
+                      marginLeft: 8, padding: '1px 8px', borderRadius: 99,
+                      background: p.paiement_effectue ? '#f0fdf4' : '#fef9c3',
+                      color: p.paiement_effectue ? '#16a34a' : '#92400e',
+                      fontSize: 10, fontWeight: 700
+                    }}>
+                      {p.paiement_effectue ? '✅ Payé' : '⚠️ À vérifier'}
+                    </span>
+                  )}
+                </div>
               </div>
-            ))}
-          </div>
+              <button onClick={() => ouvrirDossier(p)} style={{
+                background: 'linear-gradient(135deg,#1641C8,#0d9488)', color: 'white',
+                border: 'none', borderRadius: 9, padding: '9px 18px',
+                fontWeight: 700, cursor: 'pointer', fontSize: 13, whiteSpace: 'nowrap' as const
+              }}>
+                📋 Ouvrir le dossier
+              </button>
+            </div>
+          ))}
         </div>
-        )}
-      </div>
+      )}
+    </div>
   )
 }
 
