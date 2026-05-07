@@ -98,6 +98,13 @@ for rel in BACKEND_FILES:
     path = os.path.join(BACKEND_ROOT, rel)
     if not os.path.exists(path):
         continue
+
+    # Vérification syntaxe Python via py_compile
+    import subprocess as sp
+    r = sp.run(['python3', '-m', 'py_compile', path], capture_output=True, text=True)
+    if r.returncode != 0:
+        errors.append(f"[PY-SYNTAX] {rel}: {r.stderr.strip()}")
+
     content = open(path, encoding='utf-8').read()
     lines   = content.split('\n')
 
