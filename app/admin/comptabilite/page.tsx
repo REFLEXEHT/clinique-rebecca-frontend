@@ -104,6 +104,8 @@ export default function AdminComptabilite() {
     else setEcriture(null)
   }, [typeW, catW, descW, montantW])
 
+  const [refreshKey, setRefreshKey] = useState(0)
+
   const loadJournal = useCallback(async () => {
     try {
       const res = await api.get('/admin/mouvements', { params: { mois: moisBilan, annee: anneeBilan } })
