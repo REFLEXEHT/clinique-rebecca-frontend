@@ -147,6 +147,8 @@ export default function CaissierPage() {
   const { user, isAuthenticated, loading, logout } = useAuth()
   const router = useRouter()
   const [onglet, setOnglet] = useState<'paiement'|'documents'|'depenses'|'nouveau'|'rapport'|'registre'>('paiement')
+  const [periodeDepense,  setPeriodeDepense]  = useState<'jour'|'mois'>('jour')
+  const [periodeEncaisse, setPeriodeEncaisse] = useState<'jour'|'mois'>('jour')
   const [searchPaiement, setSearchPaiement] = useState('')
   const [searchDoc, setSearchDoc] = useState('')
   const [patient, setPatient] = useState<any>(null)
@@ -300,8 +302,6 @@ export default function CaissierPage() {
   }
 
   const [loadingDepense,  setLoadingDepense]  = useState(false)
-  const [periodeDepense,  setPeriodeDepense]  = useState<'jour'|'mois'>('jour')
-  const [periodeEncaisse, setPeriodeEncaisse] = useState<'jour'|'mois'>('jour')
   const [rdvPaiementId,   setRdvPaiementId]   = useState<number|null>(null)
   const [rdvPaiementInfo, setRdvPaiementInfo] = useState<PaiementInfo|null>(null)
   const [queueResult, setQueueResult] = useState<any>(null)
