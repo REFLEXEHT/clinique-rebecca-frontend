@@ -252,15 +252,28 @@ export default function CaissierPage() {
 
   const enregistrerPaiement = async () => {
     if (!patient) { toast.error('Recherchez un patient'); return }
+    if (!form.montant) { toast.error('Saisissez un montant'); return }
+    if (form.mode_paiement !== 'especes' && !(form as any).paiementVerifie) {
+      toast.error(`Vérifiez le paiement ${form.mode_paiement} avant d'enregistrer`)
+      return
+    }
+    // Construire la référence enrichie selon le mode
+    let refEnrichie = form.reference || ''
+    if (form.mode_paiement === 'moncash') refEnrichie = `MonCash:${(form as any).tel_moncash||''}${form.reference?'|ref:'+form.reference:''}`
+    if (form.mode_paiement === 'natcash') refEnrichie = `NatCash:${(form as any).tel_natcash||''}${form.reference?'|ref:'+form.reference:''}`
+    if (form.mode_paiement === 'carte')   refEnrichie = `Carte:${(form as any).carte_nom||''}|${(form as any).reference||''}`
+    if (form.mode_paiement === 'zelle')   refEnrichie = `Zelle:${(form as any).zelle_contact||''}|${(form as any).zelle_nom||''}|$${(form as any).zelle_montant_usd||''}${form.reference?'|ref:'+form.reference:''}`
     try {
       const r = await api.post('/caissier/paiement', {
         patient_id: patient.id, service: form.service,
-        montant: form.montant, mode_paiement: form.mode_paiement, reference: form.reference
+        montant: form.montant, mode_paiement: form.mode_paiement, reference: refEnrichie
       })
       setRecu({...r.data, patient_nom: patient.nom, patient_numero: patient.numero})
       toast.success('Paiement enregistré — reçu généré ✓')
       setPaiements(prev => [r.data, ...prev])
       setTotalJour(prev => prev + form.montant)
+      // Réinitialiser vérification pour prochain paiement
+      setForm(p => ({...p, paiementVerifie:false, tel_moncash:'', tel_natcash:'', carte_numero:'', carte_expiry:'', carte_cvv:'', carte_nom:'', zelle_contact:'', zelle_nom:'', zelle_montant_usd:''}))
     } catch (e: any) { toast.error(e?.response?.data?.detail || 'Erreur') }
   }
 
@@ -516,7 +529,8 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
 
               <div style={{background:'white',borderRadius:16,padding:20,border:'1px solid #e2e8f0'}}>
                 <h3 style={{fontWeight:700,fontSize:15,marginBottom:14,color:'#0f172a'}}>💳 Service & Paiement</h3>
-                
+
+                {/* Service */}
                 <div style={{marginBottom:12}}>
                   <label style={{display:'block',fontWeight:600,fontSize:13,color:'#374151',marginBottom:6}}>Service *</label>
                   <select value={form.service} onChange={e=>{
@@ -533,36 +547,315 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   </select>
                 </div>
 
+                {/* Montant */}
                 <div style={{marginBottom:12}}>
                   <label style={{display:'block',fontWeight:600,fontSize:13,color:'#374151',marginBottom:6}}>Montant (HTG) *</label>
                   <input type="number" value={form.montant} onChange={e=>setForm(p=>({...p,montant:parseInt(e.target.value)||0}))}
                     style={{width:'100%',padding:'10px 12px',borderRadius:8,border:'1px solid #d1d5db',fontSize:15,fontWeight:700,boxSizing:'border-box' as const}}/>
                 </div>
 
-                <div style={{marginBottom:12}}>
+                {/* Mode de paiement */}
+                <div style={{marginBottom:14}}>
                   <label style={{display:'block',fontWeight:600,fontSize:13,color:'#374151',marginBottom:6}}>Mode de paiement</label>
-                  <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:6}}>
-                    {['especes','moncash','natcash','carte'].map(m=>(
-                      <button key={m} type="button" onClick={()=>setForm(p=>({...p,mode_paiement:m}))} style={{
-                        padding:'8px 4px',borderRadius:8,border:`2px solid ${form.mode_paiement===m?'#d97706':'#e2e8f0'}`,
-                        background:form.mode_paiement===m?'#fff7ed':'white',fontWeight:600,fontSize:11,cursor:'pointer',
-                        color:form.mode_paiement===m?'#d97706':'#64748b',textTransform:'capitalize'
-                      }}>{m}</button>
+                  <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:5}}>
+                    {[
+                      {id:'especes',  icon:'💵', label:'Espèces'},
+                      {id:'moncash',  icon:'📱', label:'MonCash'},
+                      {id:'natcash',  icon:'📲', label:'NatCash'},
+                      {id:'carte',    icon:'💳', label:'Carte'},
+                      {id:'zelle',    icon:'🇺🇸', label:'Zelle'},
+                    ].map(m=>(
+                      <button key={m.id} type="button" onClick={()=>setForm(p=>({...p,mode_paiement:m.id,reference:'',paiementVerifie:false}))} style={{
+                        padding:'7px 3px',borderRadius:8,border:`2px solid ${form.mode_paiement===m.id?'#d97706':'#e2e8f0'}`,
+                        background:form.mode_paiement===m.id?'#fff7ed':'white',fontWeight:600,fontSize:10,cursor:'pointer',
+                        color:form.mode_paiement===m.id?'#d97706':'#64748b',textAlign:'center' as const,lineHeight:1.4
+                      }}><div style={{fontSize:16}}>{m.icon}</div>{m.label}</button>
                     ))}
                   </div>
                 </div>
-                {['moncash','natcash'].includes(form.mode_paiement) && (
-                  <div style={{marginBottom:12}}>
-                    <input value={form.reference} onChange={e=>setForm(p=>({...p,reference:e.target.value}))}
-                      placeholder="Référence transaction"
-                      style={{width:'100%',padding:'10px 12px',borderRadius:8,border:'1px solid #d1d5db',fontSize:14,boxSizing:'border-box' as const}}/>
+
+                {/* ── ESPÈCES : pas de vérification nécessaire ── */}
+                {form.mode_paiement==='especes' && (
+                  <div style={{background:'#f0fdf4',borderRadius:8,padding:'10px 12px',marginBottom:12,fontSize:13,color:'#16a34a',display:'flex',gap:8,alignItems:'center'}}>
+                    <span style={{fontSize:18}}>✅</span>
+                    <span>Paiement espèces — aucune vérification requise</span>
                   </div>
                 )}
-                <button onClick={enregistrerPaiement} disabled={!patient||!form.montant} style={{
-                  width:'100%',background:'linear-gradient(135deg,#d97706,#b45309)',color:'white',
-                  border:'none',borderRadius:10,padding:'13px',fontWeight:700,cursor:'pointer',
-                  fontSize:15,opacity:(!patient||!form.montant)?0.5:1
-                }}>✓ Enregistrer le paiement</button>
+
+                {/* ── MONCASH ── */}
+                {form.mode_paiement==='moncash' && (
+                  <div style={{background:'#fef3c7',borderRadius:10,padding:12,marginBottom:12,border:'1px solid #fcd34d'}}>
+                    <div style={{fontWeight:700,fontSize:13,color:'#92400e',marginBottom:8}}>📱 Vérification MonCash</div>
+                    <div style={{fontSize:12,color:'#78350f',marginBottom:10}}>
+                      Demandez au patient d'effectuer le transfert MonCash vers notre numéro, puis saisissez son numéro pour confirmer.
+                    </div>
+                    <div style={{display:'flex',gap:8,marginBottom:8}}>
+                      <div style={{flex:1}}>
+                        <label style={{display:'block',fontSize:11,fontWeight:600,color:'#92400e',marginBottom:4}}>Numéro MonCash du patient *</label>
+                        <input
+                          value={(form as any).tel_moncash||''}
+                          onChange={e=>setForm(p=>({...p,tel_moncash:e.target.value,paiementVerifie:false}))}
+                          placeholder="3X/4X-XXX-XXXX"
+                          style={{width:'100%',padding:'9px 11px',borderRadius:7,border:'1px solid #f59e0b',fontSize:14,fontFamily:'monospace',boxSizing:'border-box' as const}}
+                        />
+                      </div>
+                      <div style={{flex:1}}>
+                        <label style={{display:'block',fontSize:11,fontWeight:600,color:'#92400e',marginBottom:4}}>Référence transaction (optionnel)</label>
+                        <input
+                          value={form.reference||''}
+                          onChange={e=>setForm(p=>({...p,reference:e.target.value}))}
+                          placeholder="Code confirmation MonCash"
+                          style={{width:'100%',padding:'9px 11px',borderRadius:7,border:'1px solid #f59e0b',fontSize:13,boxSizing:'border-box' as const}}
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!(form as any).tel_moncash||(form as any).paiementVerifie}
+                      onClick={async()=>{
+                        try{
+                          const r=await api.post('/caissier/verifier-moncash',{
+                            telephone:(form as any).tel_moncash,
+                            reference:form.reference,
+                            montant:form.montant
+                          })
+                          setForm(p=>({...p,paiementVerifie:true,reference:r.data.reference||form.reference}))
+                          toast.success(r.data.message||'MonCash vérifié ✓')
+                        }catch(e:any){toast.error(e?.response?.data?.detail||'Numéro invalide')}
+                      }}
+                      style={{width:'100%',background:(form as any).paiementVerifie?'#16a34a':'#d97706',color:'white',border:'none',borderRadius:8,padding:'9px',fontWeight:700,cursor:'pointer',fontSize:13,
+                        opacity:!(form as any).tel_moncash?0.5:1}}
+                    >
+                      {(form as any).paiementVerifie ? '✅ Numéro MonCash vérifié' : '🔍 Vérifier le numéro MonCash'}
+                    </button>
+                  </div>
+                )}
+
+                {/* ── NATCASH ── */}
+                {form.mode_paiement==='natcash' && (
+                  <div style={{background:'#eff6ff',borderRadius:10,padding:12,marginBottom:12,border:'1px solid #bfdbfe'}}>
+                    <div style={{fontWeight:700,fontSize:13,color:'#1e40af',marginBottom:8}}>📲 Vérification NatCash</div>
+                    <div style={{fontSize:12,color:'#1d4ed8',marginBottom:10}}>
+                      Demandez au patient d'effectuer le transfert NatCash, puis saisissez son numéro pour confirmer.
+                    </div>
+                    <div style={{display:'flex',gap:8,marginBottom:8}}>
+                      <div style={{flex:1}}>
+                        <label style={{display:'block',fontSize:11,fontWeight:600,color:'#1e40af',marginBottom:4}}>Numéro NatCash du patient *</label>
+                        <input
+                          value={(form as any).tel_natcash||''}
+                          onChange={e=>setForm(p=>({...p,tel_natcash:e.target.value,paiementVerifie:false}))}
+                          placeholder="3X/4X-XXX-XXXX"
+                          style={{width:'100%',padding:'9px 11px',borderRadius:7,border:'1px solid #93c5fd',fontSize:14,fontFamily:'monospace',boxSizing:'border-box' as const}}
+                        />
+                      </div>
+                      <div style={{flex:1}}>
+                        <label style={{display:'block',fontSize:11,fontWeight:600,color:'#1e40af',marginBottom:4}}>Référence NatCash (optionnel)</label>
+                        <input
+                          value={form.reference||''}
+                          onChange={e=>setForm(p=>({...p,reference:e.target.value}))}
+                          placeholder="Code confirmation NatCash"
+                          style={{width:'100%',padding:'9px 11px',borderRadius:7,border:'1px solid #93c5fd',fontSize:13,boxSizing:'border-box' as const}}
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!(form as any).tel_natcash||(form as any).paiementVerifie}
+                      onClick={async()=>{
+                        try{
+                          const r=await api.post('/caissier/verifier-natcash',{
+                            telephone:(form as any).tel_natcash,
+                            reference:form.reference,
+                            montant:form.montant
+                          })
+                          setForm(p=>({...p,paiementVerifie:true}))
+                          toast.success(r.data.message||'NatCash vérifié ✓')
+                        }catch(e:any){toast.error(e?.response?.data?.detail||'Numéro invalide')}
+                      }}
+                      style={{width:'100%',background:(form as any).paiementVerifie?'#16a34a':'#1d4ed8',color:'white',border:'none',borderRadius:8,padding:'9px',fontWeight:700,cursor:'pointer',fontSize:13,
+                        opacity:!(form as any).tel_natcash?0.5:1}}
+                    >
+                      {(form as any).paiementVerifie ? '✅ Numéro NatCash vérifié' : '🔍 Vérifier le numéro NatCash'}
+                    </button>
+                  </div>
+                )}
+
+                {/* ── CARTE BANCAIRE ── */}
+                {form.mode_paiement==='carte' && (
+                  <div style={{background:'#f5f3ff',borderRadius:10,padding:12,marginBottom:12,border:'1px solid #ddd6fe'}}>
+                    <div style={{fontWeight:700,fontSize:13,color:'#5b21b6',marginBottom:8}}>💳 Informations carte bancaire</div>
+                    <div style={{fontSize:12,color:'#6d28d9',marginBottom:10}}>
+                      Les données de carte ne sont jamais stockées — traitement sécurisé uniquement.
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:8}}>
+                      <div style={{gridColumn:'1/-1'}}>
+                        <label style={{display:'block',fontSize:11,fontWeight:600,color:'#5b21b6',marginBottom:4}}>Numéro de carte *</label>
+                        <input
+                          value={(form as any).carte_numero||''}
+                          onChange={e=>{
+                            const v=e.target.value.replace(/\D/g,'').slice(0,19)
+                            const fmt=v.replace(/(\d{4})/g,'$1 ').trim()
+                            setForm(p=>({...p,carte_numero:fmt,paiementVerifie:false}))
+                          }}
+                          placeholder="XXXX XXXX XXXX XXXX"
+                          maxLength={23}
+                          style={{width:'100%',padding:'9px 11px',borderRadius:7,border:'1px solid #c4b5fd',fontSize:16,fontFamily:'monospace',letterSpacing:2,boxSizing:'border-box' as const}}
+                        />
+                      </div>
+                      <div>
+                        <label style={{display:'block',fontSize:11,fontWeight:600,color:'#5b21b6',marginBottom:4}}>Expiration *</label>
+                        <input
+                          value={(form as any).carte_expiry||''}
+                          onChange={e=>{
+                            let v=e.target.value.replace(/\D/g,'')
+                            if(v.length>=2) v=v.slice(0,2)+'/'+v.slice(2,4)
+                            setForm(p=>({...p,carte_expiry:v,paiementVerifie:false}))
+                          }}
+                          placeholder="MM/AA"
+                          maxLength={5}
+                          style={{width:'100%',padding:'9px 11px',borderRadius:7,border:'1px solid #c4b5fd',fontSize:14,fontFamily:'monospace',boxSizing:'border-box' as const}}
+                        />
+                      </div>
+                      <div>
+                        <label style={{display:'block',fontSize:11,fontWeight:600,color:'#5b21b6',marginBottom:4}}>CVV *</label>
+                        <input
+                          value={(form as any).carte_cvv||''}
+                          onChange={e=>setForm(p=>({...p,carte_cvv:e.target.value.replace(/\D/g,'').slice(0,4),paiementVerifie:false}))}
+                          placeholder="123"
+                          maxLength={4}
+                          type="password"
+                          style={{width:'100%',padding:'9px 11px',borderRadius:7,border:'1px solid #c4b5fd',fontSize:14,fontFamily:'monospace',boxSizing:'border-box' as const}}
+                        />
+                      </div>
+                      <div style={{gridColumn:'1/-1'}}>
+                        <label style={{display:'block',fontSize:11,fontWeight:600,color:'#5b21b6',marginBottom:4}}>Nom du titulaire *</label>
+                        <input
+                          value={(form as any).carte_nom||''}
+                          onChange={e=>setForm(p=>({...p,carte_nom:e.target.value.toUpperCase(),paiementVerifie:false}))}
+                          placeholder="NOM PRÉNOM"
+                          style={{width:'100%',padding:'9px 11px',borderRadius:7,border:'1px solid #c4b5fd',fontSize:14,boxSizing:'border-box' as const}}
+                        />
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={(form as any).paiementVerifie}
+                      onClick={async()=>{
+                        const num=((form as any).carte_numero||'').replace(/\s/g,'')
+                        if(!num||!(form as any).carte_expiry||!(form as any).carte_cvv||!(form as any).carte_nom){
+                          toast.error('Complétez toutes les informations de la carte')
+                          return
+                        }
+                        try{
+                          const r=await api.post('/caissier/verifier-carte',{
+                            numero:num,
+                            expiry:(form as any).carte_expiry,
+                            cvv:(form as any).carte_cvv,
+                            nom_titulaire:(form as any).carte_nom,
+                            montant:form.montant
+                          })
+                          setForm(p=>({...p,paiementVerifie:true,reference:r.data.token||''}))
+                          toast.success(`${r.data.carte_type} ${r.data.numero_masque} — validée ✓`)
+                        }catch(e:any){toast.error(e?.response?.data?.detail||'Carte invalide')}
+                      }}
+                      style={{width:'100%',background:(form as any).paiementVerifie?'#16a34a':'#7c3aed',color:'white',border:'none',borderRadius:8,padding:'9px',fontWeight:700,cursor:'pointer',fontSize:13}}
+                    >
+                      {(form as any).paiementVerifie ? '✅ Carte validée' : '🔐 Valider la carte'}
+                    </button>
+                  </div>
+                )}
+
+                {/* ── ZELLE ── */}
+                {form.mode_paiement==='zelle' && (
+                  <div style={{background:'#f0f9ff',borderRadius:10,padding:12,marginBottom:12,border:'1px solid #7dd3fc'}}>
+                    <div style={{fontWeight:700,fontSize:13,color:'#0369a1',marginBottom:8}}>🇺🇸 Paiement Zelle (USD)</div>
+                    <div style={{background:'#fef9c3',borderRadius:7,padding:'8px 10px',marginBottom:10,fontSize:12,color:'#92400e'}}>
+                      ⚠️ Confirmez visuellement la réception sur votre application bancaire <strong>avant</strong> de valider.
+                    </div>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:8}}>
+                      <div style={{gridColumn:'1/-1'}}>
+                        <label style={{display:'block',fontSize:11,fontWeight:600,color:'#0369a1',marginBottom:4}}>Email ou numéro Zelle de l'envoyeur *</label>
+                        <input
+                          value={(form as any).zelle_contact||''}
+                          onChange={e=>setForm(p=>({...p,zelle_contact:e.target.value,paiementVerifie:false}))}
+                          placeholder="email@exemple.com ou +1-XXX-XXX-XXXX"
+                          style={{width:'100%',padding:'9px 11px',borderRadius:7,border:'1px solid #7dd3fc',fontSize:13,boxSizing:'border-box' as const}}
+                        />
+                      </div>
+                      <div>
+                        <label style={{display:'block',fontSize:11,fontWeight:600,color:'#0369a1',marginBottom:4}}>Nom de l'envoyeur *</label>
+                        <input
+                          value={(form as any).zelle_nom||''}
+                          onChange={e=>setForm(p=>({...p,zelle_nom:e.target.value,paiementVerifie:false}))}
+                          placeholder="Prénom NOM"
+                          style={{width:'100%',padding:'9px 11px',borderRadius:7,border:'1px solid #7dd3fc',fontSize:13,boxSizing:'border-box' as const}}
+                        />
+                      </div>
+                      <div>
+                        <label style={{display:'block',fontSize:11,fontWeight:600,color:'#0369a1',marginBottom:4}}>Montant USD reçu *</label>
+                        <input
+                          type="number"
+                          value={(form as any).zelle_montant_usd||''}
+                          onChange={e=>setForm(p=>({...p,zelle_montant_usd:e.target.value,paiementVerifie:false}))}
+                          placeholder={`${Math.round(form.montant/tauxChange)}`}
+                          style={{width:'100%',padding:'9px 11px',borderRadius:7,border:'1px solid #7dd3fc',fontSize:13,fontFamily:'monospace',boxSizing:'border-box' as const}}
+                        />
+                      </div>
+                      <div style={{gridColumn:'1/-1'}}>
+                        <label style={{display:'block',fontSize:11,fontWeight:600,color:'#0369a1',marginBottom:4}}>Référence de confirmation Zelle (optionnel)</label>
+                        <input
+                          value={form.reference||''}
+                          onChange={e=>setForm(p=>({...p,reference:e.target.value}))}
+                          placeholder="Numéro de confirmation Zelle"
+                          style={{width:'100%',padding:'9px 11px',borderRadius:7,border:'1px solid #7dd3fc',fontSize:13,boxSizing:'border-box' as const}}
+                        />
+                      </div>
+                    </div>
+                    {form.montant>0&&tauxChange>0&&(
+                      <div style={{background:'#e0f2fe',borderRadius:7,padding:'6px 10px',marginBottom:8,fontSize:12,color:'#0369a1',fontWeight:600}}>
+                        💱 Équivalent : ${Math.round(form.montant/tauxChange*100)/100} USD (taux: 1 USD = {tauxChange} HTG)
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      disabled={(form as any).paiementVerifie}
+                      onClick={async()=>{
+                        if(!(form as any).zelle_contact||!(form as any).zelle_nom||!(form as any).zelle_montant_usd){
+                          toast.error('Complétez toutes les informations Zelle')
+                          return
+                        }
+                        try{
+                          const r=await api.post('/caissier/verifier-zelle',{
+                            email_ou_tel:(form as any).zelle_contact,
+                            nom_envoyeur:(form as any).zelle_nom,
+                            montant_usd:(form as any).zelle_montant_usd,
+                            reference:form.reference,
+                          })
+                          setForm(p=>({...p,paiementVerifie:true}))
+                          toast.success('Zelle confirmé ✓ — n'oubliez pas de vérifier sur l'app bancaire')
+                        }catch(e:any){toast.error(e?.response?.data?.detail||'Informations Zelle invalides')}
+                      }}
+                      style={{width:'100%',background:(form as any).paiementVerifie?'#16a34a':'#0284c7',color:'white',border:'none',borderRadius:8,padding:'9px',fontWeight:700,cursor:'pointer',fontSize:13}}
+                    >
+                      {(form as any).paiementVerifie ? '✅ Zelle confirmé' : '✓ Confirmer la réception Zelle'}
+                    </button>
+                  </div>
+                )}
+
+                {/* Bouton final — actif uniquement si vérification OK ou espèces */}
+                <button onClick={enregistrerPaiement}
+                  disabled={!patient||!form.montant||(form.mode_paiement!=='especes'&&!(form as any).paiementVerifie)}
+                  style={{
+                    width:'100%',background:'linear-gradient(135deg,#d97706,#b45309)',color:'white',
+                    border:'none',borderRadius:10,padding:'13px',fontWeight:700,cursor:'pointer',
+                    fontSize:15,opacity:(!patient||!form.montant||(form.mode_paiement!=='especes'&&!(form as any).paiementVerifie))?0.4:1,
+                    marginTop:4
+                  }}>
+                  {!patient ? 'Recherchez un patient d'abord' :
+                   !form.montant ? 'Saisissez un montant' :
+                   form.mode_paiement!=='especes'&&!(form as any).paiementVerifie ? `Vérifiez le ${form.mode_paiement} d'abord` :
+                   '✓ Enregistrer le paiement'}
+                </button>
               </div>
             </div>
 
@@ -1279,9 +1572,9 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                 </div>
                 <div>
                   <label style={{display:'block',fontWeight:600,fontSize:12,color:'#374151',marginBottom:4}}>Mode paiement</label>
-                  <select value={formNouv.mode_paiement} onChange={e=>setFormNouv(p=>({...p,mode_paiement:e.target.value}))}
+                  <select value={formNouv.mode_paiement} onChange={e=>setFormNouv(p=>({...p,mode_paiement:e.target.value,paiementNvVerifie:false}))}
                     style={{width:'100%',padding:'9px 11px',borderRadius:8,border:'1px solid #d1d5db',fontSize:13,background:'white'}}>
-                    {['especes','moncash','natcash','carte'].map(m=><option key={m} value={m}>{m}</option>)}
+                    {['especes','moncash','natcash','carte','zelle'].map(m=><option key={m} value={m}>{m==='especes'?'Espèces':m==='moncash'?'MonCash':m==='natcash'?'NatCash':m==='carte'?'Carte bancaire':'Zelle (USD)'}</option>)}
                   </select>
                 </div>
               </div>
