@@ -27,6 +27,9 @@ interface Medecin {
   emoji?: string
   email?: string
   telephone?: string
+  prix_rdv?: number
+  prix_consultation?: number
+  type_medecin?: string
 }
 
 interface FormData {
