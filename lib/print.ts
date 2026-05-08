@@ -785,6 +785,7 @@ ${data.totalLabel ? `
 
 // ═══════════════════════════════════════════════════════════════════════
 //  FEUILLES AUTOMATIQUES — générées dès la sortie de caisse
+//  Fidèles aux formulaires officiels Clinique de la Rebecca
 // ═══════════════════════════════════════════════════════════════════════
 
 export interface FeuilleCaisse {
@@ -807,297 +808,640 @@ export interface FeuilleCaisse {
   is_premiere_visite: boolean
 }
 
-const feuilleDateHeure = (iso: string) => {
+const fmtDateFR = (iso: string) => {
   const d = new Date(iso)
-  return d.toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })
-    + ' à ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })
+  return `${d.getDate().toString().padStart(2,'0')}/${(d.getMonth()+1).toString().padStart(2,'0')}/${d.getFullYear()}`
+}
+const fmtHeure = (iso: string) => {
+  const d = new Date(iso)
+  return `${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`
 }
 
-const badgePaiement = (complet: boolean, montant: number) =>
-  complet
-    ? `<span style="background:#dcfce7;color:#166534;padding:3px 14px;border-radius:99px;font-weight:800;font-size:12px">PAIEMENT CONFIRME — ${montant.toLocaleString('fr')} HTG</span>`
-    : `<span style="background:#fef2f2;color:#991b1b;padding:3px 14px;border-radius:99px;font-weight:800;font-size:12px">PAIEMENT PARTIEL — ${montant.toLocaleString('fr')} HTG</span>`
-
-const entetePatient = (f: FeuilleCaisse) => `
-<table style="width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12px">
-  <tr style="background:#f1f5f9">
-    <td style="padding:6px 10px;width:50%"><strong>Patient :</strong> ${f.patient_nom}</td>
-    <td style="padding:6px 10px"><strong>Dossier :</strong> <span style="font-family:monospace;font-weight:900;color:#1641C8">${f.patient_numero}</span></td>
-  </tr>
-  <tr>
-    <td style="padding:6px 10px;border-top:1px solid #e2e8f0"><strong>Ticket :</strong> <span style="font-family:monospace;font-weight:800">#${f.ticket}</span></td>
-    <td style="padding:6px 10px;border-top:1px solid #e2e8f0"><strong>Date :</strong> ${feuilleDateHeure(f.date_visite)}</td>
-  </tr>
-  <tr style="background:#f1f5f9">
-    <td style="padding:6px 10px"><strong>Age :</strong> ${f.patient_age ? f.patient_age + ' ans' : 'N/D'}</td>
-    <td style="padding:6px 10px"><strong>Tel :</strong> ${f.patient_tel || 'N/D'}</td>
-  </tr>
-  <tr>
-    <td colspan="2" style="padding:8px 10px;border-top:1px solid #e2e8f0;text-align:center">
-      ${badgePaiement(f.paiement_complet, f.montant_paye)}
-    </td>
-  </tr>
-</table>`
-
-const ligneSignature = (titre: string) => `
-<div style="margin-top:8px;display:flex;align-items:flex-end;gap:8px">
-  <span style="font-size:11px;color:#64748b;white-space:nowrap">${titre} :</span>
-  <div style="flex:1;border-bottom:1px solid #94a3b8"></div>
+const LOGO_HEADER = `
+<div style="border:1.5px solid #1641C8;border-radius:6px;padding:10px 16px;display:flex;align-items:center;justify-content:center;margin-bottom:14px">
+  <div style="text-align:center">
+    <div style="font-size:20px;font-weight:900;color:#1641C8;letter-spacing:2px">CLINIQUE DE LA REBECCA</div>
+    <div style="font-size:11px;color:#374151;margin-top:2px">#44, Rue Rebecca, Pétion-Ville</div>
+    <div style="font-size:11px;color:#374151">(509) 4858-5757</div>
+  </div>
 </div>`
 
-// ── 1. FEUILLE DE CONSULTATION (Clinique externe → Médecin) ─────────────
+const line = (label: string, w='100%') =>
+  `<span style="font-size:11px">${label}</span><span style="display:inline-block;width:${w};border-bottom:1px solid #374151;margin-left:4px">&nbsp;</span>`
+
+const badge = (paye: boolean, montant: number) =>
+  paye
+    ? `<span style="background:#dcfce7;color:#166534;padding:2px 12px;border-radius:99px;font-weight:800;font-size:11px">PAIEMENT COMPLET — ${montant.toLocaleString('fr')} HTG</span>`
+    : `<span style="background:#fef2f2;color:#991b1b;padding:2px 12px;border-radius:99px;font-weight:800;font-size:11px">PAIEMENT PARTIEL — ${montant.toLocaleString('fr')} HTG</span>`
+
+// ── 1. FEUILLE CONSULTATION / RENDEZ-VOUS (fidèle au docx Rebecca) ────
 export function imprimerFeuilleConsultation(f: FeuilleCaisse) {
+  const d = fmtDateFR(f.date_visite), h = fmtHeure(f.date_visite)
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>
-  body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:24px;color:#1e293b}
-  .header{text-align:center;border-bottom:2px solid #1641C8;padding-bottom:12px;margin-bottom:16px}
-  .clinic-name{font-size:16px;font-weight:900;color:#1641C8;letter-spacing:1px}
-  .clinic-sub{font-size:11px;color:#64748b;margin-top:2px}
-  .doc-title{font-size:14px;font-weight:900;color:#0f172a;margin:10px 0 0;text-transform:uppercase;letter-spacing:1px}
-  .section{border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:12px}
-  .section-title{font-size:11px;font-weight:800;color:#1641C8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;border-bottom:1px solid #e2e8f0;padding-bottom:4px}
-  .field-row{display:flex;gap:8px;margin-bottom:6px}
-  .field{flex:1}
-  .field-label{font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
-  .field-value{font-size:12px;font-weight:600;color:#0f172a;border-bottom:1px solid #e2e8f0;padding:4px 0;min-height:22px}
-  .field-area{border:1px solid #e2e8f0;border-radius:6px;padding:6px 8px;min-height:40px;font-size:12px;margin-top:4px}
-  .premiere{background:#fef9c3;border:1px solid #fcd34d;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;color:#92400e;text-align:center;margin-bottom:10px}
-  @media print{body{padding:10px}.no-print{display:none}}
+*{box-sizing:border-box}
+body{font-family:'Times New Roman',serif;font-size:12px;margin:0;padding:20px;color:#0f172a}
+.titre{text-align:center;font-weight:bold;font-size:15px;margin-bottom:14px;text-decoration:underline;text-transform:uppercase}
+.ligne{display:flex;gap:6px;align-items:baseline;margin-bottom:8px;flex-wrap:wrap}
+.champ{flex:1;min-width:80px}
+.champ-label{font-size:11px}
+.champ-line{border-bottom:1px solid #374151;min-width:60px;display:inline-block;flex:1}
+.section-title{font-weight:bold;font-size:12px;margin:12px 0 6px;border-bottom:1px solid #374151}
+.zone-texte{border:1px solid #94a3b8;border-radius:4px;min-height:48px;width:100%;margin-bottom:8px;padding:3px 6px}
+.vitaux{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin:8px 0}
+.vital{text-align:center}
+.vital-label{font-size:10px;font-weight:bold}
+.vital-line{border-bottom:1px solid #374151;margin-top:18px}
+.check-row{display:flex;gap:16px;margin:6px 0;align-items:center}
+.check-item{display:flex;align-items:center;gap:4px;font-size:12px}
+.sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:24px}
+.sig-box{text-align:center}
+.sig-line{border-bottom:1.5px solid #374151;margin-bottom:4px;height:32px}
+.pied{font-size:10px;color:#64748b;text-align:center;margin-top:12px;border-top:1px solid #e2e8f0;padding-top:6px}
+@media print{body{padding:10px}.no-print{display:none}}
 </style>
 </head><body>
-<div class="header">
-  <div class="clinic-name">${CLINIQUE.nom}</div>
-  <div class="clinic-sub">${CLINIQUE.adresse} &nbsp;|&nbsp; <a href="${CLINIQUE.tel_call}">${CLINIQUE.tel}</a></div>
-  <div class="doc-title">Feuille de Consultation Medicale</div>
+${LOGO_HEADER}
+<div class="titre">Consultation : Feuille de Rendez-vous</div>
+
+<div class="ligne">
+  <span class="champ-label">Nom et Prénom :</span>
+  <span class="champ-line" style="min-width:200px">${f.patient_nom}</span>
+  <span class="champ-label">Age :</span>
+  <span class="champ-line" style="min-width:50px">${f.patient_age || ''}</span>
+  <span class="champ-label">Sexe :</span>
+  <span class="champ-line" style="min-width:50px"></span>
+</div>
+<div class="ligne">
+  <span class="champ-label">Dossier :</span>
+  <span class="champ-line" style="min-width:90px;font-family:monospace;font-weight:900;color:#1641C8">${f.patient_numero}</span>
+  <span class="champ-label">Ticket :</span>
+  <span class="champ-line" style="min-width:80px;font-weight:800">#${f.ticket}</span>
+  <span class="champ-label">Tel :</span>
+  <span class="champ-line" style="min-width:100px">${f.patient_tel}</span>
+</div>
+<div class="ligne">
+  <span class="champ-label">Date :</span>
+  <span class="champ-line" style="min-width:90px">${d}</span>
+  <span class="champ-label">Heure :</span>
+  <span class="champ-line" style="min-width:60px">${h}</span>
+  <span class="champ-label">Médecin :</span>
+  <span class="champ-line" style="min-width:140px">${f.praticien}</span>
+</div>
+<div class="ligne" style="margin-bottom:4px">
+  <span class="champ-label">Paiement :</span>
+  <span style="margin-left:6px">${badge(f.paiement_complet, f.montant_paye)}</span>
+  ${f.is_premiere_visite ? '<span style="background:#fef9c3;border:1px solid #fcd34d;color:#92400e;padding:2px 10px;border-radius:99px;font-size:11px;font-weight:700;margin-left:8px">NOUVEAU PATIENT</span>' : ''}
 </div>
 
-${f.is_premiere_visite ? '<div class="premiere">NOUVEAU PATIENT — Premiere visite</div>' : ''}
+<div class="section-title">Nouvelle plainte</div>
+<div class="zone-texte"></div>
 
-${entetePatient(f)}
+<div class="section-title">Evolution de la maladie</div>
+<div class="zone-texte"></div>
 
-${f.praticien ? `<div class="section">
-  <div class="section-title">Praticien</div>
-  <div style="font-size:13px;font-weight:800;color:#0f172a">${f.praticien}</div>
-  <div style="font-size:11px;color:#64748b">${f.service_label}</div>
-</div>` : ''}
-
-<div class="section">
-  <div class="section-title">Motif de consultation</div>
-  <div class="field-area"></div>
+<div class="section-title">Signes vitaux</div>
+<div class="vitaux">
+  <div class="vital"><div class="vital-label">FC</div><div class="vital-line"></div></div>
+  <div class="vital"><div class="vital-label">TA</div><div class="vital-line"></div></div>
+  <div class="vital"><div class="vital-label">To</div><div class="vital-line"></div></div>
+  <div class="vital"><div class="vital-label">SaO2</div><div class="vital-line"></div></div>
+  <div class="vital"><div class="vital-label">Pds (kg)</div><div class="vital-line"></div></div>
 </div>
 
-<div class="section">
-  <div class="section-title">Antecedents / Allergies</div>
-  <div class="field-area" style="min-height:28px"></div>
+<div class="section-title">Examen physique (trouvailles anormales)</div>
+<div class="zone-texte" style="min-height:55px"></div>
+
+<div class="section-title">Paraclinique (résultats anormaux)</div>
+<div class="zone-texte" style="min-height:40px"></div>
+
+<div class="section-title">Diagnostique</div>
+<div class="zone-texte" style="min-height:28px"></div>
+
+<div class="section-title">Médicaments prescrits</div>
+<div class="zone-texte" style="min-height:36px"></div>
+
+<div class="check-row">
+  <strong>Disposition :</strong>
+  <div class="check-item"><span style="border:1px solid #374151;width:13px;height:13px;display:inline-block"></span> A la maison</div>
+  <div class="check-item"><span style="border:1px solid #374151;width:13px;height:13px;display:inline-block"></span> Observation</div>
+  <div class="check-item"><span style="border:1px solid #374151;width:13px;height:13px;display:inline-block"></span> Hospitalisation</div>
 </div>
 
-<div class="section">
-  <div class="section-title">Signes vitaux (saisis par infirmier)</div>
-  <div class="field-row">
-    <div class="field"><div class="field-label">Tension</div><div class="field-value"></div></div>
-    <div class="field"><div class="field-label">Pouls</div><div class="field-value"></div></div>
-    <div class="field"><div class="field-label">Temperature</div><div class="field-value"></div></div>
-    <div class="field"><div class="field-label">Poids</div><div class="field-value"></div></div>
-    <div class="field"><div class="field-label">SpO2</div><div class="field-value"></div></div>
+<div class="ligne" style="margin-top:8px">
+  <span class="champ-label">Rendez-vous de suivi :</span>
+  <span class="champ-line" style="min-width:200px"></span>
+</div>
+
+<div class="sig-row">
+  <div class="sig-box">
+    <div class="sig-line"></div>
+    <div style="font-weight:bold;font-size:11px">Médecin (Nom &amp; Prénom)</div>
+    <div style="font-size:11px;color:#64748b">${f.praticien}</div>
+  </div>
+  <div class="sig-box">
+    <div class="sig-line"></div>
+    <div style="font-weight:bold;font-size:11px">Signature</div>
   </div>
 </div>
 
-<div class="section">
-  <div class="section-title">Examen clinique / Diagnostic</div>
-  <div class="field-area" style="min-height:55px"></div>
-</div>
-
-<div class="section">
-  <div class="section-title">Prescriptions / Ordonnances</div>
-  <div class="field-area" style="min-height:55px"></div>
-</div>
-
-<div class="section">
-  <div class="section-title">Examens complementaires demandes</div>
-  <div class="field-area" style="min-height:36px"></div>
-</div>
-
-<div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:24px">
-  ${ligneSignature('Infirmier(ere)')}
-  ${ligneSignature('Medecin')}
-</div>
-
-<div style="margin-top:16px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:8px">
-  Clinique de la Rebecca &nbsp;·&nbsp; Document confidentiel &nbsp;·&nbsp; Dossier ${f.patient_numero} &nbsp;·&nbsp; Ticket #${f.ticket}
-</div>
-
-<button onclick="window.print()" class="no-print" style="position:fixed;bottom:20px;right:20px;background:#1641C8;color:white;border:none;border-radius:10px;padding:10px 20px;font-weight:700;cursor:pointer;font-size:14px">Imprimer</button>
+<div class="pied">Clinique de la Rebecca &nbsp;·&nbsp; Dossier ${f.patient_numero} &nbsp;·&nbsp; Ticket #${f.ticket} &nbsp;·&nbsp; ${d}</div>
+<button onclick="window.print()" class="no-print" style="position:fixed;bottom:16px;right:16px;background:#1641C8;color:white;border:none;border-radius:8px;padding:9px 18px;font-weight:700;cursor:pointer">Imprimer</button>
 </body></html>`
   openPrint(html, 820, 1100)
 }
 
-// ── 2. FEUILLE D'EXAMEN LABO ────────────────────────────────────────────
-export function imprimerFeuilleLabo(f: FeuilleCaisse) {
+// ── 2. FEUILLE DENTISTERIE (fidèle au rebecca_dentaire.pdf) ─────────────
+export function imprimerFeuilleDentisterie(f: FeuilleCaisse) {
+  const d = fmtDateFR(f.date_visite), h = fmtHeure(f.date_visite)
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>
-  body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:24px;color:#1e293b}
-  .header{text-align:center;border-bottom:2px solid #7c3aed;padding-bottom:12px;margin-bottom:16px}
-  .clinic-name{font-size:16px;font-weight:900;color:#7c3aed;letter-spacing:1px}
-  .clinic-sub{font-size:11px;color:#64748b;margin-top:2px}
-  .doc-title{font-size:14px;font-weight:900;color:#0f172a;margin:10px 0 0;text-transform:uppercase;letter-spacing:1px}
-  .warning{background:#fef2f2;border:2px solid #fca5a5;border-radius:8px;padding:8px 14px;text-align:center;margin-bottom:12px;font-weight:800;font-size:12px;color:#dc2626}
-  .section{border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:12px}
-  .section-title{font-size:11px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;border-bottom:1px solid #e2e8f0;padding-bottom:4px}
-  .examen-table{width:100%;border-collapse:collapse;font-size:12px}
-  .examen-table th{background:#f5f3ff;padding:6px 10px;text-align:left;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:#7c3aed}
-  .examen-table td{padding:8px 10px;border-bottom:1px solid #f1f5f9}
-  .examen-table tr:last-child td{border-bottom:none}
-  @media print{body{padding:10px}.no-print{display:none}}
+*{box-sizing:border-box}
+body{font-family:'Times New Roman',serif;font-size:11px;margin:0;padding:16px;color:#0f172a}
+.titre{text-align:center;font-weight:bold;font-size:13px;margin-bottom:10px}
+.ligne{display:flex;gap:4px;align-items:baseline;margin-bottom:6px;flex-wrap:wrap}
+.ul{border-bottom:1px solid #374151;min-width:50px;display:inline-block;flex:1}
+.section{font-weight:bold;font-size:11px;margin:10px 0 5px;text-decoration:underline}
+.zone{border:1px solid #94a3b8;min-height:32px;width:100%;margin-bottom:6px;padding:2px 5px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+table.traitement{width:100%;border-collapse:collapse;font-size:11px;margin-top:4px}
+table.traitement th{background:#e2e8f0;padding:4px 8px;text-align:left;font-weight:700;border:1px solid #94a3b8}
+table.traitement td{border:1px solid #94a3b8;padding:3px 8px;height:18px}
+.dent-schema{width:100%;text-align:center;font-size:10px;border:1px solid #94a3b8;padding:8px;margin-bottom:6px}
+.sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:16px}
+.sig-box{text-align:center}
+.sig-line{border-bottom:1.5px solid #374151;margin-bottom:4px;height:28px}
+@media print{body{padding:8px}.no-print{display:none}}
 </style>
 </head><body>
-<div class="header">
-  <div class="clinic-name">${CLINIQUE.nom}</div>
-  <div class="clinic-sub">${CLINIQUE.adresse} &nbsp;|&nbsp; <a href="${CLINIQUE.tel_call}">${CLINIQUE.tel}</a></div>
-  <div class="doc-title">Bon d'Examen de Laboratoire</div>
+${LOGO_HEADER}
+<div class="titre">DOSSIER DENTAIRE — FICHE PATIENT</div>
+
+<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;margin-bottom:10px">
+<div class="ligne">
+  <span>Date :</span><span class="ul">${d}</span>
+  <span>Heure :</span><span class="ul">${h}</span>
+  <span>Dossier :</span><span class="ul" style="font-family:monospace;font-weight:900;color:#1641C8">${f.patient_numero}</span>
+  <span>Tel :</span><span class="ul">${f.patient_tel}</span>
+</div>
+<div class="ligne">
+  <span>Nom :</span><span class="ul">${f.patient_nom.split(' ').slice(1).join(' ')}</span>
+  <span>Prénom :</span><span class="ul">${f.patient_nom.split(' ')[0]}</span>
+  <span>Age :</span><span class="ul">${f.patient_age||''}</span>
+</div>
+<div class="ligne">
+  <span>Sexe :</span><span class="ul" style="min-width:50px"></span>
+  <span>Région :</span><span class="ul"></span>
+  <span>Occupation :</span><span class="ul"></span>
+  &nbsp;D<span class="ul" style="min-width:18px"></span>
+  C<span class="ul" style="min-width:18px"></span>
+  R<span class="ul" style="min-width:18px"></span>
+</div>
+<div class="ligne" style="margin-top:2px">
+  <span>Paiement :</span>
+  <span style="margin-left:4px">${badge(f.paiement_complet, f.montant_paye)}</span>
+</div>
 </div>
 
-<div class="warning">CONDITION : Resultats remis uniquement apres paiement complet</div>
-
-${entetePatient(f)}
-
-<div class="section">
-  <div class="section-title">Medecin prescripteur</div>
-  <div style="font-size:13px;font-weight:700">${f.praticien || 'Non specifie'}</div>
+<div class="section">2 - Interrogatoire</div>
+<div class="ligne"><span>A - Motif de la consultation :</span><span class="ul"></span></div>
+<div class="ligne"><span>B - Antécédents / Tension artérielle :</span><span class="ul"></span><span>Problèmes cardio-vasculaires :</span><span class="ul"></span></div>
+<div class="ligne">
+  <span>Allergies :</span><span class="ul"></span>
+  <span>Problèmes avec l'anesthésie :</span><span class="ul"></span>
 </div>
-
-<div class="section">
-  <div class="section-title">Examens demandes</div>
-  <table class="examen-table">
-    <thead><tr>
-      <th style="width:40%">Type d'examen</th>
-      <th style="width:30%">Valeur observee</th>
-      <th style="width:15%">Valeur normale</th>
-      <th style="width:15%">Critique</th>
-    </tr></thead>
-    <tbody>
-      ${[1,2,3,4,5,6].map(() => `<tr>
-        <td style="border-bottom:1px dashed #e2e8f0"></td>
-        <td style="border-bottom:1px dashed #e2e8f0"></td>
-        <td style="border-bottom:1px dashed #e2e8f0"></td>
-        <td style="border-bottom:1px dashed #e2e8f0"></td>
-      </tr>`).join('')}
-    </tbody>
-  </table>
+<div class="ligne">
+  <span>Rhumatisme :</span><span class="ul"></span>
+  <span>Diabète :</span><span class="ul"></span>
+  <span>Leucémie :</span><span class="ul"></span>
+  <span>Tuberculose :</span><span class="ul"></span>
 </div>
-
-<div class="section">
-  <div class="section-title">Observations / Notes technicien</div>
-  <div style="border:1px solid #e2e8f0;border-radius:6px;padding:6px 8px;min-height:40px"></div>
+<div class="ligne">
+  <span>VIH :</span><span class="ul" style="min-width:40px"></span>
+  <span>Asthme :</span><span class="ul" style="min-width:40px"></span>
+  <span>Hépatite :</span><span class="ul" style="min-width:40px"></span>
+  <span>Ulcère gastro-duodénal :</span><span class="ul" style="min-width:40px"></span>
+  <span>Grossesse :</span><span class="ul" style="min-width:40px"></span>/Mois<span class="ul" style="min-width:40px"></span>
 </div>
+<div class="ligne">
+  <span>Troubles psychiques :</span><span class="ul"></span>
+  <span>Épilepsie :</span><span class="ul"></span>
+  <span>Hospitalisation : date</span><span class="ul" style="min-width:60px"></span>/motif<span class="ul"></span>
+</div>
+<div class="ligne"><span>Transfusion :</span><span class="ul"></span><span>date :</span><span class="ul"></span></div>
+<div class="ligne"><span>Médication :</span><span class="ul"></span></div>
+<div class="ligne"><span>Habitudes :</span><span class="ul"></span></div>
 
-<div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:32px">
+<div class="grid2">
   <div>
-    <div style="font-size:10px;color:#94a3b8;margin-bottom:6px">Signature technicien :</div>
-    <div style="border-bottom:1px solid #94a3b8;height:32px"></div>
+    <div class="section">3 - Examen Tête et cou</div>
+    <div class="ligne"><span>Remarque :</span><span class="ul"></span></div>
+    <div style="border-bottom:1px solid #374151;margin-bottom:6px"></div>
+    <div class="section">4 - Examen de la bouche</div>
+    <div class="ligne"><span>Remarque :</span><span class="ul"></span></div>
+    <div style="border-bottom:1px solid #374151;margin-bottom:6px"></div>
+    <div class="section">6 - Plan de traitement</div>
+    <table class="traitement">
+      <thead><tr><th>Traitement proposé</th><th>Qté / Dents</th></tr></thead>
+      <tbody>
+        ${['Détartrage','Amalgame','Composite','Inlay','Couronne en or','Petite chirurgie','Dévitalisation','Bridge','Dentiers','Extraction/décapuchonnage','Autres'].map(t =>
+          `<tr><td>${t}</td><td></td></tr>`
+        ).join('')}
+      </tbody>
+    </table>
   </div>
   <div>
-    <div style="font-size:10px;color:#94a3b8;margin-bottom:6px">Date et heure :</div>
-    <div style="border-bottom:1px solid #94a3b8;height:32px"></div>
+    <div class="section">5 - Examen dentaire (schéma)</div>
+    <div class="dent-schema" style="min-height:180px">
+      <div style="font-size:10px;color:#94a3b8;text-align:center;padding:20px">
+        [ Schéma dentaire — à compléter par le praticien ]<br/><br/>
+        Q1 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Q2<br/>
+        <div style="border-bottom:1px dashed #374151;margin:8px 0"></div>
+        Q4 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Q3
+      </div>
+    </div>
+    <div class="section">Rendez-vous</div>
+    <table class="traitement">
+      <thead><tr><th>Date</th><th>Traitement programmé</th></tr></thead>
+      <tbody>
+        ${[1,2,3,4,5,6,7,8].map(() => '<tr><td></td><td></td></tr>').join('')}
+      </tbody>
+    </table>
   </div>
 </div>
 
-<div style="margin-top:14px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:8px">
-  Clinique de la Rebecca &nbsp;·&nbsp; Laboratoire &nbsp;·&nbsp; Dossier ${f.patient_numero} &nbsp;·&nbsp; Ticket #${f.ticket}
+<div class="sig-row">
+  <div class="sig-box"><div class="sig-line"></div><div style="font-weight:bold;font-size:11px">Médecin / Dentiste</div><div style="font-size:10px;color:#64748b">${f.praticien}</div></div>
+  <div class="sig-box"><div class="sig-line"></div><div style="font-weight:bold;font-size:11px">Signature</div></div>
 </div>
 
-<button onclick="window.print()" class="no-print" style="position:fixed;bottom:20px;right:20px;background:#7c3aed;color:white;border:none;border-radius:10px;padding:10px 20px;font-weight:700;cursor:pointer;font-size:14px">Imprimer</button>
+<div style="font-size:10px;color:#64748b;text-align:center;margin-top:10px;border-top:1px solid #e2e8f0;padding-top:6px">
+  Clinique de la Rebecca &nbsp;·&nbsp; Dentisterie &nbsp;·&nbsp; Dossier ${f.patient_numero} &nbsp;·&nbsp; Ticket #${f.ticket} &nbsp;·&nbsp; ${d}
+</div>
+<button onclick="window.print()" class="no-print" style="position:fixed;bottom:16px;right:16px;background:#0d9488;color:white;border:none;border-radius:8px;padding:9px 18px;font-weight:700;cursor:pointer">Imprimer</button>
+</body></html>`
+  openPrint(html, 850, 1200)
+}
+
+// ── 3. FEUILLE OPTOMÉTRIE (fidèle à la photo du formulaire) ─────────────
+export function imprimerFeuilleOptometrie(f: FeuilleCaisse) {
+  const d = fmtDateFR(f.date_visite)
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+*{box-sizing:border-box}
+body{font-family:'Times New Roman',serif;font-size:11px;margin:0;padding:16px;color:#0f172a}
+.titre{text-align:center;font-weight:bold;font-size:13px;margin-bottom:10px;text-decoration:underline;text-transform:uppercase}
+.ligne{display:flex;gap:4px;align-items:baseline;margin-bottom:7px;flex-wrap:wrap}
+.ul{border-bottom:1px solid #374151;min-width:40px;display:inline-block}
+.section-center{text-align:center;font-weight:bold;font-size:12px;margin:10px 0 6px;text-decoration:underline}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.cross{display:flex;justify-content:center;align-items:center;height:60px;position:relative;margin:8px 0}
+.cross-h{position:absolute;width:120px;border-bottom:1px solid #374151}
+.cross-v{position:absolute;height:60px;border-left:1px solid #374151}
+.rx-row{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;text-align:center;margin:4px 0}
+.rx-label{font-size:9px;font-weight:bold;text-align:center}
+.rx-val{border-bottom:1px solid #374151;margin:0 2px;min-height:16px}
+.bottom-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+.sig-row{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:16px}
+.sig-line{border-bottom:1.5px solid #374151;margin-bottom:4px;height:28px}
+@media print{body{padding:8px}.no-print{display:none}}
+</style>
+</head><body>
+${LOGO_HEADER}
+<div class="titre">Formulaire d'information du patient — Optométrie</div>
+
+<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;margin-bottom:10px">
+<div class="ligne">
+  <span>Date :</span><span class="ul">${d}</span>
+  <span>&nbsp; #Dossier :</span><span class="ul" style="font-family:monospace;font-weight:900;color:#dc2626">${f.patient_numero}</span>
+  <span>&nbsp; Tel :</span><span class="ul">${f.patient_tel}</span>
+  <span>&nbsp; Examinateur :</span><span class="ul">${f.praticien}</span>
+</div>
+<div class="ligne">
+  <span>Nom :</span><span class="ul" style="min-width:120px">${f.patient_nom.split(' ').slice(1).join(' ')}</span>
+  <span>&nbsp; Prénom :</span><span class="ul" style="min-width:100px">${f.patient_nom.split(' ')[0]}</span>
+  <span>&nbsp; Age :</span><span class="ul" style="min-width:40px">${f.patient_age||''}</span>
+</div>
+<div class="ligne">
+  <span>Sexe :</span><span class="ul" style="min-width:50px"></span>
+  <span>&nbsp; Région :</span><span class="ul" style="min-width:80px"></span>
+  <span>&nbsp; Occupation :</span><span class="ul"></span>
+  <span>&nbsp; D<span class="ul" style="min-width:20px"></span>
+  C<span class="ul" style="min-width:20px"></span>
+  R<span class="ul" style="min-width:20px"></span></span>
+</div>
+<div class="ligne">
+  <span>Motif :</span><span class="ul"></span>
+  <span style="margin-left:16px">Paiement :</span>
+  <span style="margin-left:4px">${badge(f.paiement_complet, f.montant_paye)}</span>
+</div>
+<div class="ligne"><span>Allergies :</span><span class="ul"></span></div>
+</div>
+
+<!-- Sus Esp D/I + PD -->
+<div class="ligne">
+  <span>Sus Esp. D :</span><span class="ul" style="min-width:60px"></span>
+  <span>&nbsp;&nbsp; = &nbsp;&nbsp;</span>
+  <span>Add :</span><span class="ul" style="min-width:50px"></span>
+  <span>&nbsp;&nbsp; = &nbsp;&nbsp;</span>
+  <span>PD :</span><span class="ul" style="min-width:40px"></span>
+</div>
+<div class="ligne">
+  <span>Sus Esp. I :</span><span class="ul" style="min-width:60px"></span>
+  <span>&nbsp;&nbsp; &nbsp;&nbsp;</span>
+  <span>Add :</span><span class="ul" style="min-width:50px"></span>
+</div>
+
+<div class="section-center">KERATOMETRIE</div>
+<div class="ligne" style="justify-content:center;gap:12px">
+  <span>D :</span><span class="ul" style="min-width:60px"></span>
+  <span>@</span><span class="ul" style="min-width:50px"></span>
+  <span>&nbsp;&nbsp;&nbsp;&nbsp;</span>
+  <span>I :</span><span class="ul" style="min-width:60px"></span>
+  <span>@</span><span class="ul" style="min-width:50px"></span>
+  <span>&nbsp;&nbsp;&nbsp;&nbsp; Dip :</span><span class="ul" style="min-width:40px"></span>
+</div>
+
+<div class="grid2" style="margin-top:10px">
+  <div>
+    <div class="section-center">AUTOREFRACTOR</div>
+    <div class="cross"><div class="cross-h"></div><div class="cross-v"></div></div>
+    <div style="text-align:right;font-size:10px;font-weight:bold;margin-bottom:4px">OD :</div>
+    <!-- DV row -->
+    <div style="margin-bottom:4px">
+      <div class="rx-row">
+        <div class="rx-label">DV :</div>
+        <div class="rx-label">SPH :</div>
+        <div class="rx-label">CYL :</div>
+        <div class="rx-label">AXE</div>
+        <div class="rx-label">=</div>
+        <div class="rx-label">Add</div>
+      </div>
+      <div class="rx-row">
+        <div class="rx-val"></div><div class="rx-val"></div><div class="rx-val"></div>
+        <div class="rx-val"></div><div class="rx-val"></div><div class="rx-val"></div>
+      </div>
+    </div>
+    <div style="margin-bottom:4px">
+      <div class="rx-row">
+        <div class="rx-label">IV :</div>
+        <div class="rx-label">SPH</div>
+        <div class="rx-label">CYL</div>
+        <div class="rx-label">AXE</div>
+        <div class="rx-label">=</div>
+        <div class="rx-label">Add</div>
+      </div>
+      <div class="rx-row">
+        <div class="rx-val"></div><div class="rx-val"></div><div class="rx-val"></div>
+        <div class="rx-val"></div><div class="rx-val"></div><div class="rx-val"></div>
+      </div>
+    </div>
+  </div>
+  <div>
+    <div class="section-center">ESQUIASCOPIA / RETINOSCOPIE</div>
+    <div class="cross"><div class="cross-h"></div><div class="cross-v"></div></div>
+    <div style="text-align:right;font-size:10px;font-weight:bold;margin-bottom:4px">OI :</div>
+    <div style="margin-bottom:4px">
+      <div class="rx-row">
+        <div class="rx-label"></div>
+        <div class="rx-label">No.</div>
+        <div class="rx-label">F</div>
+        <div class="rx-label" style="grid-column:span 3;text-align:right">RX Medical :</div>
+      </div>
+      <div class="rx-row">
+        <div class="rx-val"></div><div class="rx-val"></div><div class="rx-val"></div>
+        <div class="rx-val" style="grid-column:span 3"></div>
+      </div>
+    </div>
+    <div>
+      <div class="rx-row">
+        <div class="rx-label"></div>
+        <div class="rx-label">No.</div>
+        <div class="rx-label">F</div>
+        <div class="rx-label" style="grid-column:span 3"></div>
+      </div>
+      <div class="rx-row">
+        <div class="rx-val"></div><div class="rx-val"></div><div class="rx-val"></div>
+        <div class="rx-val" style="grid-column:span 3"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Tests complémentaires -->
+<div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;font-size:11px">
+  <div class="ligne"><span>Metamorfopsia D :</span><span class="ul"></span><span>I :</span><span class="ul"></span></div>
+  <div class="ligne"><span>Graeffe :</span><span class="ul"></span></div>
+  <div class="ligne"><span>Stereo Test :</span><span class="ul" style="min-width:30px"></span>%</div>
+  <div class="ligne"><span>Ishihara D :</span><span class="ul"></span><span>I :</span><span class="ul"></span></div>
+  <div class="ligne"><span>Schirmer D :</span><span class="ul"></span><span>I :</span><span class="ul"></span></div>
+  <div class="ligne"><span>Maddox :</span><span class="ul"></span><span style="margin-left:8px">CITA :</span><span class="ul"></span></div>
+  <div class="ligne"><span>TIO D :</span><span class="ul"></span><span>I :</span><span class="ul"></span></div>
+  <div class="ligne"><span>Parpados :</span><span class="ul"></span></div>
+  <div class="ligne"><span>Eversión :</span><span class="ul"></span></div>
+  <div class="ligne"><span>Conjontive :</span><span class="ul"></span></div>
+  <div class="ligne"><span>Fondoscopie :</span><span class="ul"></span></div>
+  <div></div>
+  <div class="ligne"><span>Lampara de Hendidura :</span><span class="ul"></span></div>
+</div>
+
+<div class="ligne" style="margin-top:6px"><span>Observations :</span><span class="ul"></span></div>
+
+<!-- Prescription finale -->
+<div style="margin-top:10px;border:1px solid #374151;border-radius:4px;padding:8px">
+  <div style="font-weight:bold;font-size:11px;margin-bottom:6px">Prescription finale</div>
+  <div class="rx-row" style="margin-bottom:4px">
+    <div class="rx-label">SPH</div>
+    <div class="rx-label">CYL</div>
+    <div class="rx-label">AXE</div>
+    <div class="rx-label">/ADD</div>
+    <div class="rx-label">DIP: D</div>
+    <div class="rx-label"></div>
+  </div>
+  <div class="rx-row" style="margin-bottom:8px">
+    <div class="rx-val"></div><div class="rx-val"></div><div class="rx-val"></div>
+    <div class="rx-val"></div><div class="rx-val"></div><div class="rx-val"></div>
+  </div>
+  <div class="rx-row" style="margin-bottom:4px">
+    <div class="rx-label">SPH</div>
+    <div class="rx-label">CYL</div>
+    <div class="rx-label">AXE</div>
+    <div class="rx-label">/ADD</div>
+    <div class="rx-label">DIP: I</div>
+    <div class="rx-label"></div>
+  </div>
+  <div class="rx-row">
+    <div class="rx-val"></div><div class="rx-val"></div><div class="rx-val"></div>
+    <div class="rx-val"></div><div class="rx-val"></div><div class="rx-val"></div>
+  </div>
+</div>
+
+<div class="ligne" style="margin-top:8px"><span>Comentaires :</span><span class="ul"></span></div>
+
+<div class="sig-row">
+  <div style="text-align:center"><div class="sig-line"></div><div style="font-weight:bold;font-size:11px">Optométriste</div><div style="font-size:10px;color:#64748b">${f.praticien}</div></div>
+  <div style="text-align:center"><div class="sig-line"></div><div style="font-weight:bold;font-size:11px">Signature</div></div>
+</div>
+
+<div style="font-size:10px;color:#64748b;text-align:center;margin-top:10px;border-top:1px solid #e2e8f0;padding-top:5px">
+  Clinique de la Rebecca &nbsp;·&nbsp; Optométrie &nbsp;·&nbsp; Dossier ${f.patient_numero} &nbsp;·&nbsp; Ticket #${f.ticket} &nbsp;·&nbsp; ${d}
+</div>
+<button onclick="window.print()" class="no-print" style="position:fixed;bottom:16px;right:16px;background:#dc2626;color:white;border:none;border-radius:8px;padding:9px 18px;font-weight:700;cursor:pointer">Imprimer</button>
+</body></html>`
+  openPrint(html, 820, 1150)
+}
+
+// ── 4. FEUILLE LABO (résultats signés uniquement par technicien) ─────────
+export function imprimerFeuilleLabo(f: FeuilleCaisse) {
+  const d = fmtDateFR(f.date_visite), h = fmtHeure(f.date_visite)
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+*{box-sizing:border-box}
+body{font-family:'Times New Roman',serif;font-size:12px;margin:0;padding:20px;color:#0f172a}
+.avertissement{background:#fef2f2;border:2px solid #fca5a5;border-radius:6px;padding:8px 14px;text-align:center;margin-bottom:12px;font-weight:800;font-size:12px;color:#dc2626}
+.ligne{display:flex;gap:4px;align-items:baseline;margin-bottom:7px}
+.ul{border-bottom:1px solid #374151;min-width:40px;display:inline-block;flex:1}
+table.examens{width:100%;border-collapse:collapse;margin-top:6px;font-size:11px}
+table.examens th{background:#f5f3ff;padding:6px 10px;border:1px solid #94a3b8;text-align:left;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.3px;color:#7c3aed}
+table.examens td{border:1px solid #e2e8f0;padding:7px 10px;min-height:20px}
+table.examens tr:nth-child(even) td{background:#fafafa}
+.sig-box{text-align:center;margin-top:20px;max-width:250px}
+.sig-line{border-bottom:1.5px solid #374151;margin-bottom:4px;height:32px}
+@media print{body{padding:10px}.no-print{display:none}}
+</style>
+</head><body>
+${LOGO_HEADER}
+<div style="text-align:center;font-weight:bold;font-size:15px;margin-bottom:10px;text-decoration:underline;text-transform:uppercase">Bon d'Examen de Laboratoire</div>
+
+<div class="avertissement">CONDITION : Résultats remis uniquement après paiement complet</div>
+
+<div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:8px 12px;margin-bottom:12px">
+<div class="ligne">
+  <span>Date :</span><span class="ul" style="max-width:100px">${d}</span>
+  <span style="margin-left:8px">Heure :</span><span class="ul" style="max-width:60px">${h}</span>
+  <span style="margin-left:8px">Dossier :</span><span class="ul" style="font-family:monospace;font-weight:900;color:#7c3aed;max-width:100px">${f.patient_numero}</span>
+  <span style="margin-left:8px">Ticket :</span><span class="ul" style="font-weight:800;max-width:90px">#${f.ticket}</span>
+</div>
+<div class="ligne">
+  <span>Patient :</span><span class="ul" style="max-width:200px">${f.patient_nom}</span>
+  <span style="margin-left:8px">Age :</span><span class="ul" style="max-width:50px">${f.patient_age||''}</span>
+  <span style="margin-left:8px">Tel :</span><span class="ul" style="max-width:100px">${f.patient_tel}</span>
+</div>
+<div class="ligne">
+  <span>Médecin prescripteur :</span><span class="ul" style="max-width:180px">${f.praticien||''}</span>
+  <span style="margin-left:8px">Paiement :</span>
+  <span style="margin-left:4px">${badge(f.paiement_complet, f.montant_paye)}</span>
+</div>
+</div>
+
+<table class="examens">
+  <thead><tr>
+    <th style="width:35%">Type d'examen demandé</th>
+    <th style="width:25%">Valeur observée</th>
+    <th style="width:20%">Valeur normale</th>
+    <th style="width:10%">Unité</th>
+    <th style="width:10%;text-align:center">Critique</th>
+  </tr></thead>
+  <tbody>
+    ${[1,2,3,4,5,6,7,8].map((i) => `<tr>
+      <td>&nbsp;</td>
+      <td>&nbsp;</td>
+      <td style="color:#94a3b8">&nbsp;</td>
+      <td>&nbsp;</td>
+      <td style="text-align:center">&nbsp;</td>
+    </tr>`).join('')}
+  </tbody>
+</table>
+
+<div style="margin-top:12px">
+  <div style="font-weight:bold;font-size:11px;margin-bottom:4px">Observations / Notes du technicien :</div>
+  <div style="border:1px solid #e2e8f0;border-radius:4px;min-height:40px;padding:4px 8px"></div>
+</div>
+
+<div style="margin-top:16px;display:flex;justify-content:flex-end">
+  <div class="sig-box">
+    <div class="sig-line"></div>
+    <div style="font-weight:bold;font-size:11px">Technicien de laboratoire</div>
+    <div style="font-size:11px;margin-top:6px">Date : ____/____/________</div>
+  </div>
+</div>
+
+<div style="font-size:10px;color:#64748b;text-align:center;margin-top:12px;border-top:1px solid #e2e8f0;padding-top:6px">
+  Clinique de la Rebecca &nbsp;·&nbsp; Laboratoire &nbsp;·&nbsp; Dossier ${f.patient_numero} &nbsp;·&nbsp; Ticket #${f.ticket} &nbsp;·&nbsp; ${d}
+</div>
+<button onclick="window.print()" class="no-print" style="position:fixed;bottom:16px;right:16px;background:#7c3aed;color:white;border:none;border-radius:8px;padding:9px 18px;font-weight:700;cursor:pointer">Imprimer</button>
 </body></html>`
   openPrint(html, 820, 1050)
 }
 
-// ── 3. FEUILLE SERVICE SPECIALISE (dentiste, physio, optométrie…) ──────
-export function imprimerFeuilleSpecialise(f: FeuilleCaisse) {
-  const COULEURS: Record<string, {color:string, accent:string}> = {
-    dentisterie: { color:'#0d9488', accent:'#f0fdfa' },
-    physio:      { color:'#d97706', accent:'#fffbeb' },
-    optometrie:  { color:'#dc2626', accent:'#fef2f2' },
-    maternite:   { color:'#db2777', accent:'#fdf2f8' },
-    sop:         { color:'#475569', accent:'#f1f5f9' },
-    observation: { color:'#64748b', accent:'#f8fafc' },
-  }
-  const svcKey = Object.keys(COULEURS).find(k => f.service_dest.includes(k)) || 'observation'
-  const { color, accent } = COULEURS[svcKey]
-
-  // Champs spécifiques par service
-  const CHAMPS: Record<string, string[]> = {
-    dentisterie: ['Dent(s) concernee(s)', 'Type d\'acte (extraction/plombage/detartrage/autre)', 'Anesthesie utilisee', 'Materiel utilise', 'Prochaine RDV recommandee', 'Observations'],
-    physio:      ['Zone traitee', 'Type de therapie', 'Nombre de seances prescrites', 'Exercices prescrits', 'Evolution / Progression', 'Observations'],
-    optometrie:  ['Acuite visuelle OD', 'Acuite visuelle OG', 'Correction prescrite (OD)', 'Correction prescrite (OG)', 'Pathologie detectee', 'Observations'],
-    maternite:   ['Semaines de grossesse', 'Presentation foetale', 'BCF (battements/min)', 'Tension arterielle', 'Prescription / Suivi', 'Observations'],
-    default:     ['Motif de consultation', 'Examen clinique', 'Traitement effectue', 'Prescription / Suivi', 'Prochaine RDV', 'Observations'],
-  }
-  const champs = CHAMPS[svcKey] || CHAMPS.default
-
+// ── 5. FICHE DE DÉCAISSEMENT (fidèle au pdf Citymed comme référence) ────
+export function imprimerFicheDecaissement(data: {
+  responsable: string, fonction: string,
+  montant_lettres: string, montant_chiffres: string,
+  beneficiaire: string, nif_cin: string,
+  motif: string, caissier: string, date: string
+}) {
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
 <style>
-  body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:24px;color:#1e293b}
-  .header{text-align:center;border-bottom:3px solid ${color};padding-bottom:12px;margin-bottom:16px}
-  .clinic-name{font-size:16px;font-weight:900;color:${color};letter-spacing:1px}
-  .clinic-sub{font-size:11px;color:#64748b;margin-top:2px}
-  .doc-title{font-size:14px;font-weight:900;color:#0f172a;margin:10px 0 0;text-transform:uppercase;letter-spacing:1px}
-  .service-badge{background:${accent};border:2px solid ${color};border-radius:8px;padding:6px 16px;display:inline-block;font-weight:900;font-size:13px;color:${color};margin-bottom:12px}
-  .section{border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:10px}
-  .section-title{font-size:11px;font-weight:800;color:${color};text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;border-bottom:1px solid #e2e8f0;padding-bottom:4px}
-  .field-label{font-size:10px;color:#94a3b8;font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
-  .field-area{border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;min-height:28px;margin-bottom:8px;font-size:12px}
-  @media print{body{padding:10px}.no-print{display:none}}
+body{font-family:'Times New Roman',serif;font-size:13px;margin:0;padding:40px 60px;color:#0f172a}
+.titre{text-align:center;font-weight:bold;font-size:16px;margin:20px 0 32px;text-decoration:underline}
+.champ{margin-bottom:18px;font-size:13px}
+.champ-val{border-bottom:1px solid #374151;display:inline-block;min-width:200px;padding-bottom:2px}
+.mention{font-size:12px;margin-top:28px;font-style:italic}
+.sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:50px}
+.sig-center{display:flex;justify-content:center;margin-top:40px}
+.sig-box{text-align:center}
+.sig-line{border-bottom:1.5px solid #374151;margin-bottom:6px;height:36px}
+@media print{body{padding:30px 50px}.no-print{display:none}}
 </style>
 </head><body>
-<div class="header">
-  <div class="clinic-name">${CLINIQUE.nom}</div>
-  <div class="clinic-sub">${CLINIQUE.adresse} &nbsp;|&nbsp; <a href="${CLINIQUE.tel_call}">${CLINIQUE.tel}</a></div>
-  <div class="doc-title">Feuille de Consultation — ${f.service_label}</div>
-</div>
+${LOGO_HEADER}
+<div class="titre">Fiche de Décaissement de Fonds</div>
 
-<div style="text-align:center;margin-bottom:12px">
-  <div class="service-badge">${f.service_label.toUpperCase()}</div>
-</div>
+<div class="champ">Je soussigné(e) : <span class="champ-val">${data.responsable}</span></div>
+<div class="champ">Fonction : <span class="champ-val">${data.fonction}</span></div>
+<div class="champ">Déclare avoir remis la somme de (en lettres) :<br/><span class="champ-val" style="min-width:100%;display:block;margin-top:6px">${data.montant_lettres}</span></div>
+<div class="champ">Montant en chiffres : <span class="champ-val">${data.montant_chiffres} HTG</span></div>
+<div class="champ">À (demandeur / bénéficiaire) : <span class="champ-val">${data.beneficiaire}</span></div>
+<div class="champ">NIF / CIN : <span class="champ-val">${data.nif_cin}</span></div>
+<div class="champ">Motif(s) de la sortie : <span class="champ-val" style="min-width:300px">${data.motif}</span></div>
 
-${entetePatient(f)}
+<div class="mention">En foi de quoi la présente fiche est établie pour servir et valoir ce que de droit.</div>
 
-${f.praticien ? `<div class="section">
-  <div class="section-title">Praticien</div>
-  <div style="font-size:13px;font-weight:800;color:#0f172a">${f.praticien}</div>
-</div>` : ''}
-
-<div class="section">
-  <div class="section-title">Informations cliniques</div>
-  ${champs.map(c => `
-  <div class="field-label">${c}</div>
-  <div class="field-area"></div>`).join('')}
-</div>
-
-<div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:24px">
-  <div>
-    <div style="font-size:10px;color:#94a3b8;margin-bottom:6px">Signature praticien :</div>
-    <div style="border-bottom:1px solid #94a3b8;height:36px"></div>
+<div class="sig-grid">
+  <div class="sig-box">
+    <div class="sig-line"></div>
+    <div style="font-weight:bold">Responsable</div>
   </div>
-  <div>
-    <div style="font-size:10px;color:#94a3b8;margin-bottom:6px">Date et heure :</div>
-    <div style="border-bottom:1px solid #94a3b8;height:36px"></div>
+  <div class="sig-box">
+    <div class="sig-line"></div>
+    <div style="font-weight:bold">Caissier(ère)</div>
+    <div style="font-size:11px;color:#64748b">${data.caissier}</div>
   </div>
 </div>
 
-<div style="margin-top:12px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:8px">
-  Clinique de la Rebecca &nbsp;·&nbsp; ${f.service_label} &nbsp;·&nbsp; Dossier ${f.patient_numero} &nbsp;·&nbsp; Ticket #${f.ticket}
+<div class="sig-center">
+  <div class="sig-box" style="min-width:220px">
+    <div class="sig-line"></div>
+    <div style="font-weight:bold">Bénéficiaire</div>
+    <div style="font-size:11px;color:#64748b">${data.beneficiaire}</div>
+  </div>
 </div>
 
-<button onclick="window.print()" class="no-print" style="position:fixed;bottom:20px;right:20px;background:${color};color:white;border:none;border-radius:10px;padding:10px 20px;font-weight:700;cursor:pointer;font-size:14px">Imprimer</button>
+<div style="font-size:10px;color:#64748b;text-align:center;margin-top:24px;border-top:1px solid #e2e8f0;padding-top:8px">
+  Clinique de la Rebecca &nbsp;·&nbsp; #44 Rue Rebecca, Pétion-Ville &nbsp;·&nbsp; (509) 4858-5757 &nbsp;·&nbsp; ${data.date}
+</div>
+<button onclick="window.print()" class="no-print" style="position:fixed;bottom:16px;right:16px;background:#1641C8;color:white;border:none;border-radius:8px;padding:9px 18px;font-weight:700;cursor:pointer">Imprimer</button>
 </body></html>`
-  openPrint(html, 820, 1050)
+  openPrint(html, 820, 1000)
 }
 
 // ── DISPATCHER PRINCIPAL ────────────────────────────────────────────────
 export function imprimerFeuilleAuto(feuille: FeuilleCaisse) {
-  switch (feuille.type) {
-    case 'consultation': return imprimerFeuilleConsultation(feuille)
-    case 'labo':         return imprimerFeuilleLabo(feuille)
-    case 'specialise':   return imprimerFeuilleSpecialise(feuille)
-    default:             return imprimerFeuilleConsultation(feuille)
-  }
+  const svc = (feuille.service_dest || feuille.service || '').toLowerCase()
+  if (feuille.type === 'labo' || svc.includes('labo')) return imprimerFeuilleLabo(feuille)
+  if (svc.includes('dent'))   return imprimerFeuilleDentisterie(feuille)
+  if (svc.includes('optom') || svc.includes('opht')) return imprimerFeuilleOptometrie(feuille)
+  // Clinique externe, médecine, RDV de suivi → feuille consultation
+  return imprimerFeuilleConsultation(feuille)
 }

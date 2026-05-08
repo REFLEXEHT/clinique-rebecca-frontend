@@ -6,7 +6,7 @@ import { api, aiApi } from '@/lib/api'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import PaiementFlow, { type PaiementInfo } from '@/components/ui/PaiementFlow'
-import { imprimerRecuEnregistrement, imprimerRecuPaiement, imprimerFactureOfficielle, imprimerRapportComptable, imprimerFeuilleAuto } from '@/lib/print'
+import { imprimerRecuEnregistrement, imprimerRecuPaiement, imprimerFactureOfficielle, imprimerRapportComptable, imprimerFeuilleAuto, imprimerFicheDecaissement } from '@/lib/print'
 import { LogOut, Printer, Search, Plus, TrendingUp, ArrowDownCircle, Eye } from 'lucide-react'
 
 const SERVICES_TARIFS = [
