@@ -1,6 +1,6 @@
 // types/index.ts — Types complets v3
 
-export type Role = 'patient' | 'medecin' | 'admin' | 'caissier' | 'labo' | 'pharmacie'
+export type Role = 'patient' | 'medecin' | 'admin' | 'caissier' | 'labo' | 'pharmacie' | 'infirmier' | 'dentiste' | 'physio' | 'optometrie'
 export type StatutRDV = 'en_attente' | 'paiement_requis' | 'paiement_effectue' | 'confirme' | 'propose_autre_moment' | 'annule' | 'termine'
 export type TypeRDV = 'presentiel' | 'video'
 export type TypeMouvement = 'recette' | 'depense'
