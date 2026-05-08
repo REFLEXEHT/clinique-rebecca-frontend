@@ -117,7 +117,7 @@ body{width:80mm;max-width:80mm;font-size:12px}
 .id-num{font-size:24px;font-weight:900;font-family:monospace;letter-spacing:2px}
 .id-lbl{font-size:9px;color:#94a3b8;text-transform:uppercase;letter-spacing:1px}
 </style></head><body>
-<div style="font-size:14px;font-weight:900;color:#1641C8;text-align:center;margin-bottom:2px">${CLINIQUE.logo} CLINIQUE DE LA REBECCA</div>
+<div style="font-size:14px;font-weight:900;color:#1641C8;text-align:center;margin-bottom:2px">CLINIQUE DE LA REBECCA</div>
 <div style="font-size:9px;color:#666;text-align:center;margin-bottom:6px">${CLINIQUE.tel} · ${now}</div>
 <hr style="border:none;border-top:1px dashed #ccc;margin:6px 0">
 
@@ -183,7 +183,7 @@ export function imprimerRecuPaiement(p: {
 
   const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reçu ${refNum}</title>
 <style>${BASE_STYLE}body{width:80mm;max-width:80mm;font-size:12px}</style></head><body>
-<div style="font-size:14px;font-weight:900;color:#1641C8;text-align:center">${CLINIQUE.logo} CLINIQUE DE LA REBECCA</div>
+<div style="font-size:14px;font-weight:900;color:#1641C8;text-align:center">CLINIQUE DE LA REBECCA</div>
 <div style="font-size:9px;color:#666;text-align:center;margin-bottom:4px">${CLINIQUE.tel}</div>
 <div style="font-size:10px;font-weight:700;text-align:center;color:#374151;margin-bottom:6px"> REÇU DE PAIEMENT · ${now}</div>
 <div style="text-align:center;font-family:monospace;font-size:13px;font-weight:900;color:#1641C8;background:#eff6ff;border-radius:6px;padding:6px;margin:6px 0">🧾 ${refNum}</div>
