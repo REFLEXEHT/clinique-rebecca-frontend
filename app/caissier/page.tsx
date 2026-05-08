@@ -318,25 +318,25 @@ export default function CaissierPage() {
  const [stocksPharmacie, setStocksPharmacie] = useState<any[]>([])
  const [previewNumero, setPreviewNumero] = useState<string>('')
 
- // Charger le prochain numéro — avec retries progressifs
- useEffect(() => {
- let tries = 0
- const maxTries = 5
- const load = () => {
- api.get('/caissier/prochain-numero').then(r => {
- const num = r.data?.prochain_numero
- if (num && num.startsWith('#RB-') && !num.includes('?')) {
- setPreviewNumero(num)
- } else if (tries < maxTries) {
- tries++
- setTimeout(load, 1000 * tries)
- }
- }).catch(() => {
- if (tries < maxTries) { tries++; setTimeout(load, 1000 * tries) }
- })
- }
- load()
- }, [])
+  // Charger le prochain numéro — retry toutes les 2s jusqu'à succès
+  useEffect(() => {
+    let active = true
+    const load = () => {
+      if (!active) return
+      api.get('/caissier/prochain-numero')
+        .then(r => {
+          const num = r.data?.prochain_numero
+          if (num && num.startsWith('#RB-') && active) {
+            setPreviewNumero(num)
+          } else if (active) {
+            setTimeout(load, 2000)
+          }
+        })
+        .catch(() => { if (active) setTimeout(load, 2000) })
+    }
+    load()
+    return () => { active = false }
+  }, [])
 
  // Recalculer après chaque enregistrement
  useEffect(() => {
