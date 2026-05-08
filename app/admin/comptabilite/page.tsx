@@ -33,7 +33,7 @@ const fmtDate = (d: string | null | undefined) => {
   return dt.toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
 }
 
-// ─── Suggestion IA écriture comptable ────────────────────────────────────────
+//  Suggestion IA écriture comptable 
 const suggererEcriture = (type: string, cat: string, desc: string) => {
   if (type === 'recette') {
     const map: Record<string,string> = {
@@ -307,7 +307,7 @@ export default function AdminComptabilite() {
         ))}
       </div>
 
-      {/* ── JOURNAL ── */}
+      {/*  JOURNAL  */}
       {onglet === 'journal' && (
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -322,8 +322,8 @@ export default function AdminComptabilite() {
                 <div className="grid grid-cols-3 gap-4 mb-3">
                   <div><label className="label">Type *</label>
                     <select {...register('type')} className="input">
-                      <option value="recette">📈 Recette</option>
-                      <option value="depense">📉 Dépense</option>
+                      <option value="recette"> Recette</option>
+                      <option value="depense"> Dépense</option>
                     </select></div>
                   <div><label className="label">Catégorie *</label>
                     <select {...register('categorie',{required:true})} className="input">
@@ -342,7 +342,7 @@ export default function AdminComptabilite() {
                 <div className="grid grid-cols-2 gap-4 mb-3">
                   <div>
                     <label className="label font-bold" style={{color: typeW==='depense'?'#dc2626':'#16a34a'}}>
-                      {typeW==='depense' ? '🏢 Payé à — Bénéficiaire / Fournisseur *' : '👤 Reçu de — Source / Payeur *'}
+                      {typeW==='depense' ? ' Payé à — Bénéficiaire / Fournisseur *' : ' Reçu de — Source / Payeur *'}
                     </label>
                     <input {...register('tiers_nom',{required:true})} className="input"
                       placeholder={typeW==='depense' ? 'Ex: Pharmacie Centrale, Dr Jean, OFATMA...' : 'Ex: Patient Jean Pierre, Assurance CHIBAS...'}/>
@@ -352,15 +352,15 @@ export default function AdminComptabilite() {
                     <label className="label">Type de tiers</label>
                     <select {...register('tiers_type')} className="input">
                       {typeW==='depense' ? <>
-                        <option value="fournisseur">🏢 Fournisseur / Société</option>
-                        <option value="medecin">👨‍⚕️ Médecin / Praticien</option>
-                        <option value="employe">👷 Employé / Personnel</option>
-                        <option value="institution">🏛 Institution / Gouvernement</option>
+                        <option value="fournisseur"> Fournisseur / Société</option>
+                        <option value="medecin">‍ Médecin / Praticien</option>
+                        <option value="employe"> Employé / Personnel</option>
+                        <option value="institution"> Institution / Gouvernement</option>
                         <option value="autre">Autre</option>
                       </> : <>
                         <option value="patient">🧑 Patient</option>
-                        <option value="assurance">🏥 Assurance / Mutuelle</option>
-                        <option value="institution">🏛 Institution</option>
+                        <option value="assurance"> Assurance / Mutuelle</option>
+                        <option value="institution"> Institution</option>
                         <option value="autre">Autre</option>
                       </>}
                     </select>
@@ -392,7 +392,7 @@ export default function AdminComptabilite() {
                         <div className="font-mono text-[11px] font-bold text-slate-800">{ecriture.credit}</div>
                       </div>
                     </div>
-                    <p className="text-[10px] text-slate-400 mt-2 italic">✓ Vérifiez avec votre comptable</p>
+                    <p className="text-[10px] text-slate-400 mt-2 italic"> Vérifiez avec votre comptable</p>
                   </div>
                 )}
                 <div className="flex gap-3">
@@ -408,7 +408,7 @@ export default function AdminComptabilite() {
               <button key={t} onClick={()=>setFilterType(t)}
                 className={`px-3 py-1.5 rounded-full text-xs font-bold border cursor-pointer transition-all
                 ${filterType===t?'bg-[#1641C8] text-white border-[#1641C8]':'bg-white text-slate-500 border-slate-200'}`}>
-                {t==='tous'?'Tout':t==='recette'?'📈 Recettes':'📉 Dépenses'}
+                {t==='tous'?'Tout':t==='recette'?' Recettes':' Dépenses'}
               </button>
             ))}
           </div>
@@ -446,7 +446,7 @@ export default function AdminComptabilite() {
         </div>
       )}
 
-      {/* ── ACTES & RÉPARTITION ── */}
+      {/*  ACTES & RÉPARTITION  */}
       {onglet === 'actes' && (
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -517,7 +517,7 @@ export default function AdminComptabilite() {
                     <td className="font-bold text-green-600">{fmt(a.montant_clinique)}</td>
                     <td className="text-xs text-slate-500">{a.pct_medecin}%</td>
                     <td><span className={`badge ${a.statut_decaissement==='decaisse'?'badge-green':'badge-yellow'} text-[10px]`}>
-                      {a.statut_decaissement==='decaisse'?'✓ Décaissé':'En attente'}
+                      {a.statut_decaissement==='decaisse'?' Décaissé':'En attente'}
                     </span></td>
                   </tr>
                 ))}
@@ -528,7 +528,7 @@ export default function AdminComptabilite() {
         </div>
       )}
 
-      {/* ── DÉCAISSEMENTS ── */}
+      {/*  DÉCAISSEMENTS  */}
       {onglet === 'decaissements' && (
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -556,15 +556,15 @@ export default function AdminComptabilite() {
                     <select {...regDec('mode_paiement')} className="input">{MODES.map(m=><option key={m}>{m}</option>)}</select></div>
                 </div>
                 <div className="mb-3">
-                  <label className="label font-bold text-red-600">🏢 Remis à (bénéficiaire) *</label>
+                  <label className="label font-bold text-red-600"> Remis à (bénéficiaire) *</label>
                   <input {...regDec('tiers_nom',{required:true})} className="input" placeholder="Nom du médecin, de la personne ou de la société"/>
                   <p className="text-[10px] text-slate-400 mt-0.5">Qui a reçu physiquement cet argent ?</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div><label className="label">Statut</label>
                     <select {...regDec('statut')} className="input">
-                      <option value="effectue">✅ Effectué maintenant</option>
-                      <option value="planifie">🗓 Planifié (date future)</option>
+                      <option value="effectue"> Effectué maintenant</option>
+                      <option value="planifie"> Planifié (date future)</option>
                     </select>
                   </div>
                   <div><label className="label">Date prévue (si planifié)</label>
@@ -581,7 +581,7 @@ export default function AdminComptabilite() {
           {/* Décaissements planifiés */}
           {decaissementsPlanifies.length > 0 && (
             <div className="card p-4 mb-4 border-l-4 border-amber-400 bg-amber-50">
-              <h3 className="font-bold text-sm text-amber-700 mb-3">🗓 Décaissements planifiés ({decaissementsPlanifies.length})</h3>
+              <h3 className="font-bold text-sm text-amber-700 mb-3"> Décaissements planifiés ({decaissementsPlanifies.length})</h3>
               <div className="flex flex-col gap-2">
                 {decaissementsPlanifies.map((d:any) => (
                   <div key={d.id} className="flex items-center justify-between bg-white rounded-lg p-3 border border-amber-200">
@@ -616,7 +616,7 @@ export default function AdminComptabilite() {
         </div>
       )}
 
-      {/* ── EXPLOITANTS ── */}
+      {/*  EXPLOITANTS  */}
       {onglet === 'exploitants' && (
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -693,7 +693,7 @@ export default function AdminComptabilite() {
         </div>
       )}
 
-      {/* ── OPTOMÉTRIE ── */}
+      {/*  OPTOMÉTRIE  */}
       {onglet === 'optometrie' && (
         <div>
           <h2 className="font-extrabold text-[15px] mb-4">Calcul mensuel Optométrie</h2>
@@ -758,7 +758,7 @@ export default function AdminComptabilite() {
         </div>
       )}
 
-      {/* ── BILAN MENSUEL ── */}
+      {/*  BILAN MENSUEL  */}
       {onglet === 'bilan' && (
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -776,7 +776,7 @@ export default function AdminComptabilite() {
             <div id="bilan-print">
               <div className="flex items-center gap-2 mb-4">
                 <span className={`badge ${bilanMoisCourant.statut==='valide'?'badge-green':'badge-yellow'}`}>
-                  {bilanMoisCourant.statut==='valide'?'✓ Validé':'Brouillon'}
+                  {bilanMoisCourant.statut==='valide'?' Validé':'Brouillon'}
                 </span>
                 {bilanMoisCourant.statut==='valide'&&<span className="text-xs text-slate-400">Validé — prêt pour partage investisseurs</span>}
               </div>
@@ -849,7 +849,7 @@ export default function AdminComptabilite() {
         </div>
       )}
 
-      {/* ── RAPPORT CUMULATIF ── */}
+      {/*  RAPPORT CUMULATIF  */}
       {onglet === 'cumul' && (
         <div>
           <h2 className="font-extrabold text-[15px] mb-4">Rapport cumulatif — 3 / 6 / 12 mois</h2>
@@ -941,8 +941,8 @@ export default function AdminComptabilite() {
         </div>
       )}
 
-      {/* ── CONFIGURATION ── */}
-      {/* ── GRAND LIVRE ── */}
+      {/*  CONFIGURATION  */}
+      {/*  GRAND LIVRE  */}
       {onglet === 'grand_livre' && (
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -958,7 +958,7 @@ export default function AdminComptabilite() {
                   setGrandLivre(r.data)
                 } catch(e:any){toast.error(e?.response?.data?.detail||'Erreur')}
                 finally{setGlLoading(false)}
-              }} className="btn-primary py-2">{glLoading?'⏳ Chargement...':'🔍 Charger le Grand Livre'}</button>
+              }} className="btn-primary py-2">{glLoading?'⏳ Chargement...':' Charger le Grand Livre'}</button>
               {grandLivre && <button onClick={()=>window.print()} className="btn-ghost py-2"><i className="fa-solid fa-print mr-1"/>Imprimer</button>}
             </div>
           </div>
@@ -1029,7 +1029,7 @@ export default function AdminComptabilite() {
         </div>
       )}
 
-      {/* ── BALANCE DE VÉRIFICATION ── */}
+      {/*  BALANCE DE VÉRIFICATION  */}
       {onglet === 'balance' && (
         <div>
           <div className="flex items-center justify-between mb-4">
@@ -1041,8 +1041,8 @@ export default function AdminComptabilite() {
                 try{
                   const r = await api.get('/admin/balance-verification',{params:{mois:moisBilan,annee:anneeBilan}})
                   setBalance(r.data)
-                  if(r.data.equilibre) toast.success('Balance équilibrée ✓')
-                  else toast.error('⚠️ Déséquilibre détecté!')
+                  if(r.data.equilibre) toast.success('Balance équilibrée ')
+                  else toast.error(' Déséquilibre détecté!')
                 }catch(e:any){toast.error(e?.response?.data?.detail||'Erreur')}
               }} className="btn-primary py-2"><i className="fa-solid fa-calculator mr-2"/>Vérifier la balance</button>
               {balance && <button onClick={()=>window.print()} className="btn-ghost py-2"><i className="fa-solid fa-print mr-1"/>Imprimer</button>}
@@ -1054,7 +1054,7 @@ export default function AdminComptabilite() {
               {/* Statut global */}
               <div className={`card p-5 mb-5 border-2 ${balance.equilibre?'border-green-300 bg-green-50':'border-red-300 bg-red-50'}`}>
                 <div className="flex items-center gap-4">
-                  <span className="text-4xl">{balance.equilibre?'✅':'⚠️'}</span>
+                  <span className="text-4xl">{balance.equilibre?'':''}</span>
                   <div>
                     <div className={`font-extrabold text-lg ${balance.equilibre?'text-green-700':'text-red-600'}`}>{balance.message}</div>
                     <div className="text-sm text-slate-600 mt-1">{balance.nb_ecritures} écritures · Total Débit = Total Crédit = {balance.total_debit.toLocaleString('fr')} HTG</div>
@@ -1105,7 +1105,7 @@ export default function AdminComptabilite() {
         </div>
       )}
 
-      {/* ── RAPPORT IA COMPTABLE ── */}
+      {/*  RAPPORT IA COMPTABLE  */}
       {onglet === 'ai_compta' && (
         <div>
           <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -1114,10 +1114,10 @@ export default function AdminComptabilite() {
             </h2>
             <div className="flex gap-2 items-center flex-wrap">
               <select value={aiType} onChange={e=>setAiType(e.target.value)} className="input w-52 py-1.5 text-xs">
-                <option value="mensuel">📊 Rapport mensuel complet</option>
-                <option value="flux_tresorerie">💰 Flux trésorerie (IAS 7)</option>
-                <option value="bilan_patrimonial">🏦 Bilan patrimonial</option>
-                <option value="annuel">📈 Synthèse annuelle</option>
+                <option value="mensuel"> Rapport mensuel complet</option>
+                <option value="flux_tresorerie"> Flux trésorerie (IAS 7)</option>
+                <option value="bilan_patrimonial"> Bilan patrimonial</option>
+                <option value="annuel"> Synthèse annuelle</option>
               </select>
               <button disabled={aiLoading} onClick={async()=>{
                 setAiLoading(true); setAiRapport(''); setAiDonnees(null)
@@ -1125,8 +1125,8 @@ export default function AdminComptabilite() {
                   const r = await api.post('/admin/comptable-ai',{mois:moisBilan,annee:anneeBilan,type:aiType})
                   setAiRapport(r.data.rapport)
                   setAiDonnees(r.data.donnees)
-                  if(r.data.anomalies?.length>0) toast.error(`⚠️ ${r.data.anomalies.length} anomalie(s) détectée(s)`)
-                  else toast.success('Rapport IA généré ✓')
+                  if(r.data.anomalies?.length>0) toast.error(` ${r.data.anomalies.length} anomalie(s) détectée(s)`)
+                  else toast.success('Rapport IA généré ')
                 }catch(e:any){toast.error(e?.response?.data?.detail||'Erreur IA')}
                 finally{setAiLoading(false)}
               }} className="btn-primary py-2">
@@ -1170,7 +1170,7 @@ export default function AdminComptabilite() {
           )}
           {aiDonnees?.anomalies_count > 0 && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 font-semibold">
-              ⚠️ {aiDonnees.anomalies_count} anomalie(s) comptable(s) détectée(s) — vérifiez les écritures PCN
+               {aiDonnees.anomalies_count} anomalie(s) comptable(s) détectée(s) — vérifiez les écritures PCN
             </div>
           )}
 

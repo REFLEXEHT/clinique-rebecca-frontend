@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const payload: any = {
-      model: model || 'claude-sonnet-4-20250514',
+      model: model || 'claude-sonnet-4-6',
       max_tokens: Math.min(max_tokens || 800, 2000),
       messages,
     }

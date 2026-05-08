@@ -80,10 +80,10 @@ export default function AdminDepenses() {
               <div>
                 <label className="label">Type de tiers</label>
                 <select {...register('tiers_type')} className="input">
-                  <option value="fournisseur">🏢 Fournisseur / Société</option>
-                  <option value="medecin">👨‍⚕️ Médecin / Praticien</option>
-                  <option value="employe">👷 Employé / Personnel</option>
-                  <option value="institution">🏛 Institution / Gouvernement</option>
+                  <option value="fournisseur"> Fournisseur / Société</option>
+                  <option value="medecin">‍ Médecin / Praticien</option>
+                  <option value="employe"> Employé / Personnel</option>
+                  <option value="institution"> Institution / Gouvernement</option>
                   <option value="autre">Autre</option>
                 </select>
               </div>

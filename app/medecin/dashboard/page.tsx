@@ -13,7 +13,7 @@ import VerificationPaiement from '@/components/ui/VerificationPaiement'
 import { RendezVous } from '@/types'
 import { LogOut, Edit2, Save, X, Calendar, Clock, User, FileText, Star, ChevronRight, Video, ExternalLink } from 'lucide-react'
 
-// ─── Types locaux ────────────────────────────────────────────────────────────
+//  Types locaux 
 type TypeActe = 'consultation' | 'geste' | 'observation' | 'hospitalisation' | 'chirurgie'
 type Onglet   = 'file-attente' | 'tableau' | 'rdv' | 'consultations' | 'profil' | 'demande-acces' | 'paiement'
 
@@ -56,7 +56,7 @@ const fmtDate = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: '2
 const fmtHeure = (d: string) => new Date(d).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
 const fmtDateCourt = (d: string) => new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })
 
-// ─── Demo data ────────────────────────────────────────────────────────────────
+//  Demo data 
 const DEMO_RDV: RendezVous[] = [
   { id: 1, patient_nom: 'Marie Théodore',    patient_telephone: '+509 3111-2222', patient_email: null,               specialite: 'Gynécologie',     date_rdv: new Date(Date.now() + 3_600_000).toISOString(),   type_rdv: 'presentiel', statut: 'confirme',   motif: 'Suivi grossesse T2',       notes_admin: null, mode_paiement: 'Espèces',        rappel_envoye: true,  created_at: new Date().toISOString() },
   { id: 2, patient_nom: 'Jean Dorval',       patient_telephone: '+509 3333-4444', patient_email: null,               specialite: 'Médecine interne', date_rdv: new Date(Date.now() + 7_200_000).toISOString(),   type_rdv: 'presentiel', statut: 'en_attente', motif: 'Contrôle tension',         notes_admin: null, mode_paiement: null,             rappel_envoye: false, created_at: new Date().toISOString() },
@@ -74,7 +74,7 @@ const DEMO_ACTES: ActeLocal[] = [
   { id: 7, patient_id: '#RB-011', patient_nom: 'Ange-Marie Pierre', type_acte: 'chirurgie',       specialite: 'Chirurgie',      description: 'Appendicectomie laparoscopique',                 notes: 'Suites simples',                          date_acte: new Date(Date.now() - 8_640_000_000).toISOString() },
 ]
 
-// ═════════════════════════════════════════════════════════════════════════════
+// 
 
 function RecommandationPanel({ dossierId }: { dossierId: number | null }) {
   const [specialiste, setSpecialiste] = useState('')
@@ -124,9 +124,9 @@ function RecommandationPanel({ dossierId }: { dossierId: number | null }) {
     </div>
   ) : (
     <div style={{ background: '#f5f3ff', borderRadius: 12, padding: 16, border: '1px solid #ddd6fe' }}>
-      <div style={{ fontWeight: 700, color: '#7c3aed', marginBottom: 8 }}>✓ Recommandation envoyée à {specialiste}</div>
+      <div style={{ fontWeight: 700, color: '#7c3aed', marginBottom: 8 }}> Recommandation envoyée à {specialiste}</div>
       <div style={{ fontSize: 13, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap', marginBottom: 8 }}>{resumeIA}</div>
-      <div style={{ fontSize: 11, color: '#94a3b8' }}>ℹ️ Seul ce résumé est transmis — dossier complet confidentiel.</div>
+      <div style={{ fontSize: 11, color: '#94a3b8' }}>ℹ Seul ce résumé est transmis — dossier complet confidentiel.</div>
       <button onClick={() => { setSent(false); setSpecialiste(''); setMotif(''); setResumeIA('') }}
         style={{ marginTop: 8, background: 'none', border: '1px solid #e2e8f0', borderRadius: 8, padding: '5px 12px', cursor: 'pointer', fontSize: 12, color: '#64748b' }}>
         Nouvelle recommandation
@@ -156,7 +156,7 @@ export default function MedecinDashboard() {
   const [editProfil, setEditProfil] = useState(false)
   const [filtreActe, setFiltreActe] = useState<TypeActe | 'tous'>('tous')
   const [profil, setProfil] = useState({
-    bio: '', telephone: '', disponibilites: 'Lun–Ven 07h–17h · Sam 07h–12h', emoji: '👨‍⚕️', photoProfil: ''
+    bio: '', telephone: '', disponibilites: 'Lun–Ven 07h–17h · Sam 07h–12h', emoji: '‍', photoProfil: ''
   })
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<ActeForm>({
@@ -216,7 +216,7 @@ export default function MedecinDashboard() {
   const onAddActe = async (data: ActeForm) => {
     try {
       await actesApi.create({ ...data, date_acte: new Date().toISOString() })
-      toast.success('Acte enregistré ✓')
+      toast.success('Acte enregistré ')
       reset()
       setShowForm(false)
       actesApi.list().then(r => setActes(r.data || [])).catch(() => {})
@@ -224,7 +224,7 @@ export default function MedecinDashboard() {
       // En mode démo : juste simuler
       const newActe: ActeLocal = { id: Date.now(), ...data, date_acte: new Date().toISOString() }
       setActes(prev => [newActe, ...prev])
-      toast.success('Acte enregistré ✓')
+      toast.success('Acte enregistré ')
       reset(); setShowForm(false)
     }
   }
@@ -241,7 +241,7 @@ export default function MedecinDashboard() {
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
 
-      {/* ── NAVBAR ─────────────────────────────────────────────────────── */}
+      {/*  NAVBAR  */}
       <div style={{ background: 'linear-gradient(135deg,#0f1e3d,#1641C8)', height: 64, display: 'flex', alignItems: 'center', padding: '0 24px', gap: 16, flexShrink: 0, boxShadow: '0 2px 12px rgba(0,0,0,0.2)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>
@@ -286,15 +286,15 @@ export default function MedecinDashboard() {
 
       <div style={{ flex: 1, overflowY: 'auto', padding: 28 }}>
 
-        {/* ══════════════════════════════════════════════════════════════
+        {/* 
             TABLEAU DE BORD
-        ══════════════════════════════════════════════════════════════ */}
-        {/* ── FILE D'ATTENTE ────────────────────────────────────── */}
+         */}
+        {/*  FILE D'ATTENTE  */}
         {onglet === 'file-attente' && (
           <div>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:20 }}>
               <h2 style={{ fontWeight:900, fontSize:'1.2rem', margin:0 }}>
-                🏥 Patients en attente de consultation
+                 Patients en attente de consultation
               </h2>
               <button onClick={() => api.get('/medecin/file-attente').then(r => {
                           const file = r.data?.patients || r.data || []
@@ -302,12 +302,12 @@ export default function MedecinDashboard() {
                           setNbAttente(Array.isArray(file) ? file.length : (r.data?.total || 0))
                         }).catch(()=>{})}
                 style={{ background:'none', border:'1px solid #e2e8f0', borderRadius:8, padding:'7px 14px', cursor:'pointer', fontWeight:600, fontSize:13, color:'#64748b' }}>
-                🔄 Actualiser
+                 Actualiser
               </button>
             </div>
             {fileAttente.length === 0 ? (
               <div style={{ background:'white', borderRadius:16, padding:48, textAlign:'center', border:'1px solid #e2e8f0' }}>
-                <div style={{ fontSize:48, marginBottom:12 }}>✅</div>
+                <div style={{ fontSize:48, marginBottom:12 }}></div>
                 <p style={{ color:'#16a34a', fontWeight:700, fontSize:15 }}>Aucun patient en attente</p>
                 <p style={{ color:'#94a3b8', fontSize:13 }}>La file se met à jour automatiquement toutes les 30 secondes</p>
               </div>
@@ -326,7 +326,7 @@ export default function MedecinDashboard() {
                     <div style={{ flex:1, minWidth:200 }}>
                       <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap' as const, marginBottom:3 }}>
                         <span style={{ fontWeight:800, fontSize:15, color:'#0f172a' }}>{f.patient_nom || f.patient_numero}</span>
-                        {(f.priorite===1||f.priorite==='urgent') && <span style={{ background:'#fef2f2', color:'#dc2626', borderRadius:50, padding:'2px 10px', fontSize:11, fontWeight:700 }}>🚨 URGENT</span>}
+                        {(f.priorite===1||f.priorite==='urgent') && <span style={{ background:'#fef2f2', color:'#dc2626', borderRadius:50, padding:'2px 10px', fontSize:11, fontWeight:700 }}> URGENT</span>}
                         {/* Badge statut paiement — vert/rouge/jaune */}
                         <span style={{
                           background: `${f.couleur||'#dc2626'}15`,
@@ -334,13 +334,13 @@ export default function MedecinDashboard() {
                           border: `1px solid ${f.couleur||'#dc2626'}40`,
                           borderRadius:20, padding:'2px 10px', fontSize:11, fontWeight:700
                         }}>
-                          {f.libelle || '⚠️ Non payé'}
+                          {f.libelle || ' Non payé'}
                         </span>
                       </div>
                       <div style={{ fontSize:12, color:'#64748b' }}>
                         {f.service || ''} · Entré à {(f.heure_entree||f.heure) ? new Date(f.heure_entree||f.heure).toLocaleTimeString('fr-FR', {hour:'2-digit',minute:'2-digit'}) : '—'}
                         {f.signes_vitaux?.resume && <span style={{ color:'#0d9488', marginLeft:8 }}>· SV enregistrés</span>}
-                        {f.alerte_message && <span style={{ color:'#dc2626', marginLeft:8 }}>⚠️ {f.alerte_message}</span>}
+                        {f.alerte_message && <span style={{ color:'#dc2626', marginLeft:8 }}> {f.alerte_message}</span>}
                       </div>
                     </div>
                     <button
@@ -359,7 +359,7 @@ export default function MedecinDashboard() {
                         }
                       }}
                       style={{ background:'linear-gradient(135deg,#1641C8,#0d9488)', color:'white', border:'none', borderRadius:10, padding:'10px 18px', fontWeight:700, cursor:'pointer', fontSize:13 }}>
-                      📋 Dossier
+                       Dossier
                     </button>
                   </div>
                 ))}
@@ -371,7 +371,7 @@ export default function MedecinDashboard() {
         {onglet === 'tableau' && (
           <div>
             <div style={{ marginBottom: 24 }}>
-              <h1 style={{ fontWeight: 900, fontSize: '1.4rem', color: '#0f172a', margin: 0 }}>Bonjour Dr. {user?.nom?.split(' ').pop()} 👋</h1>
+              <h1 style={{ fontWeight: 900, fontSize: '1.4rem', color: '#0f172a', margin: 0 }}>Bonjour Dr. {user?.nom?.split(' ').pop()} </h1>
               <p style={{ color: '#64748b', marginTop: 4, fontSize: 14 }}>
                 {rdvAujourd.length > 0 ? `Vous avez ${rdvAujourd.length} rendez-vous aujourd'hui.` : "Aucun rendez-vous aujourd'hui."}
               </p>
@@ -433,17 +433,17 @@ export default function MedecinDashboard() {
                           <div style={{ display: 'flex', gap: 4 }}>
                             <button onClick={async () => {
                               await api.post(`/rdv/confirmer/${r.id}`, {})
-                              toast.success('RDV confirmé ✓')
+                              toast.success('RDV confirmé ')
                               const updated = await rdvApi.medecinList()
                               setRdvs(updated.data || [])
                             }} style={{ background: '#16a34a', color: 'white', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
-                              ✓ Confirmer
+                               Confirmer
                             </button>
                             <button onClick={() => {
                               const msg = prompt('Votre message + nouveau créneau proposé:')
                               if (msg) api.post(`/rdv/proposer-autre-moment/${r.id}`, { message: msg, nouveau_moment: msg }).then(() => toast.success('Proposition envoyée'))
                             }} style={{ background: '#d97706', color: 'white', border: 'none', borderRadius: 6, padding: '4px 8px', fontSize: 10, fontWeight: 700, cursor: 'pointer' }}>
-                              📅 Autre moment
+                               Autre moment
                             </button>
                           </div>
                         ) : null}
@@ -544,9 +544,9 @@ export default function MedecinDashboard() {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════
+        {/* 
             RENDEZ-VOUS À VENIR
-        ══════════════════════════════════════════════════════════════ */}
+         */}
         {onglet === 'rdv' && (
           <div>
             <h2 style={{ fontWeight: 900, fontSize: '1.3rem', color: '#0f172a', marginBottom: 6 }}>Mes rendez-vous à venir</h2>
@@ -582,9 +582,9 @@ export default function MedecinDashboard() {
                             <span style={{ color: '#64748b', fontSize: 13, display: 'flex', alignItems: 'center', gap: 4 }}>
                               <Clock size={13} /> {fmtDate(r.date_rdv)} à {fmtHeure(r.date_rdv)}
                             </span>
-                            <span style={{ color: '#64748b', fontSize: 13 }}>📞 {r.patient_telephone}</span>
-                            {r.patient_email && <span style={{ color: '#64748b', fontSize: 13 }}>✉️ {r.patient_email}</span>}
-                            {r.type_rdv === 'video' && <span style={{ color: '#1641C8', fontSize: 13, fontWeight: 600 }}>📹 Consultation vidéo</span>}
+                            <span style={{ color: '#64748b', fontSize: 13 }}> {r.patient_telephone}</span>
+                            {r.patient_email && <span style={{ color: '#64748b', fontSize: 13 }}> {r.patient_email}</span>}
+                            {r.type_rdv === 'video' && <span style={{ color: '#1641C8', fontSize: 13, fontWeight: 600 }}> Consultation vidéo</span>}
                           </div>
                           {r.motif && <div style={{ marginTop: 8, color: '#475569', fontSize: 13, background: '#f8fafc', borderRadius: 8, padding: '6px 10px' }}>Motif : {r.motif}</div>}
                         </div>
@@ -607,14 +607,14 @@ export default function MedecinDashboard() {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════
+        {/* 
             CONSULTATIONS / GESTES — 6 DERNIERS MOIS
-        ══════════════════════════════════════════════════════════════ */}
+         */}
         {onglet === 'consultations' && (
           <div>
             {/* Recherche directe par ID patient (patient se présente sans RDV) */}
             <div style={{ background:'#fffbeb', border:'1px solid #fcd34d', borderRadius:12, padding:'14px 18px', marginBottom:20, display:'flex', gap:12, alignItems:'center' }}>
-              <span style={{ fontSize:20 }}>🔍</span>
+              <span style={{ fontSize:20 }}></span>
               <div style={{ flex:1 }}>
                 <div style={{ fontWeight:700, fontSize:13, marginBottom:6 }}>Patient se présente avec son ID</div>
                 <div style={{ display:'flex', gap:8 }}>
@@ -715,7 +715,7 @@ export default function MedecinDashboard() {
                   </button>
                 </form>
                 <div style={{ marginTop: 18, borderTop: '1px solid #e2e8f0', paddingTop: 14 }}>
-                  <h4 style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}>🔄 Recommander vers spécialiste</h4>
+                  <h4 style={{ fontWeight: 700, fontSize: 14, marginBottom: 8 }}> Recommander vers spécialiste</h4>
                   <RecommandationPanel dossierId={dossierId} />
                 </div>
               </div>
@@ -765,7 +765,7 @@ export default function MedecinDashboard() {
                         </div>
                         {a.specialite && <div style={{ color: '#0d9488', fontSize: 12, fontWeight: 600, marginBottom: 4 }}>{a.specialite}</div>}
                         <div style={{ color: '#475569', fontSize: 13 }}>{a.description}</div>
-                        {a.notes && <div style={{ marginTop: 6, background: '#f8fafc', borderRadius: 8, padding: '6px 10px', color: '#64748b', fontSize: 12 }}>📝 {a.notes}</div>}
+                        {a.notes && <div style={{ marginTop: 6, background: '#f8fafc', borderRadius: 8, padding: '6px 10px', color: '#64748b', fontSize: 12 }}> {a.notes}</div>}
                       </div>
                     </div>
                   )
@@ -775,10 +775,10 @@ export default function MedecinDashboard() {
           </div>
         )}
 
-        {/* ══════════════════════════════════════════════════════════════
+        {/* 
             PROFIL — INFORMATIONS PERSONNELLES ET PROFESSIONNELLES UNIQUEMENT
             Aucune donnée financière ou comptable
-        ══════════════════════════════════════════════════════════════ */}
+         */}
         {onglet === 'profil' && (
           <div style={{ maxWidth: 640 }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
@@ -820,7 +820,7 @@ export default function MedecinDashboard() {
                           try {
                             await api.post('/medecin/photo-profil', { photo_base64: b64 })
                             setProfil(p => ({ ...p, photoProfil: b64 }))
-                            toast.success('Photo mise à jour ✓')
+                            toast.success('Photo mise à jour ')
                           } catch (err: any) { toast.error(err?.response?.data?.detail || 'Erreur upload') }
                         }
                         reader.readAsDataURL(file)
@@ -856,7 +856,7 @@ export default function MedecinDashboard() {
                       rows={5} placeholder="Décrivez votre formation, vos spécialisations, votre approche médicale..."
                       style={{ width: '100%', padding: '11px 13px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, resize: 'vertical', boxSizing: 'border-box' }} />
                   </div>
-                  <button onClick={() => { toast.success('Profil mis à jour ✓'); setEditProfil(false) }} style={{
+                  <button onClick={() => { toast.success('Profil mis à jour '); setEditProfil(false) }} style={{
                     background: 'linear-gradient(135deg,#1641C8,#0d9488)', color: 'white',
                     border: 'none', borderRadius: 12, padding: '12px 24px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8
                   }}>
@@ -889,7 +889,7 @@ export default function MedecinDashboard() {
                   {!profil.bio && (
                     <div style={{ background: '#fffbeb', border: '1px solid #fcd34d', borderRadius: 10, padding: 12 }}>
                       <p style={{ margin: 0, color: '#92400e', fontSize: 13 }}>
-                        💡 Ajoutez votre biographie pour que les patients puissent vous connaître avant le rendez-vous.
+                         Ajoutez votre biographie pour que les patients puissent vous connaître avant le rendez-vous.
                       </p>
                     </div>
                   )}
@@ -897,10 +897,10 @@ export default function MedecinDashboard() {
               )}
             </div>
 
-            {/* ── SIGNATURE NUMÉRIQUE ── */}
+            {/*  SIGNATURE NUMÉRIQUE  */}
             <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 16, padding: 20 }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: '#0f172a', marginBottom: 4 }}>
-                ✍️ Signature numérique
+                 Signature numérique
               </div>
               <p style={{ color: '#64748b', fontSize: 12, margin: '0 0 14px', lineHeight: 1.6 }}>
                 Votre signature sera automatiquement apposée sur les ordonnances, certificats médicaux, résultats de laboratoire et tout autre document officiel.
@@ -919,7 +919,7 @@ export default function MedecinDashboard() {
                 <button onClick={async () => {
                   try {
                     await api.post('/medecin/enregistrer-signature', { signature_base64: maSignature })
-                    toast.success('Signature enregistrée ✓ — elle sera utilisée sur vos documents officiels')
+                    toast.success('Signature enregistrée  — elle sera utilisée sur vos documents officiels')
                   } catch (e: any) {
                     toast.error(e?.response?.data?.detail || 'Erreur enregistrement signature')
                   }
@@ -927,7 +927,7 @@ export default function MedecinDashboard() {
                   marginTop: 10, background: '#1641C8', color: 'white', border: 'none',
                   borderRadius: 9, padding: '9px 20px', fontWeight: 700, cursor: 'pointer', fontSize: 13
                 }}>
-                  💾 Enregistrer ma signature
+                   Enregistrer ma signature
                 </button>
               )}
             </div>
@@ -955,9 +955,9 @@ export default function MedecinDashboard() {
 
       </div>
 
-        {/* ══════════════════════════════════════════════════════════════
+        {/* 
             DEMANDE D'ACCÈS DOSSIER (via autorisation admin)
-        ══════════════════════════════════════════════════════════════ */}
+         */}
         {onglet === 'demande-acces' && (
           <AccesDossierDirect
             onOuvrirDossier={(dossier: any, id: any) => {
@@ -968,7 +968,7 @@ export default function MedecinDashboard() {
           />
         )}
 
-        {/* ── VÉRIFICATION PAIEMENT ──────────────────────────────── */}
+        {/*  VÉRIFICATION PAIEMENT  */}
         {onglet === 'paiement' && (
           <div style={{ maxWidth: 600, padding: '0 0 24px' }}>
             <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 13, marginBottom: 16 }}>
@@ -1018,7 +1018,7 @@ function AccesDossierDirect({ onOuvrirDossier }: { onOuvrirDossier: (dossier: an
 
   return (
     <div style={{ maxWidth: 680 }}>
-      <h2 style={{ fontWeight: 900, fontSize: '1.1rem', marginBottom: 8 }}>🔍 Accès dossier patient</h2>
+      <h2 style={{ fontWeight: 900, fontSize: '1.1rem', marginBottom: 8 }}> Accès dossier patient</h2>
       <p style={{ color: '#64748b', fontSize: 13, marginBottom: 16 }}>
         Recherchez un patient par son numéro <strong>#RB-XXXX</strong>, son nom ou son prénom.
         En tant que médecin, vous avez accès direct sans demande préalable.
@@ -1037,7 +1037,7 @@ function AccesDossierDirect({ onOuvrirDossier }: { onOuvrirDossier: (dossier: an
           padding: '11px 22px', fontWeight: 700, cursor: 'pointer', fontSize: 14,
           opacity: loading ? 0.7 : 1
         }}>
-          {loading ? '⏳' : '🔍 Chercher'}
+          {loading ? '⏳' : ' Chercher'}
         </button>
       </div>
 
@@ -1068,7 +1068,7 @@ function AccesDossierDirect({ onOuvrirDossier }: { onOuvrirDossier: (dossier: an
                       color: p.paiement_effectue ? '#16a34a' : '#92400e',
                       fontSize: 10, fontWeight: 700
                     }}>
-                      {p.paiement_effectue ? '✅ Payé' : '⚠️ À vérifier'}
+                      {p.paiement_effectue ? ' Payé' : ' À vérifier'}
                     </span>
                   )}
                 </div>
@@ -1078,7 +1078,7 @@ function AccesDossierDirect({ onOuvrirDossier }: { onOuvrirDossier: (dossier: an
                 border: 'none', borderRadius: 9, padding: '9px 18px',
                 fontWeight: 700, cursor: 'pointer', fontSize: 13, whiteSpace: 'nowrap' as const
               }}>
-                📋 Ouvrir le dossier
+                 Ouvrir le dossier
               </button>
             </div>
           ))}

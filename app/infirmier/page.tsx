@@ -51,15 +51,15 @@ export default function InfirmierDashboard() {
   const detectAlertes = (vals: Record<string, string>) => {
     const msgs: string[] = []
     const sys = parseFloat(vals.tension_systolique || '0')
-    if (sys && (sys > 180 || sys < 80)) msgs.push(`⚠️ Tension critique: ${sys} mmHg`)
+    if (sys && (sys > 180 || sys < 80)) msgs.push(` Tension critique: ${sys} mmHg`)
     const glyc = parseFloat(vals.glycemie || '0')
-    if (glyc && glyc > 600) msgs.push(`⚠️ Glycémie critique: ${glyc} mg/dL`)
+    if (glyc && glyc > 600) msgs.push(` Glycémie critique: ${glyc} mg/dL`)
     const spo2 = parseFloat(vals.saturation_o2 || '0')
-    if (spo2 && spo2 < 90) msgs.push(`⚠️ SpO2 critique: ${spo2}%`)
+    if (spo2 && spo2 < 90) msgs.push(` SpO2 critique: ${spo2}%`)
     const temp = parseFloat(vals.temperature || '0')
-    if (temp && (temp > 40 || temp < 35)) msgs.push(`⚠️ Température critique: ${temp}°C`)
+    if (temp && (temp > 40 || temp < 35)) msgs.push(` Température critique: ${temp}°C`)
     const fc = parseFloat(vals.frequence_cardiaque || '0')
-    if (fc && (fc > 150 || fc < 40)) msgs.push(`⚠️ FC critique: ${fc} bpm`)
+    if (fc && (fc > 150 || fc < 40)) msgs.push(` FC critique: ${fc} bpm`)
     setAlertes(msgs)
   }
 
@@ -75,9 +75,9 @@ export default function InfirmierDashboard() {
       Object.entries(sv).forEach(([k, v]) => { if (v) payload[k] = parseFloat(v as string) || v })
       const r = await api.post('/infirmier/signes-vitaux', payload)
       if (r.data.alerte) {
-        toast.error(`🚨 Alertes critiques !\n${r.data.alertes.join('\n')}`, { duration: 8000 })
+        toast.error(` Alertes critiques !\n${r.data.alertes.join('\n')}`, { duration: 8000 })
       } else {
-        toast.success('Signes vitaux enregistrés — patient en file d\'attente ✓')
+        toast.success('Signes vitaux enregistrés — patient en file d\'attente ')
       }
       setDossiers(prev => prev.filter(d => d.id !== selected.id))
       setSelected(null); setSv({}); setAlertes([])
@@ -104,7 +104,7 @@ export default function InfirmierDashboard() {
     <div style={{ minHeight:'100vh', background:'#f8fafc', display:'flex', flexDirection:'column' }}>
       {/* Navbar */}
       <div style={{ background:'linear-gradient(135deg,#0f1e3d,#0d9488)', height:58, display:'flex', alignItems:'center', padding:'0 24px', gap:16, flexShrink:0 }}>
-        <div style={{ width:38, height:38, borderRadius:10, background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}>🏥</div>
+        <div style={{ width:38, height:38, borderRadius:10, background:'rgba(255,255,255,0.15)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18 }}></div>
         <div>
           <div style={{ color:'white', fontWeight:800, fontSize:14 }}>{user?.nom || 'Infirmier'}</div>
           <div style={{ color:'rgba(255,255,255,0.6)', fontSize:11 }}>Infirmier(ère)</div>
@@ -128,11 +128,11 @@ export default function InfirmierDashboard() {
           {/* Onglets */}
           <div style={{ display:'flex', background:'#f1f5f9', borderRadius:10, padding:3, gap:2 }}>
             {([
-              {k:'queue' as const, label:`Queue (${queue.length})`, icon:'🏥'},
+              {k:'queue' as const, label:`Queue (${queue.length})`, icon:''},
               {k:'attente' as const, label:'Dossiers', icon:'⏳'},
-              {k:'alertes' as const, label:`Alertes (${alertesPrescriptions.length})`, icon:'🔔'},
-              {k:'recherche' as const, label:'Recherche', icon:'🔍'},
-              {k:'paiement' as const, label:'Vérif. paiement', icon:'💳'},
+              {k:'alertes' as const, label:`Alertes (${alertesPrescriptions.length})`, icon:''},
+              {k:'recherche' as const, label:'Recherche', icon:''},
+              {k:'paiement' as const, label:'Vérif. paiement', icon:''},
             ] as const).map(t => (
               <button key={t.k} onClick={() => setOnglet(t.k)} style={{
                 padding:'8px 12px', borderRadius:8, border:'none', cursor:'pointer', fontSize:12, fontWeight:600,
@@ -144,19 +144,19 @@ export default function InfirmierDashboard() {
           </div>
         </div>
 
-        {/* ── ONGLET QUEUE CAISSE (temps réel) ─────────────────────── */}
+        {/*  ONGLET QUEUE CAISSE (temps réel)  */}
         {onglet === 'queue' && (
           <div>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
               <div style={{fontSize:13,color:'#64748b'}}>{queue.length} patient(s) en attente · Actualisation auto 30s</div>
               <button onClick={()=>api.get('/infirmier/queue').then(r=>setQueue(r.data?.patients||[]))}
                 style={{background:'#0d9488',color:'white',border:'none',borderRadius:8,padding:'7px 14px',fontWeight:700,cursor:'pointer',fontSize:13}}>
-                🔄 Actualiser
+                 Actualiser
               </button>
             </div>
             {queue.length === 0 ? (
               <div style={{background:'white',borderRadius:16,padding:40,textAlign:'center',border:'1px solid #e2e8f0'}}>
-                <div style={{fontSize:40,marginBottom:12}}>✅</div>
+                <div style={{fontSize:40,marginBottom:12}}></div>
                 <div style={{fontWeight:700,color:'#16a34a',fontSize:15}}>Aucun patient en attente</div>
                 <div style={{color:'#64748b',fontSize:13,marginTop:4}}>La caisse n'a pas encore enregistré de patients aujourd'hui</div>
               </div>
@@ -168,7 +168,7 @@ export default function InfirmierDashboard() {
                       {/* Ticket */}
                       <div style={{background:p.priorite==='urgent'?'#fef2f2':'#f0fdfa',borderRadius:10,padding:'8px 12px',textAlign:'center' as const,minWidth:64}}>
                         <div style={{fontFamily:'monospace',fontWeight:900,fontSize:16,color:p.priorite==='urgent'?'#dc2626':'#0d9488'}}>#{p.ticket}</div>
-                        <div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>{p.priorite==='urgent'?'🚨 URGENT':'Normal'}</div>
+                        <div style={{fontSize:10,color:'#94a3b8',marginTop:2}}>{p.priorite==='urgent'?' URGENT':'Normal'}</div>
                       </div>
                       <div>
                         <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:2}}>
@@ -181,16 +181,16 @@ export default function InfirmierDashboard() {
                             borderRadius:20,padding:'2px 9px',fontSize:11,fontWeight:700,
                             whiteSpace:'nowrap' as const
                           }}>
-                            {p.libelle || '⚠️ Non payé'}
+                            {p.libelle || ' Non payé'}
                           </span>
                         </div>
                         <div style={{color:'#0d9488',fontSize:13,fontWeight:600}}>{p.service}</div>
-                        {p.medecin_nom && <div style={{color:'#1641C8',fontSize:12,fontWeight:600}}>👨‍⚕️ Dr {p.medecin_nom.replace('Dr ','')}</div>}
+                        {p.medecin_nom && <div style={{color:'#1641C8',fontSize:12,fontWeight:600}}>‍ Dr {p.medecin_nom.replace('Dr ','')}</div>}
                         <div style={{color:'#94a3b8',fontSize:12}}>{p.patient_telephone} · {new Date(p.heure).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</div>
                       </div>
                     </div>
                     <button onClick={()=>setSelectedRdv(p)} style={{background:'linear-gradient(135deg,#0d9488,#0f766e)',color:'white',border:'none',borderRadius:10,padding:'9px 18px',fontWeight:700,cursor:'pointer',fontSize:13,flexShrink:0}}>
-                      ➜ Signes vitaux
+                       Signes vitaux
                     </button>
                   </div>
                 ))}
@@ -206,7 +206,7 @@ export default function InfirmierDashboard() {
                       <div style={{fontWeight:800,fontSize:15}}>Signes vitaux — {selectedRdv.patient_nom}</div>
                       <div style={{color:'#0d9488',fontSize:13}}>#{selectedRdv.ticket} · {selectedRdv.service}</div>
                     </div>
-                    <button onClick={()=>setSelectedRdv(null)} style={{background:'#f1f5f9',border:'none',borderRadius:8,padding:'6px 12px',cursor:'pointer'}}>✕</button>
+                    <button onClick={()=>setSelectedRdv(null)} style={{background:'#f1f5f9',border:'none',borderRadius:8,padding:'6px 12px',cursor:'pointer'}}></button>
                   </div>
                   <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginBottom:16}}>
                     {[
@@ -227,7 +227,7 @@ export default function InfirmierDashboard() {
                   {/* Afficher le médecin destinataire */}
                   {selectedRdv.medecin_nom && (
                     <div style={{background:'#eff6ff',borderRadius:8,padding:'8px 12px',marginBottom:10,fontSize:13,color:'#1641C8',fontWeight:600}}>
-                      👨‍⚕️ Sera envoyé à : {selectedRdv.medecin_nom}
+                      ‍ Sera envoyé à : {selectedRdv.medecin_nom}
                     </div>
                   )}
                   <button onClick={async()=>{
@@ -239,12 +239,12 @@ export default function InfirmierDashboard() {
                       }
                       await api.put(`/infirmier/signes-vitaux/${selectedRdv.rdv_id}`, payload)
                       const dest = selectedRdv.medecin_nom ? ` → Dr ${selectedRdv.medecin_nom.replace('Dr ','')}` : ' au médecin'
-                      toast.success(`✓ ${selectedRdv.patient_nom} envoyé${dest}`)
+                      toast.success(` ${selectedRdv.patient_nom} envoyé${dest}`)
                       setQueue(q=>q.filter((x:any)=>x.rdv_id!==selectedRdv.rdv_id))
                       setSelectedRdv(null); setSvRdv({tension:'',pouls:'',temperature:'',poids:'',spo2:''})
                     } catch(e:any){toast.error(e?.response?.data?.detail||'Erreur')}
                   }} style={{width:'100%',background:'linear-gradient(135deg,#0d9488,#0f766e)',color:'white',border:'none',borderRadius:12,padding:'12px',fontWeight:700,cursor:'pointer',fontSize:14}}>
-                    ✓ Enregistrer &amp; Envoyer au médecin
+                     Enregistrer &amp; Envoyer au médecin
                   </button>
                 </div>
               </div>
@@ -252,26 +252,26 @@ export default function InfirmierDashboard() {
           </div>
         )}
 
-        {/* ── ONGLET ALERTES PRESCRIPTIONS ─────────────────────────── */}
+        {/*  ONGLET ALERTES PRESCRIPTIONS  */}
         {onglet === 'alertes' && (
           <div>
             <div style={{marginBottom:16,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div style={{fontSize:13,color:'#64748b'}}>{alertesPrescriptions.length} prescription(s) à suivre (dernières 4h)</div>
               <button onClick={()=>api.get('/infirmier/alertes-prescriptions').then(r=>setAlertesPrescriptions(r.data?.alertes||[]))}
                 style={{background:'#d97706',color:'white',border:'none',borderRadius:8,padding:'7px 14px',fontWeight:700,cursor:'pointer',fontSize:13}}>
-                🔄 Actualiser
+                 Actualiser
               </button>
             </div>
             {alertesPrescriptions.length===0 ? (
               <div style={{background:'white',borderRadius:16,padding:40,textAlign:'center',border:'1px solid #e2e8f0'}}>
-                <div style={{fontSize:40,marginBottom:12}}>✅</div>
+                <div style={{fontSize:40,marginBottom:12}}></div>
                 <div style={{fontWeight:700,color:'#16a34a'}}>Aucune alerte en cours</div>
               </div>
             ) : alertesPrescriptions.map((a:any,i:number)=>(
               <div key={i} style={{background:'white',borderRadius:14,padding:16,border:`1px solid ${a.type==='labo'?'#3b82f6':'#a855f7'}`,marginBottom:12}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8}}>
                   <span style={{background:a.type==='labo'?'#eff6ff':'#faf5ff',color:a.type==='labo'?'#1d4ed8':'#7e22ce',padding:'3px 10px',borderRadius:20,fontSize:12,fontWeight:700}}>
-                    {a.type==='labo'?'🔬 Laboratoire':'💊 Pharmacie'}
+                    {a.type==='labo'?' Laboratoire':' Pharmacie'}
                   </span>
                   <span style={{color:'#94a3b8',fontSize:12}}>{new Date(a.date).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>
                 </div>
@@ -283,12 +283,12 @@ export default function InfirmierDashboard() {
           </div>
         )}
 
-        {/* ── ONGLET RECHERCHE PAR ID ────────────────────────────────── */}
+        {/*  ONGLET RECHERCHE PAR ID  */}
         {onglet === 'recherche' && (
           <SearchByIdPanel />
         )}
 
-        {/* ── ONGLET VÉRIFICATION PAIEMENT ──────────────────────────── */}
+        {/*  ONGLET VÉRIFICATION PAIEMENT  */}
         {onglet === 'paiement' && (
           <div style={{maxWidth:600}}>
             <p style={{color:'#64748b',fontSize:13,marginBottom:16}}>
@@ -298,7 +298,7 @@ export default function InfirmierDashboard() {
           </div>
         )}
 
-        {/* ── ONGLET FILE D'ATTENTE + SIGNES VITAUX ─────────────────── */}
+        {/*  ONGLET FILE D'ATTENTE + SIGNES VITAUX  */}
         {onglet === 'attente' && (
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
             {/* Liste dossiers en attente */}
@@ -330,7 +330,7 @@ export default function InfirmierDashboard() {
                 </div>
               ))}
               <div style={{ marginTop:10, background:'#fffbeb', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#92400e' }}>
-                ⚠️ Accès via ID patient uniquement — jamais par nom
+                 Accès via ID patient uniquement — jamais par nom
               </div>
             </div>
 
@@ -385,7 +385,7 @@ export default function InfirmierDashboard() {
                     width:'100%', color:'white', border:'none', borderRadius:12, padding:12, fontWeight:700, cursor:'pointer', fontSize:14,
                     background: alertes.length > 0 ? 'linear-gradient(135deg,#dc2626,#b91c1c)' : 'linear-gradient(135deg,#0d9488,#0f766e)'
                   }}>
-                    {submitting ? 'Enregistrement...' : alertes.length > 0 ? '🚨 Enregistrer (URGENT)' : '✓ Enregistrer + File d\'attente'}
+                    {submitting ? 'Enregistrement...' : alertes.length > 0 ? ' Enregistrer (URGENT)' : ' Enregistrer + File d\'attente'}
                   </button>
                 </>
               )}
@@ -397,7 +397,7 @@ export default function InfirmierDashboard() {
   )
 }
 
-// ── Composant recherche par ID patient ─────────────────────────────────────
+//  Composant recherche par ID patient 
 function SearchByIdPanel() {
   const [patientId,  setPatientId]  = useState('')
   const [result,     setResult]     = useState<any>(null)
@@ -439,11 +439,11 @@ function SearchByIdPanel() {
   return (
     <div style={{ maxWidth:680 }}>
       <div style={{ background:'#fffbeb', border:'1px solid #fcd34d', borderRadius:12, padding:'10px 16px', marginBottom:20, fontSize:13, color:'#92400e' }}>
-        🔒 Impression uniquement — Recherchez par ID patient. Vous n'avez pas accès au dossier médical.
+         Impression uniquement — Recherchez par ID patient. Vous n'avez pas accès au dossier médical.
       </div>
 
       <div style={{ background:'white', borderRadius:18, padding:24, border:'1px solid #e2e8f0', marginBottom:16 }}>
-        <h3 style={{ fontWeight:700, fontSize:14, color:'#0f172a', marginBottom:14 }}>🔍 Rechercher un patient par ID</h3>
+        <h3 style={{ fontWeight:700, fontSize:14, color:'#0f172a', marginBottom:14 }}> Rechercher un patient par ID</h3>
         <div style={{ display:'flex', gap:10 }}>
           <input value={patientId} onChange={e => setPatientId(e.target.value.toUpperCase())}
             onKeyDown={e => e.key === 'Enter' && chercher()}
@@ -453,7 +453,7 @@ function SearchByIdPanel() {
             <Search size={16} /> {loading ? 'Recherche...' : 'Chercher'}
           </button>
         </div>
-        {error && <div style={{ marginTop:10, color:'#dc2626', fontSize:13, display:'flex', alignItems:'center', gap:6 }}>⚠️ {error}</div>}
+        {error && <div style={{ marginTop:10, color:'#dc2626', fontSize:13, display:'flex', alignItems:'center', gap:6 }}> {error}</div>}
       </div>
 
       {result && (

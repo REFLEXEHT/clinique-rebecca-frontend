@@ -1,14 +1,17 @@
+'use client'
+
 /**
  * lib/print.ts — Module d'impression universel Clinique de la Rebecca
  * Tous les documents imprimables passent par ce module.
  */
 
 const CLINIQUE = {
-  nom:       'CLINIQUE DE LA REBECCA',
-  adresse:   '#44 Rue Rebecca, Pétion-Ville, Haïti',
-  tel:       '(509) 4858-5757',
-  email:     'clinique.rebecca@gmail.com',
-  logo:      '🏥',
+  nom:     'CLINIQUE DE LA REBECCA',
+  adresse: '#44 Rue Rebecca, Pétion-Ville, Haïti',
+  tel:     '(509) 4858-5757',
+  tel_wa:  'https://wa.me/50948585757',
+  tel_call:'tel:+50948585757',
+  email:   'clinique.rebecca@gmail.com',
 }
 
 const BASE_STYLE = `
@@ -52,7 +55,37 @@ tr:nth-child(even) td{background:#f8fafc}
 function openPrint(html: string, width = 820, height = 1050) {
   const w = window.open('', '_blank', `width=${width},height=${height},scrollbars=yes`)
   if (!w) {
-    alert("⚠️ Autorisez les popups pour ce site afin d'imprimer les documents.")
+    alert(" Autorisez les popups pour ce site afin d'imprimer les documents.")
+    return
+  }
+  w.document.write(html)
+  w.document.close()
+  w.focus()
+  // Délai pour laisser les styles se charger
+  setTimeout(() => w.print(), 600)
+}
+
+function clinicHeader(titre: string, refDoc?: string) {
+  return `
+<div class="header">
+  <div class="clinic-name">${CLINIQUE.nom}</div>
+  <div class="clinic-sub">${CLINIQUE.adresse}</div>
+  <div class="clinic-sub">
+    Tél: <a href="${CLINIQUE.tel_call}" style="color:#1641C8">${CLINIQUE.tel}</a>
+    &nbsp;&nbsp;|&nbsp;&nbsp;
+    <a href="${CLINIQUE.tel_wa}" target="_blank" style="color:#16a34a">WhatsApp</a>
+    &nbsp;&nbsp;·&nbsp;&nbsp; ${CLINIQUE.email}
+  </div>
+  <div class="doc-title">${titre}</div>
+  ${refDoc ? `<div class="doc-ref">${refDoc}</div>` : ''}
+</div>`
+}
+
+
+function openPrint(html: string, width = 820, height = 1050) {
+  const w = window.open('', '_blank', `width=${width},height=${height},scrollbars=yes`)
+  if (!w) {
+    alert(" Autorisez les popups pour ce site afin d'imprimer les documents.")
     return
   }
   w.document.write(html)
@@ -83,9 +116,9 @@ function clinicFooter(extra = '') {
 </div>`
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // REÇU D'ENREGISTREMENT (caissier → nouveau patient)
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 export function imprimerRecuEnregistrement(data: {
   patient: { id: number; numero: string; nom: string; telephone?: string; is_premiere_visite?: boolean }
   ticket: string
@@ -98,8 +131,8 @@ export function imprimerRecuEnregistrement(data: {
   recu_numero?: string
 }) {
   const modeLabel: Record<string, string> = {
-    especes: '💵 Espèces', moncash: '📱 MonCash', natcash: '📲 NatCash',
-    carte: '💳 Carte bancaire', zelle: '🇺🇸 Zelle (USD)'
+    especes: ' Espèces', moncash: ' MonCash', natcash: ' NatCash',
+    carte: ' Carte bancaire', zelle: ' Zelle (USD)'
   }
   const mode = data.mode_paiement || 'especes'
   const now = new Date().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
@@ -124,7 +157,7 @@ body{width:80mm;max-width:80mm;font-size:12px}
 </div>
 
 <div class="ticket-box">
-  <div style="font-size:9px;font-weight:700;color:#1641C8;text-transform:uppercase;margin-bottom:3px">🎫 Ticket Infirmière</div>
+  <div style="font-size:9px;font-weight:700;color:#1641C8;text-transform:uppercase;margin-bottom:3px"> Ticket Infirmière</div>
   <div class="ticket-num">#${data.ticket}</div>
 </div>
 
@@ -133,7 +166,7 @@ body{width:80mm;max-width:80mm;font-size:12px}
 <div class="row"><span class="row-key">Tél.</span><span class="row-val">${data.patient.telephone || '—'}</span></div>
 <div class="row"><span class="row-key">Service</span><span class="row-val">${data.service}</span></div>
 ${data.medecin_nom ? `<div class="row"><span class="row-key">Praticien</span><span class="row-val">${data.medecin_nom}</span></div>` : ''}
-<div class="row"><span class="row-key">Priorité</span><span class="row-val">${data.priorite === 'urgent' ? '🔴 URGENT' : '🟢 Normal'}</span></div>
+<div class="row"><span class="row-key">Priorité</span><span class="row-val">${data.priorite === 'urgent' ? ' URGENT' : '🟢 Normal'}</span></div>
 <div class="row"><span class="row-key">Mode paiement</span><span class="row-val">${modeLabel[mode] || mode}</span></div>
 ${data.recu_numero ? `<div class="row"><span class="row-key">N° Reçu</span><span class="row-val" style="font-family:monospace">${data.recu_numero}</span></div>` : ''}
 
@@ -144,7 +177,7 @@ ${data.montant > 0 ? `
   <div class="total-htg">${Number(data.montant).toLocaleString('fr-FR')} HTG</div>
 </div>` : `
 <div style="text-align:center;font-size:10px;color:#d97706;font-weight:700;margin:8px 0;padding:8px;background:#fef9c3;border-radius:6px">
-  ⚠️ Paiement à effectuer à la caisse
+   Paiement à effectuer à la caisse
 </div>`}
 <hr style="border:none;border-top:1px dashed #ccc;margin:6px 0">
 <div style="text-align:center;font-size:9px;color:#94a3b8;line-height:1.7">
@@ -152,15 +185,15 @@ ${data.montant > 0 ? `
   Conservez ce reçu comme justificatif<br>
   Merci de votre confiance
 </div>
-<button class="btn-print" onclick="window.print()">🖨 Imprimer ce reçu</button>
+<button class="btn-print" onclick="window.print()"> Imprimer ce reçu</button>
 </body></html>`
 
   openPrint(html, 420, 720)
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // REÇU DE PAIEMENT (transaction isolée)
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 export function imprimerRecuPaiement(p: {
   recu_numero?: string; numero_piece?: string
   service?: string; description?: string
@@ -172,8 +205,8 @@ export function imprimerRecuPaiement(p: {
   date?: string
 }) {
   const modeLabel: Record<string, string> = {
-    especes: '💵 Espèces', moncash: '📱 MonCash', natcash: '📲 NatCash',
-    carte: '💳 Carte bancaire', zelle: '🇺🇸 Zelle (USD)'
+    especes: ' Espèces', moncash: ' MonCash', natcash: ' NatCash',
+    carte: ' Carte bancaire', zelle: ' Zelle (USD)'
   }
   const refNum = (p.recu_numero || p.numero_piece || '—').toString().replace(/JournalEnum\./g,'').replace(/[<>]/g,'').trim()
   const now = new Date().toLocaleString('fr-FR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' })
@@ -182,7 +215,7 @@ export function imprimerRecuPaiement(p: {
 <style>${BASE_STYLE}body{width:80mm;max-width:80mm;font-size:12px}</style></head><body>
 <div style="font-size:14px;font-weight:900;color:#1641C8;text-align:center">${CLINIQUE.logo} CLINIQUE DE LA REBECCA</div>
 <div style="font-size:9px;color:#666;text-align:center;margin-bottom:4px">${CLINIQUE.tel}</div>
-<div style="font-size:10px;font-weight:700;text-align:center;color:#374151;margin-bottom:6px">📋 REÇU DE PAIEMENT · ${now}</div>
+<div style="font-size:10px;font-weight:700;text-align:center;color:#374151;margin-bottom:6px"> REÇU DE PAIEMENT · ${now}</div>
 <div style="text-align:center;font-family:monospace;font-size:13px;font-weight:900;color:#1641C8;background:#eff6ff;border-radius:6px;padding:6px;margin:6px 0">🧾 ${refNum}</div>
 <hr style="border:none;border-top:1px dashed #ccc;margin:6px 0">
 ${p.patient_nom ? `<div class="row"><span class="row-key">Patient</span><span class="row-val">${p.patient_nom}</span></div>` : ''}
@@ -201,15 +234,15 @@ ${p.reference ? `<div class="row"><span class="row-key">Référence</span><span 
   Clinique de la Rebecca · Pétion-Ville, Haïti<br>
   Tél: ${CLINIQUE.tel}
 </div>
-<button class="btn-print" onclick="window.print()">🖨 Imprimer le reçu</button>
+<button class="btn-print" onclick="window.print()"> Imprimer le reçu</button>
 </body></html>`
 
   openPrint(html, 420, 640)
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // FACTURE OFFICIELLE (A4 — pour remboursement assurance)
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 export function imprimerFactureOfficielle(data: {
   patient: { numero: string; nom: string; telephone?: string; adresse?: string; age?: number }
   service: string
@@ -272,7 +305,7 @@ export function imprimerFactureOfficielle(data: {
     <div class="section-title">Paiement</div>
     <div class="row"><span class="row-key">Mode de paiement</span><span class="row-val">${modeLabel[data.mode_paiement] || data.mode_paiement}</span></div>
     <div class="row"><span class="row-key">Date</span><span class="row-val">${dateDoc}</span></div>
-    <div class="row"><span class="row-key">Statut</span><span class="row-val"><span class="badge badge-green">✅ ACQUITTÉ</span></span></div>
+    <div class="row"><span class="row-key">Statut</span><span class="row-val"><span class="badge badge-green"> ACQUITTÉ</span></span></div>
   </div>
 
   <div class="signature-box">
@@ -287,16 +320,16 @@ export function imprimerFactureOfficielle(data: {
   </div>
 
   ${clinicFooter('Soins médicaux exonérés de la TCA selon la loi haïtienne')}
-  <button class="btn-print" onclick="window.print()">🖨 Imprimer la facture officielle</button>
+  <button class="btn-print" onclick="window.print()"> Imprimer la facture officielle</button>
 </div>
 </body></html>`
 
   openPrint(html, 820, 1100)
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // CERTIFICAT MÉDICAL
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 export function imprimerCertificatMedical(data: {
   patient: { numero: string; nom: string; age?: number; telephone?: string }
   medecin_nom: string
@@ -348,16 +381,16 @@ export function imprimerCertificatMedical(data: {
   </div>
 
   ${clinicFooter('Ce certificat est établi à la demande de l\'intéressé(e) pour faire valoir ce que de droit.')}
-  <button class="btn-print" onclick="window.print()">🖨 Imprimer le certificat</button>
+  <button class="btn-print" onclick="window.print()"> Imprimer le certificat</button>
 </div>
 </body></html>`
 
   openPrint(html, 820, 1100)
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // RAPPORT COMPTABLE A4 (avec données IA)
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 export function imprimerRapportComptable(data: {
   moisNom: string; annee: number
   totalProduits: number; totalCharges: number; resultatNet: number
@@ -408,11 +441,11 @@ export function imprimerRapportComptable(data: {
 
   ${data.anomalies?.length > 0 ? `
   <div class="section" style="background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:12px">
-    <div class="section-title" style="color:#dc2626">⚠️ Anomalies Comptables (${data.anomalies.length})</div>
+    <div class="section-title" style="color:#dc2626"> Anomalies Comptables (${data.anomalies.length})</div>
     ${data.anomalies.map(a => `<div style="font-size:12px;color:#dc2626;margin:3px 0">• ${a}</div>`).join('')}
   </div>` : `
   <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:10px;margin-bottom:14px;font-size:12px;color:#16a34a;font-weight:700">
-    ✅ Aucune anomalie comptable détectée — Écritures conformes PCN
+     Aucune anomalie comptable détectée — Écritures conformes PCN
   </div>`}
 
   <div class="section">
@@ -453,16 +486,16 @@ export function imprimerRapportComptable(data: {
   </div>
 
   ${clinicFooter('Document confidentiel · Usage interne uniquement · PCN Haïti + IFRS PME')}
-  <button class="btn-print" onclick="window.print()">🖨 Imprimer le rapport</button>
+  <button class="btn-print" onclick="window.print()"> Imprimer le rapport</button>
 </div>
 </body></html>`
 
   openPrint(html, 870, 1150)
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // RÉSULTATS DE LABORATOIRE (A4)
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 export function imprimerResultatLabo(data: {
   patient: { numero: string; nom: string; age?: number; sexe?: string; telephone?: string }
   examens: Array<{
@@ -484,7 +517,7 @@ export function imprimerResultatLabo(data: {
 <tr style="${e.critique ? 'background:#fff0f0;' : ''}">
   ${e.code ? `<td style="font-family:monospace;font-size:11px;color:#64748b">${e.code}</td>` : '<td style="color:#94a3b8">—</td>'}
   <td style="font-weight:600">${e.libelle}</td>
-  <td style="font-weight:800;font-family:monospace;font-size:13px;${e.critique ? 'color:#dc2626;' : 'color:#0f172a;'}">${e.valeur}${e.critique ? ' ⚠️' : ''}</td>
+  <td style="font-weight:800;font-family:monospace;font-size:13px;${e.critique ? 'color:#dc2626;' : 'color:#0f172a;'}">${e.valeur}${e.critique ? ' ' : ''}</td>
   <td style="color:#64748b;font-size:12px">${e.unite || '—'}</td>
   <td style="color:#94a3b8;font-size:11px;white-space:nowrap">${e.reference || '—'}</td>
   ${e.methode ? `<td style="color:#94a3b8;font-size:10px">${e.methode}</td>` : ''}
@@ -508,7 +541,7 @@ ${BASE_STYLE}
   <!-- EN-TÊTE OFFICIELLE -->
   <div class="header">
     <div style="display:flex;align-items:center;gap:16px;justify-content:center;margin-bottom:8px">
-      <div style="font-size:36px">🏥</div>
+      <div style="font-size:36px"></div>
       <div>
         <div class="clinic-name">${CLINIQUE.nom}</div>
         <div class="clinic-sub">${CLINIQUE.adresse}</div>
@@ -541,7 +574,7 @@ ${BASE_STYLE}
   </div>
 
   <!-- BANNIÈRE VALEURS CRITIQUES -->
-  ${hasCritique ? '<div class="critique-banner">⚠️ VALEURS CRITIQUES DÉTECTÉES — CONTACTER LE PRESCRIPTEUR IMMÉDIATEMENT</div>' : ''}
+  ${hasCritique ? '<div class="critique-banner"> VALEURS CRITIQUES DÉTECTÉES — CONTACTER LE PRESCRIPTEUR IMMÉDIATEMENT</div>' : ''}
 
   <!-- TABLEAU DES RÉSULTATS -->
   <div class="section">
@@ -565,7 +598,7 @@ ${BASE_STYLE}
   <!-- SIGNATURE TECHNICIEN UNIQUEMENT -->
   <div class="tech-box">
     <div style="flex:1">
-      <div class="tech-title">🔬 Document émis par le laboratoire</div>
+      <div class="tech-title"> Document émis par le laboratoire</div>
       <div class="tech-name">${data.technicien}</div>
       <div style="font-size:11px;color:#16a34a;margin-top:2px">Technicien de Laboratoire · ${CLINIQUE.nom}</div>
       <div style="font-size:10px;color:#94a3b8;margin-top:4px">Ce document certifie l'exactitude des résultats analysés</div>
@@ -580,7 +613,7 @@ ${BASE_STYLE}
   </div>
 
   ${clinicFooter('Document confidentiel · Résultats valables 3 mois · Signé par le technicien de laboratoire uniquement')}
-  <button class="btn-print" onclick="window.print()">🖨 Imprimer les résultats</button>
+  <button class="btn-print" onclick="window.print()"> Imprimer les résultats</button>
 </div>
 </body></html>`
 
@@ -640,7 +673,7 @@ ${BASE_STYLE}
   <!-- EN-TÊTE OFFICIELLE -->
   <div class="header">
     <div style="display:flex;align-items:center;gap:16px;justify-content:center;margin-bottom:8px">
-      <div style="font-size:36px">🏥</div>
+      <div style="font-size:36px"></div>
       <div>
         <div class="clinic-name">${CLINIQUE.nom}</div>
         <div class="clinic-sub">${CLINIQUE.adresse}</div>
@@ -653,7 +686,7 @@ ${BASE_STYLE}
     </div>
   </div>
 
-  ${data.urgence ? '<div class="urgence-band">🚨 URGENT — TRAITEMENT PRIORITAIRE IMMÉDIAT</div>' : ''}
+  ${data.urgence ? '<div class="urgence-band"> URGENT — TRAITEMENT PRIORITAIRE IMMÉDIAT</div>' : ''}
 
   <!-- INFOS PATIENT + MÉDECIN -->
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:16px">
@@ -702,12 +735,12 @@ ${BASE_STYLE}
         ${data.signature_medecin
           ? `<img src="${data.signature_medecin}" style="height:65px;max-width:175px;object-fit:contain" />`
           : `<div style="text-align:center;color:#94a3b8;font-size:11px;padding:10px">
-              <div style="font-size:24px;opacity:0.3">✍️</div>
+              <div style="font-size:24px;opacity:0.3"></div>
               <div>Signature requise</div>
              </div>`}
       </div>
       <div style="border-top:1px solid #1641C8;padding-top:4px;font-size:10px;font-weight:700;color:#1e40af">${data.medecin_nom}</div>
-      ${!data.signature_medecin ? '<div class="no-sig-warning">⚠️ Document non signé</div>' : ''}
+      ${!data.signature_medecin ? '<div class="no-sig-warning"> Document non signé</div>' : ''}
     </div>
   </div>
 
@@ -717,7 +750,7 @@ ${BASE_STYLE}
       ? "Compte rendu médical confidentiel · Valide uniquement avec signature du médecin"
       : "Document médical confidentiel · Valide uniquement avec signature et cachet du médecin"
   )}
-  <button class="btn-print" onclick="window.print()">🖨 Imprimer</button>
+  <button class="btn-print" onclick="window.print()"> Imprimer</button>
 </div>
 </body></html>`
 
@@ -730,9 +763,9 @@ export function imprimerOrdonnance(data: Parameters<typeof imprimerDocumentMedec
 }
 
 
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 // TICKET RAPIDE (80mm) — générique pour tout reçu thermique
-// ─────────────────────────────────────────────────────────────────────────────
+// 
 export function imprimerTicket80mm(data: {
   titre: string
   lignes: Array<{ label: string; valeur: string; gras?: boolean }>
@@ -760,8 +793,8 @@ body{font-family:Arial,sans-serif;width:80mm;max-width:80mm;margin:0 auto;paddin
 .btn-print{display:block;width:100%;padding:8px;background:#1641C8;color:white;border:none;border-radius:6px;font-size:12px;cursor:pointer;font-weight:700;margin-top:8px}
 @media print{.btn-print{display:none!important}}
 </style></head><body>
-<div class="logo">🏥 CLINIQUE DE LA REBECCA</div>
-<div class="sub">#44 Rue Rebecca, Pétion-Ville · (509) 4858-5757<br>${now}</div>
+<div class="logo"> CLINIQUE DE LA REBECCA</div>
+<div class="sub">#44 Rue Rebecca, Pétion-Ville · <a href="tel:+50948585757" className="contact-link">(509) 4858-5757</a><br>${now}</div>
 <hr class="sep">
 <div class="titre">${data.titre}</div>
 <hr class="sep">
@@ -774,7 +807,7 @@ ${data.totalLabel ? `
 </div>` : ''}
 <hr class="sep">
 <div class="footer-txt">${data.footer || 'Merci de votre confiance — Clinique de la Rebecca'}</div>
-<button class="btn-print" onclick="window.print()">🖨 Imprimer</button>
+<button class="btn-print" onclick="window.print()"> Imprimer</button>
 </body></html>`
 
   openPrint(html, 420, 700)

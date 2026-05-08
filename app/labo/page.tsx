@@ -9,7 +9,7 @@ import { LogOut, Search, AlertTriangle, CheckCircle, Clock, Edit, FlaskConical, 
 import SignaturePad from '@/components/ui/SignaturePad'
 import { imprimerResultatLabo } from '@/lib/print'
 
-// ── 188 examens complets ─────────────────────────────────────────────────
+//  188 examens complets 
 const TOUS_EXAMENS = [
   // Hématologie
   "Hémogramme complet (NFS)","Numération globulaire","Formule sanguine","Hématocrite",
@@ -110,7 +110,7 @@ function detecterValeurCritique(examen: string, resultats: string) {
 }
 
 
-// ── Searchable exam selector ──────────────────────────────────────────────
+//  Searchable exam selector 
 function ExamenSearchable({ value, onChange, examens }: { value: string; onChange: (v: string) => void; examens: string[] }) {
   const [search, setSearch] = useState('')
   const [open,   setOpen]   = useState(false)
@@ -154,7 +154,7 @@ function ExamenSearchable({ value, onChange, examens }: { value: string; onChang
           {search.length > 1 && (
             <button type="button" onClick={() => { onChange(search); setOpen(false) }}
               style={{ width: '100%', padding: '9px 14px', border: 'none', background: '#f8fafc', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: '#1641C8', fontWeight: 600 }}>
-              ✚ Utiliser "{search}" (examen personnalisé)
+               Utiliser "{search}" (examen personnalisé)
             </button>
           )}
         </div>
@@ -235,14 +235,14 @@ export default function LaboPage() {
       let res
       if (editId) {
         res = await api.put(`/labo/resultats/${editId}`, payload)
-        toast.success('Résultat modifié ✓')
+        toast.success('Résultat modifié ')
       } else {
         res = await api.post('/labo/resultats', payload)
-        toast.success('Résultat enregistré — patient notifié ✓')
+        toast.success('Résultat enregistré — patient notifié ')
       }
 
       if (alerteCritique) {
-        toast.error(`🚨 ${alerteCritique} — Médecin prescripteur alerté automatiquement`, {duration: 10000})
+        toast.error(` ${alerteCritique} — Médecin prescripteur alerté automatiquement`, {duration: 10000})
         if (res?.data?.id) {
           await api.post(`/labo/alerte-critique/${res.data.id}`, {
             examen: form.type_examen,
@@ -280,7 +280,7 @@ export default function LaboPage() {
     <div style={{minHeight:'100vh',background:'#f8fafc'}}>
       {/* Navbar */}
       <div style={{background:'linear-gradient(135deg,#0f1e3d,#16a34a)',height:58,display:'flex',alignItems:'center',padding:'0 24px',gap:14}}>
-        <div style={{width:36,height:36,borderRadius:10,background:'rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>🔬</div>
+        <div style={{width:36,height:36,borderRadius:10,background:'rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}></div>
         <div>
           <div style={{color:'white',fontWeight:800,fontSize:14}}>{user?.nom}</div>
           <div style={{color:'rgba(255,255,255,0.6)',fontSize:11}}>Technicien de Laboratoire</div>
@@ -298,9 +298,9 @@ export default function LaboPage() {
       {/* Onglets */}
       <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',display:'flex',gap:4}}>
         {[
-          {k:'saisie',     label:'📝 Saisir résultat'},
-          {k:'historique', label:'📋 Historique'},
-          {k:'alertes',    label:`🚨 Alertes${alertes.length>0?` (${alertes.length})`:''}`},
+          {k:'saisie',     label:' Saisir résultat'},
+          {k:'historique', label:' Historique'},
+          {k:'alertes',    label:` Alertes${alertes.length>0?` (${alertes.length})`:''}`},
         ].map(t => (
           <button key={t.k} onClick={()=>setOnglet(t.k as any)} style={{
             padding:'13px 16px',border:'none',background:'transparent',cursor:'pointer',
@@ -312,14 +312,14 @@ export default function LaboPage() {
 
       <div style={{maxWidth:1000,margin:'0 auto',padding:'24px 20px'}}>
 
-        {/* ── SAISIE ─────────────────────────────────────────────── */}
+        {/*  SAISIE  */}
         {onglet==='saisie' && (
           <div style={{display:'grid',gridTemplateColumns:'1fr 1.5fr',gap:20}}>
 
             {/* Colonne gauche: recherche patient + sélection examen */}
             <div>
               <div style={{background:'white',borderRadius:16,padding:20,border:'1px solid #e2e8f0',marginBottom:16}}>
-                <h3 style={{fontWeight:700,fontSize:15,marginBottom:12,color:'#0f172a'}}>🔍 Patient (ID ou NOM)</h3>
+                <h3 style={{fontWeight:700,fontSize:15,marginBottom:12,color:'#0f172a'}}> Patient (ID ou NOM)</h3>
                 <div style={{display:'flex',gap:8,marginBottom:10}}>
                   <input value={searchPat} onChange={e=>setSearchPat(e.target.value.toUpperCase())}
                     onKeyDown={e=>e.key==='Enter'&&chercherPatient()}
@@ -341,7 +341,7 @@ export default function LaboPage() {
               {/* Sélecteur d'examen avec recherche */}
               <div style={{background:'white',borderRadius:16,padding:16,border:'1px solid #e2e8f0'}}>
                 <div style={{fontWeight:700,fontSize:13,marginBottom:10}}>
-                  🔬 Examen ({TOUS_EXAMENS.length} disponibles)
+                   Examen ({TOUS_EXAMENS.length} disponibles)
                 </div>
                 <input value={searchEx} onChange={e=>setSearchEx(e.target.value)}
                   placeholder="Filtrer les examens..."
@@ -359,7 +359,7 @@ export default function LaboPage() {
                 </div>
                 {form.type_examen && (
                   <div style={{marginTop:8,padding:'6px 10px',background:'#eff6ff',borderRadius:6,fontSize:12,color:'#1641C8',fontWeight:600}}>
-                    ✓ {form.type_examen}
+                     {form.type_examen}
                   </div>
                 )}
               </div>
@@ -368,7 +368,7 @@ export default function LaboPage() {
             {/* Colonne droite: saisie résultats */}
             <div style={{background:'white',borderRadius:16,padding:20,border:`2px solid ${editId?'#f59e0b':'#e2e8f0'}`}}>
               <h3 style={{fontWeight:700,fontSize:15,marginBottom:16,color:'#0f172a'}}>
-                {editId ? '✏️ Modifier (fenêtre 24h)' : '➕ Résultats de l\'examen'}
+                {editId ? ' Modifier (fenêtre 24h)' : ' Résultats de l\'examen'}
               </h3>
 
               {!form.type_examen && (
@@ -380,7 +380,7 @@ export default function LaboPage() {
               {form.type_examen && (
                 <>
                   <div style={{background:'#eff6ff',borderRadius:8,padding:'8px 12px',marginBottom:14,fontSize:13,fontWeight:700,color:'#1641C8'}}>
-                    📋 {form.type_examen}
+                     {form.type_examen}
                   </div>
 
                   <div style={{marginBottom:14}}>
@@ -393,7 +393,7 @@ export default function LaboPage() {
                       style={{width:'100%',padding:'10px 12px',borderRadius:8,border:'1px solid #d1d5db',fontSize:13,resize:'vertical',boxSizing:'border-box' as const,fontFamily:'monospace'}}/>
                     {form.resultats && detecterValeurCritique(form.type_examen, form.resultats) && (
                       <div style={{marginTop:6,background:'#fef2f2',borderRadius:6,padding:'8px 12px',fontSize:12,color:'#dc2626',fontWeight:700,display:'flex',gap:6,alignItems:'center'}}>
-                        <AlertTriangle size={12}/> ⚠️ VALEUR CRITIQUE DÉTECTÉE — Alerte automatique au médecin
+                        <AlertTriangle size={12}/>  VALEUR CRITIQUE DÉTECTÉE — Alerte automatique au médecin
                       </div>
                     )}
                   </div>
@@ -430,7 +430,7 @@ export default function LaboPage() {
                       color:'white',border:'none',borderRadius:10,padding:'13px',fontWeight:700,cursor:'pointer',fontSize:14,
                       opacity:(!patient||!form.type_examen||!form.resultats)?0.5:1
                     }}>
-                      {submitting ? '⏳...' : editId ? '✏️ Modifier' : '✓ Enregistrer & Notifier'}
+                      {submitting ? '⏳...' : editId ? ' Modifier' : ' Enregistrer & Notifier'}
                     </button>
                     {editId && (
                       <button onClick={()=>{setEditId(null);setForm({type_examen:'',resultats:'',notes:'',date_examen:new Date().toISOString().split('T')[0],medecin_prescripteur:''})}}
@@ -445,7 +445,7 @@ export default function LaboPage() {
           </div>
         )}
 
-        {/* ── HISTORIQUE ─────────────────────────────────────────── */}
+        {/*  HISTORIQUE  */}
         {onglet==='historique' && (
           <div>
             <h2 style={{fontWeight:900,fontSize:'1.3rem',color:'#0f172a',marginBottom:16}}>Historique des résultats</h2>
@@ -477,7 +477,7 @@ export default function LaboPage() {
                   <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
                     {r.valeur_critique && (
                       <span style={{background:'#fef2f2',color:'#dc2626',borderRadius:50,padding:'3px 10px',fontSize:11,fontWeight:700}}>
-                        🚨 Critique
+                         Critique
                       </span>
                     )}
                     {canEdit(r) && (
@@ -544,18 +544,18 @@ export default function LaboPage() {
               </div>
             ))}
 
-            {/* ── SIGNATURE TECHNICIEN ── */}
+            {/*  SIGNATURE TECHNICIEN  */}
             <div style={{background:'white',borderRadius:16,padding:20,border:'2px dashed #16a34a',marginTop:20}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
                 <div>
-                  <div style={{fontWeight:800,fontSize:14,color:'#15803d'}}>✍️ Ma signature de technicien</div>
+                  <div style={{fontWeight:800,fontSize:14,color:'#15803d'}}> Ma signature de technicien</div>
                   <div style={{fontSize:12,color:'#64748b',marginTop:2}}>
                     Sera apposée automatiquement sur tous vos résultats imprimés.
                   </div>
                 </div>
                 {maSignature && !showSigPad && (
                   <button onClick={()=>setShowSigPad(true)} style={{background:'#f0fdf4',border:'1px solid #16a34a',color:'#15803d',borderRadius:8,padding:'6px 14px',cursor:'pointer',fontSize:12,fontWeight:700}}>
-                    ✏️ Modifier
+                     Modifier
                   </button>
                 )}
               </div>
@@ -564,7 +564,7 @@ export default function LaboPage() {
                   <div style={{background:'#f0fdf4',border:'1px solid #86efac',borderRadius:10,padding:10}}>
                     <img src={maSignature} style={{height:60,maxWidth:200,objectFit:'contain'}} alt="Ma signature"/>
                   </div>
-                  <div style={{fontSize:12,color:'#16a34a',fontWeight:600}}>✅ Signature enregistrée — apparaîtra sur vos documents</div>
+                  <div style={{fontSize:12,color:'#16a34a',fontWeight:600}}> Signature enregistrée — apparaîtra sur vos documents</div>
                 </div>
               ) : (
                 <div>
@@ -580,11 +580,11 @@ export default function LaboPage() {
                     <button onClick={async()=>{
                       try {
                         await api.post('/medecin/enregistrer-signature', { signature_base64: maSignature })
-                        toast.success('Signature enregistrée ✓')
+                        toast.success('Signature enregistrée ')
                         setShowSigPad(false)
                       } catch(e:any) { toast.error('Erreur enregistrement') }
                     }} style={{marginTop:10,background:'#16a34a',color:'white',border:'none',borderRadius:8,padding:'9px 20px',fontWeight:700,cursor:'pointer',fontSize:13}}>
-                      💾 Enregistrer ma signature
+                       Enregistrer ma signature
                     </button>
                   )}
                 </div>
@@ -593,10 +593,10 @@ export default function LaboPage() {
           </div>
         )}
 
-        {/* ── ALERTES ────────────────────────────────────────────── */}
+        {/*  ALERTES  */}
         {onglet==='alertes' && (
           <div>
-            <h2 style={{fontWeight:900,fontSize:'1.3rem',color:'#dc2626',marginBottom:20}}>🚨 Valeurs critiques</h2>
+            <h2 style={{fontWeight:900,fontSize:'1.3rem',color:'#dc2626',marginBottom:20}}> Valeurs critiques</h2>
             {alertes.length === 0 ? (
               <div style={{background:'#f0fdf4',borderRadius:16,padding:48,textAlign:'center',border:'1px solid #bbf7d0'}}>
                 <CheckCircle size={40} color="#16a34a" style={{marginBottom:12}}/>

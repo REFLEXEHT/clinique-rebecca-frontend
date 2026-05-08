@@ -62,7 +62,7 @@ const CATEGORIES_DEPENSES = [
   'Transport','Formation','Autre'
 ]
 
-// ── Modal aperçu document ──────────────────────────────────────────────────
+//  Modal aperçu document 
 function ModalDocument({ doc, onClose, onPrint }: any) {
   if (!doc) return null
   return (
@@ -86,7 +86,7 @@ function ModalDocument({ doc, onClose, onPrint }: any) {
           {/* En-tête clinique */}
           <div style={{textAlign:'center',borderBottom:`2px solid ${doc.couleur||'#1641C8'}`,paddingBottom:14,marginBottom:20}}>
             <div style={{fontWeight:900,fontSize:16,color:'#1641C8'}}>CLINIQUE DE LA REBECCA</div>
-            <div style={{fontSize:12,color:'#64748b'}}>#44, Rue Rebecca, Pétion-Ville · (509) 4858-5757</div>
+            <div style={{fontSize:12,color:'#64748b'}}>#44, Rue Rebecca, Pétion-Ville · <a href="tel:+50948585757" className="contact-link">(509) 4858-5757</a></div>
             <div style={{fontWeight:800,fontSize:14,marginTop:8,color:doc.couleur||'#1641C8',textTransform:'uppercase'}}>{doc.titre}</div>
           </div>
 
@@ -119,7 +119,7 @@ function ModalDocument({ doc, onClose, onPrint }: any) {
           {/* Vérification signature médecin */}
           {doc.medecin_nom && (
             <div style={{background:'#f0fdf4',borderRadius:10,padding:12,marginBottom:16,display:'flex',alignItems:'center',gap:10,fontSize:13}}>
-              <span style={{fontSize:18}}>✅</span>
+              <span style={{fontSize:18}}></span>
               <div>
                 <strong style={{color:'#16a34a'}}>Document signé par :</strong> {doc.medecin_nom}
                 {doc.medecin_specialite && <span style={{color:'#64748b'}}> · {doc.medecin_specialite}</span>}
@@ -128,7 +128,7 @@ function ModalDocument({ doc, onClose, onPrint }: any) {
           )}
           {!doc.medecin_nom && (
             <div style={{background:'#fef2f2',borderRadius:10,padding:12,marginBottom:16,display:'flex',alignItems:'center',gap:10,fontSize:13}}>
-              <span style={{fontSize:18}}>⚠️</span>
+              <span style={{fontSize:18}}></span>
               <div><strong style={{color:'#dc2626'}}>En attente de signature médicale</strong> — Ce document nécessite une validation du médecin traitant.</div>
             </div>
           )}
@@ -281,7 +281,7 @@ export default function CaissierPage() {
         montant: form.montant, mode_paiement: form.mode_paiement, reference: refEnrichie
       })
       setRecu({...r.data, patient_nom: patient.nom, patient_numero: patient.numero})
-      toast.success('Paiement enregistré — reçu généré ✓')
+      toast.success('Paiement enregistré — reçu généré ')
       setPaiements(prev => [r.data, ...prev])
       setTotalJour(prev => prev + form.montant)
       // Réinitialiser vérification pour prochain paiement
@@ -296,7 +296,7 @@ export default function CaissierPage() {
     setLoadingDepense(true)
     try {
       const r = await api.post('/caissier/depense', {...formDepense, beneficiaire: formDepense.tiers_nom, tiers_type:'fournisseur'})
-      toast.success('Dépense enregistrée ✓')
+      toast.success('Dépense enregistrée ')
       setDepenses(prev => [r.data, ...prev])
       setTotalDepenses(prev => prev + formDepense.montant)
       setFormDepense({categorie:CATEGORIES_DEPENSES[0],description:'',montant:0,mode:'especes',tiers_nom:''})
@@ -384,7 +384,7 @@ export default function CaissierPage() {
         praticien: (formNouv as any).praticien || '',
       })
       setQueueResult(r.data)
-      toast.success(`✓ Patient ${r.data.patient?.numero} — Ticket #${r.data.ticket} envoyé à l'infirmière`)
+      toast.success(` Patient ${r.data.patient?.numero} — Ticket #${r.data.ticket} envoyé à l'infirmière`)
       // Imprimer la facture automatiquement (appel direct dans le même tick)
       imprimerRecuEnregistrement({
         ...r.data,
@@ -464,7 +464,7 @@ Catégories dépenses: ${depenses.map((d:any)=>d.categorie).join(', ')}.
 Solde net: ${totalJour - totalDepenses} HTG.
 Génère un rapport comptable structuré avec: résumé financier, recettes par catégorie, dépenses par catégorie, solde net, recommandations. Max 300 mots.`}], { max_tokens: 600 })
       setRapport(data.content?.[0]?.text || '')
-    } catch (e: any) { setRapport('⚠️ Erreur de génération. Vérifiez la connexion au service IA (clé ANTHROPIC_API_KEY dans les variables Vercel).') }
+    } catch (e: any) { setRapport(' Erreur de génération. Vérifiez la connexion au service IA (clé ANTHROPIC_API_KEY dans les variables Vercel).') }
     finally { setLoadRapport(false) }
   }
 
@@ -474,14 +474,14 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
     <div style={{minHeight:'100vh',background:'#f8fafc'}}>
       {/* Navbar */}
       <div style={{background:'linear-gradient(135deg,#0f1e3d,#d97706)',height:58,display:'flex',alignItems:'center',padding:'0 24px',gap:14,flexWrap:'wrap'}}>
-        <div style={{width:36,height:36,borderRadius:10,background:'rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>💳</div>
+        <div style={{width:36,height:36,borderRadius:10,background:'rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}></div>
         <div>
           <div style={{color:'white',fontWeight:800,fontSize:14}}>{user?.nom}</div>
           <div style={{color:'rgba(255,255,255,0.6)',fontSize:11}}>Caissier(ère)</div>
         </div>
         <div style={{marginLeft:'auto',display:'flex',gap:6}}>
           {[
-            {href:'/caissier/documents',label:'🖨️ Documents'},
+            {href:'/caissier/documents',label:' Documents'},
           ].map(l=>(
             <Link key={l.href} href={l.href} style={{background:'rgba(255,255,255,0.1)',color:'white',textDecoration:'none',borderRadius:8,padding:'6px 12px',fontSize:12,fontWeight:600}}>
               {l.label}
@@ -496,11 +496,11 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
       {/* Onglets */}
       <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 20px',display:'flex',gap:2,overflowX:'auto'}}>
         {[
-          {k:'paiement',  label:'💰 Paiement'},
-          {k:'documents', label:'📋 Documents patient'},
-          {k:'depenses',  label:'💸 Décaissements'},
-          {k:'nouveau',   label:'👤 Nouveau patient'},
-          {k:'rapport',   label:'📊 Rapport comptable IA'},
+          {k:'paiement',  label:' Paiement'},
+          {k:'documents', label:' Documents patient'},
+          {k:'depenses',  label:' Décaissements'},
+          {k:'nouveau',   label:' Nouveau patient'},
+          {k:'rapport',   label:' Rapport comptable IA'},
         ].map(t=>(
           <button key={t.k} onClick={()=>setOnglet(t.k as any)} style={{
             padding:'12px 14px',border:'none',background:'transparent',cursor:'pointer',
@@ -524,13 +524,13 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
 
       <div style={{maxWidth:1100,margin:'0 auto',padding:'20px'}}>
 
-        {/* ── PAIEMENT ───────────────────────────────────────────── */}
+        {/*  PAIEMENT  */}
         {onglet==='paiement' && (
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
             {/* Gauche: formulaire */}
             <div>
               <div style={{background:'white',borderRadius:16,padding:20,border:'1px solid #e2e8f0',marginBottom:14}}>
-                <h3 style={{fontWeight:700,fontSize:15,marginBottom:12,color:'#0f172a'}}>🔍 Patient</h3>
+                <h3 style={{fontWeight:700,fontSize:15,marginBottom:12,color:'#0f172a'}}> Patient</h3>
                 <div style={{display:'flex',gap:8,marginBottom:10}}>
                   <input value={searchPaiement} onChange={e=>setSearchPaiement(e.target.value.toUpperCase())}
                     onKeyDown={e=>e.key==='Enter'&&chercherPatientPaiement()}
@@ -549,7 +549,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
               </div>
 
               <div style={{background:'white',borderRadius:16,padding:20,border:'1px solid #e2e8f0'}}>
-                <h3 style={{fontWeight:700,fontSize:15,marginBottom:14,color:'#0f172a'}}>💳 Service & Paiement</h3>
+                <h3 style={{fontWeight:700,fontSize:15,marginBottom:14,color:'#0f172a'}}> Service & Paiement</h3>
 
                 {/* Service */}
                 <div style={{marginBottom:12}}>
@@ -580,11 +580,11 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   <label style={{display:'block',fontWeight:600,fontSize:13,color:'#374151',marginBottom:6}}>Mode de paiement</label>
                   <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:5}}>
                     {[
-                      {id:'especes',  icon:'💵', label:'Espèces'},
-                      {id:'moncash',  icon:'📱', label:'MonCash'},
-                      {id:'natcash',  icon:'📲', label:'NatCash'},
-                      {id:'carte',    icon:'💳', label:'Carte'},
-                      {id:'zelle',    icon:'🇺🇸', label:'Zelle'},
+                      {id:'especes',  icon:'', label:'Espèces'},
+                      {id:'moncash',  icon:'', label:'MonCash'},
+                      {id:'natcash',  icon:'', label:'NatCash'},
+                      {id:'carte',    icon:'', label:'Carte'},
+                      {id:'zelle',    icon:'', label:'Zelle'},
                     ].map(m=>(
                       <button key={m.id} type="button" onClick={()=>setForm(p=>({...p,mode_paiement:m.id,reference:'',paiementVerifie:false}))} style={{
                         padding:'7px 3px',borderRadius:8,border:`2px solid ${form.mode_paiement===m.id?'#d97706':'#e2e8f0'}`,
@@ -595,18 +595,18 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   </div>
                 </div>
 
-                {/* ── ESPÈCES : pas de vérification nécessaire ── */}
+                {/*  ESPÈCES : pas de vérification nécessaire  */}
                 {form.mode_paiement==='especes' && (
                   <div style={{background:'#f0fdf4',borderRadius:8,padding:'10px 12px',marginBottom:12,fontSize:13,color:'#16a34a',display:'flex',gap:8,alignItems:'center'}}>
-                    <span style={{fontSize:18}}>✅</span>
+                    <span style={{fontSize:18}}></span>
                     <span>Paiement espèces — aucune vérification requise</span>
                   </div>
                 )}
 
-                {/* ── MONCASH ── */}
+                {/*  MONCASH  */}
                 {form.mode_paiement==='moncash' && (
                   <div style={{background:'#fef3c7',borderRadius:10,padding:12,marginBottom:12,border:'1px solid #fcd34d'}}>
-                    <div style={{fontWeight:700,fontSize:13,color:'#92400e',marginBottom:8}}>📱 Vérification MonCash</div>
+                    <div style={{fontWeight:700,fontSize:13,color:'#92400e',marginBottom:8}}> Vérification MonCash</div>
                     <div style={{fontSize:12,color:'#78350f',marginBottom:10}}>
                       Demandez au patient d'effectuer le transfert MonCash vers notre numéro, puis saisissez son numéro pour confirmer.
                     </div>
@@ -641,21 +641,21 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                             montant:form.montant
                           })
                           setForm(p=>({...p,paiementVerifie:true,reference:r.data.reference||form.reference}))
-                          toast.success(r.data.message||'MonCash vérifié ✓')
+                          toast.success(r.data.message||'MonCash vérifié ')
                         }catch(e:any){toast.error(e?.response?.data?.detail||'Numéro invalide')}
                       }}
                       style={{width:'100%',background:(form as any).paiementVerifie?'#16a34a':'#d97706',color:'white',border:'none',borderRadius:8,padding:'9px',fontWeight:700,cursor:'pointer',fontSize:13,
                         opacity:!(form as any).tel_moncash?0.5:1}}
                     >
-                      {(form as any).paiementVerifie ? '✅ Numéro MonCash vérifié' : '🔍 Vérifier le numéro MonCash'}
+                      {(form as any).paiementVerifie ? ' Numéro MonCash vérifié' : ' Vérifier le numéro MonCash'}
                     </button>
                   </div>
                 )}
 
-                {/* ── NATCASH ── */}
+                {/*  NATCASH  */}
                 {form.mode_paiement==='natcash' && (
                   <div style={{background:'#eff6ff',borderRadius:10,padding:12,marginBottom:12,border:'1px solid #bfdbfe'}}>
-                    <div style={{fontWeight:700,fontSize:13,color:'#1e40af',marginBottom:8}}>📲 Vérification NatCash</div>
+                    <div style={{fontWeight:700,fontSize:13,color:'#1e40af',marginBottom:8}}> Vérification NatCash</div>
                     <div style={{fontSize:12,color:'#1d4ed8',marginBottom:10}}>
                       Demandez au patient d'effectuer le transfert NatCash, puis saisissez son numéro pour confirmer.
                     </div>
@@ -690,21 +690,21 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                             montant:form.montant
                           })
                           setForm(p=>({...p,paiementVerifie:true}))
-                          toast.success(r.data.message||'NatCash vérifié ✓')
+                          toast.success(r.data.message||'NatCash vérifié ')
                         }catch(e:any){toast.error(e?.response?.data?.detail||'Numéro invalide')}
                       }}
                       style={{width:'100%',background:(form as any).paiementVerifie?'#16a34a':'#1d4ed8',color:'white',border:'none',borderRadius:8,padding:'9px',fontWeight:700,cursor:'pointer',fontSize:13,
                         opacity:!(form as any).tel_natcash?0.5:1}}
                     >
-                      {(form as any).paiementVerifie ? '✅ Numéro NatCash vérifié' : '🔍 Vérifier le numéro NatCash'}
+                      {(form as any).paiementVerifie ? ' Numéro NatCash vérifié' : ' Vérifier le numéro NatCash'}
                     </button>
                   </div>
                 )}
 
-                {/* ── CARTE BANCAIRE ── */}
+                {/*  CARTE BANCAIRE  */}
                 {form.mode_paiement==='carte' && (
                   <div style={{background:'#f5f3ff',borderRadius:10,padding:12,marginBottom:12,border:'1px solid #ddd6fe'}}>
-                    <div style={{fontWeight:700,fontSize:13,color:'#5b21b6',marginBottom:8}}>💳 Informations carte bancaire</div>
+                    <div style={{fontWeight:700,fontSize:13,color:'#5b21b6',marginBottom:8}}> Informations carte bancaire</div>
                     <div style={{fontSize:12,color:'#6d28d9',marginBottom:10}}>
                       Les données de carte ne sont jamais stockées — traitement sécurisé uniquement.
                     </div>
@@ -776,22 +776,22 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                             montant:form.montant
                           })
                           setForm(p=>({...p,paiementVerifie:true,reference:r.data.token||''}))
-                          toast.success(`${r.data.carte_type} ${r.data.numero_masque} — validée ✓`)
+                          toast.success(`${r.data.carte_type} ${r.data.numero_masque} — validée `)
                         }catch(e:any){toast.error(e?.response?.data?.detail||'Carte invalide')}
                       }}
                       style={{width:'100%',background:(form as any).paiementVerifie?'#16a34a':'#7c3aed',color:'white',border:'none',borderRadius:8,padding:'9px',fontWeight:700,cursor:'pointer',fontSize:13}}
                     >
-                      {(form as any).paiementVerifie ? '✅ Carte validée' : '🔐 Valider la carte'}
+                      {(form as any).paiementVerifie ? ' Carte validée' : ' Valider la carte'}
                     </button>
                   </div>
                 )}
 
-                {/* ── ZELLE ── */}
+                {/*  ZELLE  */}
                 {form.mode_paiement==='zelle' && (
                   <div style={{background:'#f0f9ff',borderRadius:10,padding:12,marginBottom:12,border:'1px solid #7dd3fc'}}>
-                    <div style={{fontWeight:700,fontSize:13,color:'#0369a1',marginBottom:8}}>🇺🇸 Paiement Zelle (USD)</div>
+                    <div style={{fontWeight:700,fontSize:13,color:'#0369a1',marginBottom:8}}> Paiement Zelle (USD)</div>
                     <div style={{background:'#fef9c3',borderRadius:7,padding:'8px 10px',marginBottom:10,fontSize:12,color:'#92400e'}}>
-                      ⚠️ Confirmez visuellement la réception sur votre application bancaire <strong>avant</strong> de valider.
+                       Confirmez visuellement la réception sur votre application bancaire <strong>avant</strong> de valider.
                     </div>
                     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginBottom:8}}>
                       <div style={{gridColumn:'1/-1'}}>
@@ -834,7 +834,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                     </div>
                     {form.montant>0&&tauxChange>0&&(
                       <div style={{background:'#e0f2fe',borderRadius:7,padding:'6px 10px',marginBottom:8,fontSize:12,color:'#0369a1',fontWeight:600}}>
-                        💱 Équivalent : ${Math.round(form.montant/tauxChange*100)/100} USD (taux: 1 USD = {tauxChange} HTG)
+                         Équivalent : ${Math.round(form.montant/tauxChange*100)/100} USD (taux: 1 USD = {tauxChange} HTG)
                       </div>
                     )}
                     <button
@@ -853,12 +853,12 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                             reference:form.reference,
                           })
                           setForm(p=>({...p,paiementVerifie:true}))
-                          toast.success("Zelle confirmé ✓ — n'oubliez pas de vérifier sur l'app bancaire")
+                          toast.success("Zelle confirmé  — n'oubliez pas de vérifier sur l'app bancaire")
                         }catch(e:any){toast.error(e?.response?.data?.detail||'Informations Zelle invalides')}
                       }}
                       style={{width:'100%',background:(form as any).paiementVerifie?'#16a34a':'#0284c7',color:'white',border:'none',borderRadius:8,padding:'9px',fontWeight:700,cursor:'pointer',fontSize:13}}
                     >
-                      {(form as any).paiementVerifie ? '✅ Zelle confirmé' : '✓ Confirmer la réception Zelle'}
+                      {(form as any).paiementVerifie ? ' Zelle confirmé' : ' Confirmer la réception Zelle'}
                     </button>
                   </div>
                 )}
@@ -875,7 +875,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   {!patient ? "Recherchez un patient d'abord" :
                    !form.montant ? 'Saisissez un montant' :
                    form.mode_paiement!=='especes'&&!(form as any).paiementVerifie ? `Vérifiez le ${form.mode_paiement} d'abord` :
-                   '✓ Enregistrer le paiement'}
+                   ' Enregistrer le paiement'}
                 </button>
               </div>
             </div>
@@ -907,7 +907,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
 
               <div style={{background:'white',borderRadius:16,padding:18,border:'1px solid #e2e8f0',maxHeight:420,overflowY:'auto'}}>
                 <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:12}}>
-                  <h3 style={{fontWeight:700,fontSize:14,margin:0}}>📋 Transactions {periodeEncaisse==='jour'?"du jour":"du mois"} ({paiements.length})</h3>
+                  <h3 style={{fontWeight:700,fontSize:14,margin:0}}> Transactions {periodeEncaisse==='jour'?"du jour":"du mois"} ({paiements.length})</h3>
                   <div style={{display:'flex',gap:3,background:'#f1f5f9',borderRadius:7,padding:2}}>
                     {(['jour','mois'] as const).map(p => (
                       <button key={p} onClick={()=>setPeriodeEncaisse(p)} style={{
@@ -930,7 +930,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       <div style={{fontWeight:700,color:'#16a34a'}}>{(p.montant||0).toLocaleString()} HTG</div>
                       <div style={{color:'#94a3b8'}}>{p.mode_paiement}</div>
                     </div>
-                    <button onClick={()=>imprimerRecuPaiement(p)} title="Imprimer reçu" style={{background:'#eff6ff',border:'none',borderRadius:6,padding:'4px 8px',cursor:'pointer',fontSize:11,color:'#1641C8',marginLeft:8}}>🖨</button>
+                    <button onClick={()=>imprimerRecuPaiement(p)} title="Imprimer reçu" style={{background:'#eff6ff',border:'none',borderRadius:6,padding:'4px 8px',cursor:'pointer',fontSize:11,color:'#1641C8',marginLeft:8}}></button>
                   </div>
                 ))}
               </div>
@@ -938,14 +938,14 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
           </div>
         )}
 
-        {/* ── DOCUMENTS PATIENT ──────────────────────────────────── */}
+        {/*  DOCUMENTS PATIENT  */}
         {onglet==='documents' && (
           <div style={{maxWidth:700}}>
             <div style={{background:'#fffbeb',border:'1px solid #fcd34d',borderRadius:12,padding:'10px 16px',marginBottom:20,fontSize:13,color:'#92400e'}}>
-              ℹ️ Vous pouvez apercevoir et imprimer les documents disponibles d'un patient via son ID. Chaque document est vérifié : patient confirmé + signature médicale.
+              ℹ Vous pouvez apercevoir et imprimer les documents disponibles d'un patient via son ID. Chaque document est vérifié : patient confirmé + signature médicale.
             </div>
             <div style={{background:'white',borderRadius:16,padding:22,border:'1px solid #e2e8f0',marginBottom:16}}>
-              <h3 style={{fontWeight:700,fontSize:15,marginBottom:14}}>🔍 Chercher patient par ID</h3>
+              <h3 style={{fontWeight:700,fontSize:15,marginBottom:14}}> Chercher patient par ID</h3>
               <div style={{display:'flex',gap:10}}>
                 <input value={searchDoc} onChange={e=>setSearchDoc(e.target.value.toUpperCase())}
                   onKeyDown={e=>e.key==='Enter'&&chercherPatientDocs()}
@@ -964,7 +964,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                     <div style={{fontWeight:800,fontSize:15,color:'#0f172a'}}>{patientDoc.nom}</div>
                     <div style={{fontFamily:'monospace',color:'#16a34a',fontWeight:700}}>{patientDoc.numero}</div>
                   </div>
-                  <span style={{background:'#f0fdf4',color:'#16a34a',borderRadius:50,padding:'4px 12px',fontSize:12,fontWeight:700}}>✓ Patient identifié</span>
+                  <span style={{background:'#f0fdf4',color:'#16a34a',borderRadius:50,padding:'4px 12px',fontSize:12,fontWeight:700}}> Patient identifié</span>
                 </div>
 
                 {docsDispos.length===0 ? (
@@ -991,11 +991,11 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
           </div>
         )}
 
-        {/* ── DÉCAISSEMENTS ──────────────────────────────────────── */}
+        {/*  DÉCAISSEMENTS  */}
         {onglet==='depenses' && (
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
             <div style={{background:'white',borderRadius:16,padding:22,border:'1px solid #e2e8f0'}}>
-              <h3 style={{fontWeight:700,fontSize:15,marginBottom:16}}>💸 Enregistrer une dépense</h3>
+              <h3 style={{fontWeight:700,fontSize:15,marginBottom:16}}> Enregistrer une dépense</h3>
               <div style={{marginBottom:12}}>
                 <label style={{display:'block',fontWeight:600,fontSize:13,color:'#374151',marginBottom:6}}>Catégorie *</label>
                 <select value={formDepense.categorie} onChange={e=>setFormDepense(p=>({...p,categorie:e.target.value}))}
@@ -1010,7 +1010,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   style={{width:'100%',padding:'10px 12px',borderRadius:8,border:'1px solid #d1d5db',fontSize:14,boxSizing:'border-box' as const}}/>
               </div>
               <div style={{marginBottom:12}}>
-                <label style={{display:'block',fontWeight:700,fontSize:13,color:'#dc2626',marginBottom:6}}>🏢 Remis à — Bénéficiaire *</label>
+                <label style={{display:'block',fontWeight:700,fontSize:13,color:'#dc2626',marginBottom:6}}> Remis à — Bénéficiaire *</label>
                 <input value={formDepense.tiers_nom||''} onChange={e=>setFormDepense(p=>({...p,tiers_nom:e.target.value}))}
                   placeholder="Nom du fournisseur, médecin, employé payé..."
                   style={{width:'100%',padding:'10px 12px',borderRadius:8,border:'2px solid #fca5a5',fontSize:14,boxSizing:'border-box' as const}}/>
@@ -1037,7 +1037,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                 width:'100%',background:'linear-gradient(135deg,#dc2626,#b91c1c)',color:'white',
                 border:'none',borderRadius:10,padding:'12px',fontWeight:700,cursor:'pointer',fontSize:14,
                 opacity:(!formDepense.montant||!formDepense.description||loadingDepense)?0.5:1
-              }}>{loadingDepense ? '⏳ Enregistrement...' : '✓ Enregistrer la dépense'}</button>
+              }}>{loadingDepense ? '⏳ Enregistrement...' : ' Enregistrer la dépense'}</button>
             </div>
 
             <div style={{background:'white',borderRadius:16,padding:18,border:'1px solid #e2e8f0',maxHeight:500,overflowY:'auto'}}>
@@ -1072,21 +1072,21 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       <div style={{color:'#94a3b8'}}>{d.mode}</div>
                     </div>
                   </div>
-                  {d.tiers_nom && <div style={{fontSize:11,color:'#92400e',marginTop:2}}>🏢 Remis à: <strong>{d.tiers_nom}</strong></div>}
+                  {d.tiers_nom && <div style={{fontSize:11,color:'#92400e',marginTop:2}}> Remis à: <strong>{d.tiers_nom}</strong></div>}
                 </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* ── NOUVEAU PATIENT ────────────────────────────────────── */}
+        {/*  NOUVEAU PATIENT  */}
         {onglet==='nouveau' && (
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20,alignItems:'start'}}>
             {/* Formulaire */}
             <div style={{background:'white',borderRadius:16,padding:24,border:'1px solid #e2e8f0'}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:16}}>
                 <div>
-                  <h2 style={{fontWeight:800,fontSize:'1.05rem',color:'#0f172a',margin:0}}>👤 Enregistrer un patient</h2>
+                  <h2 style={{fontWeight:800,fontSize:'1.05rem',color:'#0f172a',margin:0}}> Enregistrer un patient</h2>
                   <p style={{color:'#64748b',fontSize:12,margin:'4px 0 0'}}>Le ticket est envoyé à l'infirmière automatiquement.</p>
                 </div>
                 <div style={{background:'linear-gradient(135deg,#0f172a,#1641C8)',borderRadius:10,padding:'8px 14px',textAlign:'center',minWidth:120}}>
@@ -1099,7 +1099,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
 
               {/* Urgence */}
               <div style={{display:'flex',gap:8,marginBottom:14}}>
-                {[{k:'normal',l:'Normal',c:'#1641C8'},{k:'urgent',l:'🚨 Urgent',c:'#dc2626'}].map(p=>(
+                {[{k:'normal',l:'Normal',c:'#1641C8'},{k:'urgent',l:' Urgent',c:'#dc2626'}].map(p=>(
                   <button key={p.k} type="button" onClick={()=>setFormNouv(f=>({...f,priorite:p.k}))} style={{
                     flex:1,padding:'8px',borderRadius:8,border:`2px solid ${formNouv.priorite===p.k?p.c:'#e2e8f0'}`,
                     background:formNouv.priorite===p.k?`${p.c}15`:'white',fontWeight:700,fontSize:13,cursor:'pointer',color:formNouv.priorite===p.k?p.c:'#94a3b8'
@@ -1134,16 +1134,16 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
               {/* SERVICE — Type → Praticien (filtré) → Prix */}
               {(() => {
                 const TYPES = [
-                  {id:'clinique',    icon:'🏥', label:'Clinique Ext.'},
+                  {id:'clinique',    icon:'', label:'Clinique Ext.'},
                   {id:'maternite',   icon:'🤱', label:'Maternité'},
                   {id:'dentisterie', icon:'🦷', label:'Dentisterie'},
                   {id:'physio',      icon:'🦴', label:'Physio'},
-                  {id:'optometrie',  icon:'👁', label:'Optométrie'},
-                  {id:'labo',        icon:'🔬', label:'Laboratoire'},
-                  {id:'pharmacie',   icon:'💊', label:'Pharmacie'},
-                  {id:'observation', icon:'🛏', label:'Observation'},
-                  {id:'sop',         icon:'🔪', label:'SOP'},
-                  {id:'geste',       icon:'⚕', label:'Geste médical'},
+                  {id:'optometrie',  icon:'', label:'Optométrie'},
+                  {id:'labo',        icon:'', label:'Laboratoire'},
+                  {id:'pharmacie',   icon:'', label:'Pharmacie'},
+                  {id:'observation', icon:'', label:'Observation'},
+                  {id:'sop',         icon:'', label:'SOP'},
+                  {id:'geste',       icon:'', label:'Geste médical'},
                 ]
                 const ST   = (formNouv as any).serviceType    || ''
                 const SC   = (formNouv as any).serviceSousCat || ''
@@ -1152,7 +1152,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                 const PRIX_BASE = (formNouv as any).prixBase  || 0
                 const PRAT = (formNouv as any).praticien      || ''
 
-                // ── Helpers ──────────────────────────────────────────────
+                //  Helpers 
                 const resetSvc = (type: string) =>
                   setFormNouv((p:any) => ({...p,
                     serviceType:type, serviceSousCat:'', pharmSearch:'', laboSearch:'',
@@ -1180,7 +1180,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   }
                 }
 
-                // ── Filtres praticiens par service ───────────────────────
+                //  Filtres praticiens par service 
                 // Clinique externe: branches issues des tarifs médecins actifs
                 const BRANCHES = [...new Set(
                   tarifs.filter((t:any) => t.actif).map((t:any) => t.specialite)
@@ -1254,7 +1254,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       ))}
                     </div>
 
-                    {/* ── CLINIQUE EXTERNE ── Branche → Médecin → Prix */}
+                    {/*  CLINIQUE EXTERNE  Branche → Médecin → Prix */}
                     {ST==='clinique' && (
                       <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
                         <select value={SC} onChange={e => setSousCat(e.target.value)} style={selectStyle}>
@@ -1301,7 +1301,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       </div>
                     )}
 
-                    {/* ── MATERNITÉ ── Prestation + médecin gynéco */}
+                    {/*  MATERNITÉ  Prestation + médecin gynéco */}
                     {ST==='maternite' && (
                       <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
                         <select value={formNouv.service} onChange={e => {
@@ -1332,7 +1332,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       </div>
                     )}
 
-                    {/* ── DENTISTERIE ── Acte + praticien auto-saisi */}
+                    {/*  DENTISTERIE  Acte + praticien auto-saisi */}
                     {ST==='dentisterie' && (() => {
                       const dentiste = tarifs.find((t:any) => /dent/i.test(t.specialite||''))
                       return (
@@ -1346,14 +1346,14 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                             {SERVICES_TARIFS.filter((s:any)=>s.cat==='Dentisterie').map((s:any)=>(
                               <option key={s.nom} value={s.nom}>{s.nom} — {s.prix.toLocaleString()} HTG</option>
                             ))}
-                            {tarifsDentiste.length>0&&<option disabled>── Tarifs complets ──</option>}
+                            {tarifsDentiste.length>0&&<option disabled> Tarifs complets </option>}
                             {tarifsDentiste.map((t:any)=>(
                               <option key={t.id} value={t.libelle}>{t.libelle}{t.montant>0?` — ${t.montant.toLocaleString()} HTG`:''}</option>
                             ))}
                           </select>
                           {/* Praticien auto-saisi — modifiable */}
                           <div style={{background:'#f0fdf4',borderRadius:7,padding:'6px 10px',fontSize:12,color:'#16a34a',display:'flex',gap:6,alignItems:'center'}}>
-                            <span>👨‍⚕️</span>
+                            <span>‍</span>
                             <input
                               value={PRAT}
                               onChange={e => setPraticien(e.target.value)}
@@ -1364,7 +1364,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       )
                     })()}
 
-                    {/* ── PHYSIOTHÉRAPIE ── Séance + praticien auto-saisi */}
+                    {/*  PHYSIOTHÉRAPIE  Séance + praticien auto-saisi */}
                     {ST==='physio' && (() => {
                       return (
                         <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
@@ -1389,7 +1389,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       )
                     })()}
 
-                    {/* ── OPTOMÉTRIE ── Consultation + praticien auto-saisi */}
+                    {/*  OPTOMÉTRIE  Consultation + praticien auto-saisi */}
                     {ST==='optometrie' && (() => {
                       return (
                         <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
@@ -1403,7 +1403,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                             ))}
                           </select>
                           <div style={{background:'#f0fdf4',borderRadius:7,padding:'6px 10px',fontSize:12,color:'#16a34a',display:'flex',gap:6,alignItems:'center'}}>
-                            <span>👁️</span>
+                            <span></span>
                             <input
                               value={PRAT}
                               onChange={e => setPraticien(e.target.value)}
@@ -1414,7 +1414,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       )
                     })()}
 
-                    {/* ── OBSERVATION ── Durée */}
+                    {/*  OBSERVATION  Durée */}
                     {ST==='observation' && (
                       <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
                         <select value={formNouv.service} onChange={e => {
@@ -1431,7 +1431,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       </div>
                     )}
 
-                    {/* ── SOP ── Type chirurgie + médecin chirurgien/anesthésiste */}
+                    {/*  SOP  Type chirurgie + médecin chirurgien/anesthésiste */}
                     {ST==='sop' && (
                       <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
                         <select value={formNouv.service} onChange={e => {
@@ -1466,7 +1466,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       </div>
                     )}
 
-                    {/* ── LABORATOIRE ── Autocomplete examens */}
+                    {/*  LABORATOIRE  Autocomplete examens */}
                     {ST==='labo' && (
                       <div style={{position:'relative'}}>
                         <input value={LS} onChange={e => setFormNouv((p:any)=>({...p,laboSearch:e.target.value,service:'',montant:0,prixBase:0}))}
@@ -1495,7 +1495,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       </div>
                     )}
 
-                    {/* ── PHARMACIE ── Autocomplete médicaments */}
+                    {/*  PHARMACIE  Autocomplete médicaments */}
                     {ST==='pharmacie' && (
                       <div style={{position:'relative'}}>
                         <input value={PS} onChange={e => setFormNouv((p:any)=>({...p,pharmSearch:e.target.value,service:'',montant:0,prixBase:0}))}
@@ -1520,7 +1520,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       </div>
                     )}
 
-                    {/* ── GESTE MÉDICAL ── Spécialité → geste du catalogue + praticien de la spécialité */}
+                    {/*  GESTE MÉDICAL  Spécialité → geste du catalogue + praticien de la spécialité */}
                     {ST==='geste' && (
                       <div style={{display:'flex',flexDirection:'column' as const,gap:6}}>
                         <select value={SC} onChange={e => setSousCat(e.target.value)} style={selectStyle}>
@@ -1578,7 +1578,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       </div>
                     )}
 
-                    {/* ── PRIX OVERRIDE (tous services sauf pharmacie/labo) ── */}
+                    {/*  PRIX OVERRIDE (tous services sauf pharmacie/labo)  */}
                     {formNouv.service && ST !== 'pharmacie' && (
                       <div style={{marginTop:8,background:'#f8fafc',borderRadius:8,padding:'10px 12px',border:'1px solid #e2e8f0'}}>
                         <div style={{fontSize:11,color:'#94a3b8',marginBottom:6,fontWeight:600}}>Ajustement du prix</div>
@@ -1607,7 +1607,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                     {/* Confirmation sélection */}
                     {formNouv.service && (
                       <div style={{marginTop:6,padding:'6px 12px',background:'#f0fdf4',border:'1px solid #86efac',borderRadius:7,fontSize:12,color:'#16a34a',fontWeight:600,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                        <span>✓ {formNouv.service}</span>
+                        <span> {formNouv.service}</span>
                         {formNouv.montant > 0 && (
                           <span style={{fontFamily:'monospace'}}>
                             {formNouv.montant.toLocaleString()} HTG
@@ -1655,7 +1655,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       ? "Prénom, NOM et téléphone requis"
                       : !montantOk
                         ? `Vérifiez le paiement ${formNouv.mode_paiement} d'abord`
-                        : "✓ Enregistrer & Envoyer à l'infirmière"}
+                        : " Enregistrer & Envoyer à l'infirmière"}
                   </button>
                 )
               })()}
@@ -1679,13 +1679,13 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   <div style={{fontSize:20,fontWeight:800,marginBottom:2}}>{queueResult.patient?.numero}</div>
                   <div style={{fontSize:15,opacity:0.8,marginBottom:12}}>{queueResult.patient?.nom}</div>
                   <div style={{background:'rgba(255,255,255,0.1)',borderRadius:8,padding:'8px 12px',fontSize:13}}>
-                    <div>📋 Service: <strong>{queueResult.service}</strong></div>
-                    {queueResult.montant>0 && <div>💰 Payé: <strong>{queueResult.montant?.toLocaleString()} HTG</strong></div>}
+                    <div> Service: <strong>{queueResult.service}</strong></div>
+                    {queueResult.montant>0 && <div> Payé: <strong>{queueResult.montant?.toLocaleString()} HTG</strong></div>}
                   </div>
                   <div style={{marginTop:12,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-                    <div style={{fontSize:12,opacity:0.6}}>✅ Envoyé à l'infirmière</div>
+                    <div style={{fontSize:12,opacity:0.6}}> Envoyé à l'infirmière</div>
                     <button onClick={()=>imprimerFactureOf(queueResult)} style={{background:'rgba(255,255,255,0.2)',color:'white',border:'1px solid rgba(255,255,255,0.4)',borderRadius:8,padding:'6px 14px',cursor:'pointer',fontSize:12,fontWeight:700}}>
-                      🖨 Imprimer reçu
+                       Imprimer reçu
                     </button>
                   </div>
                 </div>
@@ -1693,7 +1693,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
 
               {/* Recherche patient */}
               <div style={{background:'white',borderRadius:16,padding:20,border:'1px solid #e2e8f0'}}>
-                <h3 style={{fontWeight:700,fontSize:13,margin:'0 0 12px',color:'#374151'}}>🔍 Rechercher un patient existant</h3>
+                <h3 style={{fontWeight:700,fontSize:13,margin:'0 0 12px',color:'#374151'}}> Rechercher un patient existant</h3>
                 <div style={{display:'flex',gap:8,marginBottom:12}}>
                   <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)}
                     onKeyDown={e=>e.key==='Enter'&&rechercherPatient()}
@@ -1721,13 +1721,13 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
           </div>
         )}
 
-        {/* ── REGISTRE RDV ──────────────────────────────────────── */}
+        {/*  REGISTRE RDV  */}
         {onglet==='registre' && (
           <div>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
-              <h2 style={{fontWeight:900,fontSize:'1.2rem',margin:0}}>📅 Registre des rendez-vous (30 jours)</h2>
+              <h2 style={{fontWeight:900,fontSize:'1.2rem',margin:0}}> Registre des rendez-vous (30 jours)</h2>
               <button onClick={()=>api.get('/registre-rdv?jours=30').then(r=>setRegistre(r.data?.rdvs||[]))} style={{background:'#1641C8',color:'white',border:'none',borderRadius:10,padding:'8px 16px',fontWeight:700,cursor:'pointer',fontSize:13}}>
-                🔄 Actualiser
+                 Actualiser
               </button>
             </div>
             <div style={{background:'white',borderRadius:16,border:'1px solid #e2e8f0',overflow:'hidden'}}>
@@ -1746,10 +1746,10 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                       <td style={{padding:'10px 14px'}}><div style={{fontWeight:600}}>{r.patient_nom}</div><div style={{fontSize:11,color:'#94a3b8'}}>{r.motif}</div></td>
                       <td style={{padding:'10px 14px',color:'#64748b'}}>{r.medecin_nom||'—'}</td>
                       <td style={{padding:'10px 14px',color:'#0d9488',fontWeight:600}}>{r.specialite}</td>
-                      <td style={{padding:'10px 14px'}}><span style={{background:r.type_rdv==='video'?'#f5f3ff':'#eff6ff',color:r.type_rdv==='video'?'#7c3aed':'#1641C8',borderRadius:50,padding:'2px 10px',fontSize:11,fontWeight:700}}>{r.type_rdv==='video'?'📹 Vidéo':'🏥 Présentiel'}</span></td>
+                      <td style={{padding:'10px 14px'}}><span style={{background:r.type_rdv==='video'?'#f5f3ff':'#eff6ff',color:r.type_rdv==='video'?'#7c3aed':'#1641C8',borderRadius:50,padding:'2px 10px',fontSize:11,fontWeight:700}}>{r.type_rdv==='video'?' Vidéo':' Présentiel'}</span></td>
                       <td style={{padding:'10px 14px'}}>
                         <span style={{background:r.statut==='confirme'?'#f0fdf4':r.statut==='en_attente'?'#fffbeb':'#eff6ff',color:r.statut==='confirme'?'#16a34a':r.statut==='en_attente'?'#d97706':'#1641C8',borderRadius:50,padding:'2px 10px',fontSize:11,fontWeight:700}}>
-                          {r.statut==='confirme'?'✓ Confirmé':r.statut==='en_attente'?'⏳ En attente':r.statut==='paiement_effectue'?'💳 Payé':r.statut}
+                          {r.statut==='confirme'?' Confirmé':r.statut==='en_attente'?'⏳ En attente':r.statut==='paiement_effectue'?' Payé':r.statut}
                         </span>
                       </td>
                       <td style={{padding:'10px 14px'}}>
@@ -1758,18 +1758,18 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                           {(r.statut==='en_attente')&&(
                             <button onClick={()=>{setRdvPaiementId(r.id===rdvPaiementId?null:r.id);setRdvPaiementInfo(null)}}
                               style={{background:'#d97706',color:'white',border:'none',borderRadius:7,padding:'5px 12px',fontWeight:700,cursor:'pointer',fontSize:12}}>
-                              💳 {rdvPaiementId===r.id?'Fermer':'Payer'}
+                               {rdvPaiementId===r.id?'Fermer':'Payer'}
                             </button>
                           )}
                           {/* Badge payé */}
                           {r.statut==='paiement_effectue'&&(
-                            <span style={{fontSize:11,color:'#16a34a',fontWeight:700}}>💳 Payé</span>
+                            <span style={{fontSize:11,color:'#16a34a',fontWeight:700}}> Payé</span>
                           )}
                           {/* Panel paiement inline */}
                           {rdvPaiementId===r.id&&r.statut==='en_attente'&&(
                             <div style={{position:'absolute' as const,right:20,zIndex:200,background:'white',borderRadius:14,border:'2px solid #d97706',boxShadow:'0 8px 32px rgba(0,0,0,0.15)',padding:16,width:360,marginTop:4}}>
                               <div style={{fontWeight:700,fontSize:13,marginBottom:10,color:'#0f172a'}}>
-                                💳 Paiement RDV — {r.patient_nom}
+                                 Paiement RDV — {r.patient_nom}
                               </div>
                               <PaiementFlow
                                 montant={r.montant||r.prix_rdv||0}
@@ -1788,7 +1788,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                                       reference:rdvPaiementInfo.reference,
                                       montant:rdvPaiementInfo.montant
                                     })
-                                    toast.success('Paiement enregistré ✓')
+                                    toast.success('Paiement enregistré ')
                                     setRdvPaiementId(null);setRdvPaiementInfo(null)
                                     api.get('/registre-rdv?jours=30').then(res=>setRegistre(res.data?.rdvs||[]))
                                   }catch(e:any){toast.error(e?.response?.data?.detail||'Erreur')}
@@ -1796,7 +1796,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                                 style={{width:'100%',marginTop:10,background:rdvPaiementInfo?.verifie?'#16a34a':'#94a3b8',
                                   color:'white',border:'none',borderRadius:8,padding:'10px',fontWeight:700,cursor:'pointer',fontSize:13}}
                               >
-                                {rdvPaiementInfo?.verifie ? '✓ Confirmer le paiement' : 'Vérifiez le paiement'}
+                                {rdvPaiementInfo?.verifie ? ' Confirmer le paiement' : 'Vérifiez le paiement'}
                               </button>
                               <button onClick={()=>{setRdvPaiementId(null);setRdvPaiementInfo(null)}}
                                 style={{width:'100%',marginTop:6,background:'#f1f5f9',border:'none',borderRadius:8,padding:'7px',cursor:'pointer',fontSize:12,color:'#64748b'}}>
@@ -1808,13 +1808,13 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                           {r.statut==='paiement_effectue'&&(
                             <button onClick={()=>api.post(`/rdv/confirmer/${r.id}`,{}).then(()=>{toast.success('RDV confirmé');api.get('/registre-rdv?jours=30').then(res=>setRegistre(res.data?.rdvs||[]))})}
                               style={{background:'#16a34a',color:'white',border:'none',borderRadius:7,padding:'5px 12px',fontWeight:700,cursor:'pointer',fontSize:12}}>
-                              ✓ Confirmer
+                               Confirmer
                             </button>
                           )}
                           {r.statut==='confirme'&&r.type_rdv==='presentiel'&&(
                             <button onClick={()=>api.post(`/rdv/initiation-physique/${r.id}`,{}).then(res=>{toast.success(`Patient ${res.data.patient_numero} — Dossier créé`)})}
                               style={{background:'#1641C8',color:'white',border:'none',borderRadius:7,padding:'5px 12px',fontWeight:700,cursor:'pointer',fontSize:12}}>
-                              🏥 Initier visite
+                               Initier visite
                             </button>
                           )}
                         </div>
@@ -1828,13 +1828,13 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
           </div>
         )}
 
-        {/* ── RAPPORT IA ─────────────────────────────────────────── */}
+        {/*  RAPPORT IA  */}
         {onglet==='rapport' && (
           <div>
-            {/* ── VERROU MOT DE PASSE CAISSIER ── */}
+            {/*  VERROU MOT DE PASSE CAISSIER  */}
             {!rapportUnlocked ? (
               <div style={{maxWidth:420,margin:'60px auto',textAlign:'center'}}>
-                <div style={{fontSize:48,marginBottom:16}}>🔐</div>
+                <div style={{fontSize:48,marginBottom:16}}></div>
                 <h2 style={{fontWeight:900,fontSize:'1.2rem',color:'#0f172a',marginBottom:8}}>Accès protégé</h2>
                 <p style={{color:'#64748b',fontSize:14,marginBottom:24,lineHeight:1.6}}>
                   Les données financières sont confidentielles.<br/>
@@ -1864,7 +1864,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                     setRapportUnlocked(true);setRapportPwd('')
                   }catch{setRapportPwdErr('Mot de passe incorrect')}
                 }} style={{width:'100%',background:'linear-gradient(135deg,#d97706,#b45309)',color:'white',border:'none',borderRadius:10,padding:'12px',fontWeight:700,cursor:'pointer',fontSize:14}}>
-                  🔓 Confirmer et accéder
+                   Confirmer et accéder
                 </button>
               </div>
             ) : (
@@ -1884,7 +1884,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
                   ))}
                 </div>
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:20}}>
-              <h2 style={{fontWeight:900,fontSize:'1.2rem',margin:0}}>📊 Rapport comptable journalier</h2>
+              <h2 style={{fontWeight:900,fontSize:'1.2rem',margin:0}}> Rapport comptable journalier</h2>
               <div style={{display:'flex',gap:8}}>
                 <button onClick={genererRapport} disabled={loadRapport} style={{background:'linear-gradient(135deg,#d97706,#b45309)',color:'white',border:'none',borderRadius:10,padding:'10px 18px',fontWeight:700,cursor:'pointer',fontSize:14}}>
                   {loadRapport?'⏳ Génération...':'🤖 Générer rapport IA'}
@@ -1897,12 +1897,12 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
 
             {rapport && (
               <div style={{background:'white',borderRadius:16,padding:28,border:'1px solid #e2e8f0',marginBottom:20}}>
-                <div style={{fontWeight:700,color:'#d97706',marginBottom:12,fontSize:15}}>📋 Rapport IA — {new Date().toLocaleDateString('fr-FR')}</div>
+                <div style={{fontWeight:700,color:'#d97706',marginBottom:12,fontSize:15}}> Rapport IA — {new Date().toLocaleDateString('fr-FR')}</div>
                 <div style={{fontSize:14,color:'#374151',lineHeight:1.9,whiteSpace:'pre-wrap'}}>{rapport}</div>
               </div>
             )}
                 <button onClick={()=>{setRapportUnlocked(false);setRapport('')}} style={{marginTop:12,background:'#f1f5f9',border:'none',borderRadius:8,padding:'8px 16px',cursor:'pointer',fontSize:12,color:'#64748b'}}>
-                  🔒 Verrouiller le rapport
+                   Verrouiller le rapport
                 </button>
               </div>
             )}
