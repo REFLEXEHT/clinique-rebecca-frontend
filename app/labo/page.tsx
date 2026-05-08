@@ -668,7 +668,7 @@ export default function LaboPage() {
     <div style={{marginTop:24,background:'white',borderRadius:14,padding:18,border:'1px solid #e2e8f0'}}>
       <div style={{fontWeight:700,fontSize:13,marginBottom:12,color:'#374151'}}>Alertes critiques du jour</div>
       {alertes.length===0 ? (
-        <div style={{color:'#94a3b8',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucune valeur critique aujourd'hui</div>
+        <div style={{color:'#94a3b8',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucune valeur critique aujourd&apos;hui</div>
       ) : alertes.slice(0,5).map((a:any,i:number) => (
         <div key={i} style={{padding:'8px 12px',background:'#fef2f2',borderRadius:8,marginBottom:6,fontSize:13}}>
           <strong>{a.patient_nom}</strong> — {a.libelle} : <span style={{color:'#dc2626',fontWeight:700}}>{a.valeur_observee}</span>
@@ -680,7 +680,7 @@ export default function LaboPage() {
 
 {onglet==='queue' && (
   <div>
-    <h2 style={{fontWeight:900,fontSize:'1.2rem',color:'#0f172a',marginBottom:16}}>File d'attente — Laboratoire</h2>
+    <h2 style={{fontWeight:900,fontSize:'1.2rem',color:'#0f172a',marginBottom:16}}>File d&apos;attente — Laboratoire</h2>
     {queueLabo.length===0 ? (
       <div style={{textAlign:'center',padding:40,color:'#94a3b8'}}>
         <i className="fa-solid fa-flask-vial" style={{fontSize:40,display:'block',marginBottom:12,opacity:0.3}}/>
