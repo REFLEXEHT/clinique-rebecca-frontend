@@ -68,36 +68,6 @@ function openPrint(html: string, width = 820, height = 1050) {
 function clinicHeader(titre: string, refDoc?: string) {
   return `
 <div class="header">
-  <div class="clinic-name">${CLINIQUE.nom}</div>
-  <div class="clinic-sub">${CLINIQUE.adresse}</div>
-  <div class="clinic-sub">
-    Tél: <a href="${CLINIQUE.tel_call}" style="color:#1641C8">${CLINIQUE.tel}</a>
-    &nbsp;&nbsp;|&nbsp;&nbsp;
-    <a href="${CLINIQUE.tel_wa}" target="_blank" style="color:#16a34a">WhatsApp</a>
-    &nbsp;&nbsp;·&nbsp;&nbsp; ${CLINIQUE.email}
-  </div>
-  <div class="doc-title">${titre}</div>
-  ${refDoc ? `<div class="doc-ref">${refDoc}</div>` : ''}
-</div>`
-}
-
-
-function openPrint(html: string, width = 820, height = 1050) {
-  const w = window.open('', '_blank', `width=${width},height=${height},scrollbars=yes`)
-  if (!w) {
-    alert(" Autorisez les popups pour ce site afin d'imprimer les documents.")
-    return
-  }
-  w.document.write(html)
-  w.document.close()
-  w.focus()
-  // Délai pour laisser les styles se charger
-  setTimeout(() => w.print(), 600)
-}
-
-function clinicHeader(titre: string, refDoc?: string) {
-  return `
-<div class="header">
   <div class="clinic-name">${CLINIQUE.logo} ${CLINIQUE.nom}</div>
   <div class="clinic-sub">${CLINIQUE.adresse} · ${CLINIQUE.tel} · ${CLINIQUE.email}</div>
   <div class="doc-title">${titre}</div>
