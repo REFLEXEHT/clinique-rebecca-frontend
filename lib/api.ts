@@ -24,10 +24,14 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
  (res) => res,
  (err) => {
- if (err.response?.status === 401 && typeof window !== 'undefined') {
- localStorage.removeItem('rb_token')
- localStorage.removeItem('rb_user')
- window.location.href = '/login'
+ // Only force logout on 401 from auth endpoints — not from feature endpoints
+ const url = err.config?.url || ''
+ const is401 = err.response?.status === 401
+ const isAuthEndpoint = url.includes('/auth/me') || url.includes('/auth/login')
+ if (is401 && isAuthEndpoint && typeof window !== 'undefined') {
+  localStorage.removeItem('rb_token')
+  localStorage.removeItem('rb_user')
+  window.location.href = '/login'
  }
  return Promise.reject(err)
  }

@@ -983,108 +983,128 @@ export default function MedecinDashboard() {
 }
 
 function AccesDossierDirect({ onOuvrirDossier }: { onOuvrirDossier: (dossier: any, id: any) => void }) {
- const [q, setQ] = React.useState('')
- const [results, setResults] = React.useState<any[]>([])
- const [loading, setLoading] = React.useState(false)
- const [errMsg, setErrMsg] = React.useState('')
+  const [modeRecherche, setModeRecherche] = React.useState<'id'|'nom'>('id')
+  const [qId,      setQId]      = React.useState('')   // #RB-XXXX
+  const [qNom,     setQNom]     = React.useState('')   // Nom complet
+  const [qDdn,     setQDdn]     = React.useState('')   // Date de naissance
+  const [results,  setResults]  = React.useState<any[]>([])
+  const [loading,  setLoading]  = React.useState(false)
+  const [errMsg,   setErrMsg]   = React.useState('')
 
- const chercher = async () => {
- if (!q.trim() || q.trim().length < 2) { setErrMsg('Saisissez au moins 2 caractères'); return }
- setLoading(true); setErrMsg(''); setResults([])
- try {
- const { api } = await import('@/lib/api')
- const r = await api.get('/medecin/chercher-patient', { params: { q: q.trim() } })
- const pts = r.data?.patients || []
- setResults(pts)
- if (pts.length === 0) setErrMsg('Aucun patient trouvé')
- } catch (e: any) {
- setErrMsg(e?.response?.data?.detail || 'Erreur de recherche')
- } finally { setLoading(false) }
- }
+  const chercher = async () => {
+    setLoading(true); setErrMsg(''); setResults([])
+    try {
+      const { api } = await import('@/lib/api')
+      let r: any
+      if (modeRecherche === 'id') {
+        // Condition 1: ID patient seul
+        if (!qId.trim()) { setErrMsg('Saisissez le numéro #RB-XXXX'); setLoading(false); return }
+        r = await api.get('/medecin/chercher-patient', { params: { q: qId.trim() } })
+      } else {
+        // Condition 2: Nom complet ET date de naissance (les deux obligatoires)
+        if (!qNom.trim()) { setErrMsg('Le nom complet est requis'); setLoading(false); return }
+        if (!qDdn) { setErrMsg('La date de naissance est requise avec le nom'); setLoading(false); return }
+        r = await api.get('/medecin/chercher-patient', { params: { nom: qNom.trim(), ddn: qDdn } })
+      }
+      const pts = r.data?.patients || []
+      setResults(pts)
+      if (pts.length === 0) setErrMsg('Aucun patient trouvé')
+    } catch (e: any) {
+      setErrMsg(e?.response?.data?.detail || 'Erreur de recherche')
+    } finally { setLoading(false) }
+  }
 
- const ouvrirDossier = async (patient: any) => {
- try {
- const { api } = await import('@/lib/api')
- const endpoint = patient.dossier_id
- ? `/medecin/dossier/${patient.dossier_id}`
- : `/medecin/dossier-par-patient/${patient.numero}`
- const r = await api.get(endpoint)
- const dossier = r.data?.dossier || r.data
- onOuvrirDossier(dossier, patient.dossier_id || dossier?.id)
- } catch (e: any) {
- alert(e?.response?.data?.detail || 'Impossible de charger le dossier')
- }
- }
+  const ouvrirDossier = async (pat: any) => {
+    try {
+      const { api } = await import('@/lib/api')
+      const r = await api.get(`/medecin/dossier/${pat.id}`)
+      onOuvrirDossier(r.data, pat.id)
+    } catch { setErrMsg("Impossible d'ouvrir ce dossier") }
+  }
 
- return (
- <div style={{ maxWidth: 680 }}>
- <h2 style={{ fontWeight: 900, fontSize: '1.1rem', marginBottom: 8 }}> Accès dossier patient</h2>
- <p style={{ color: '#64748b', fontSize: 13, marginBottom: 16 }}>
- Recherchez un patient par son numéro <strong>#RB-XXXX</strong>, son nom ou son prénom.
- En tant que médecin, vous avez accès direct sans demande préalable.
- </p>
- <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
- <input
- value={q}
- onChange={e => setQ(e.target.value)}
- onKeyDown={e => e.key === 'Enter' && chercher()}
- placeholder="#RB-0042, Jean Pierre, 36186469..."
- style={{ flex: 1, padding: '11px 14px', borderRadius: 10, border: '2px solid #1641C8', fontSize: 14 }}
- autoFocus
- />
- <button onClick={chercher} disabled={loading} style={{
- background: '#1641C8', color: 'white', border: 'none', borderRadius: 10,
- padding: '11px 22px', fontWeight: 700, cursor: 'pointer', fontSize: 14,
- opacity: loading ? 0.7 : 1
- }}>
- {loading ? '' : ' Chercher'}
- </button>
- </div>
+  const inputStyle = { width:'100%',padding:'10px 13px',borderRadius:9,border:'1.5px solid #e2e8f0',fontSize:14,boxSizing:'border-box' as const }
+  const btnStyle = { background:'#1641C8',color:'white',border:'none',borderRadius:9,padding:'10px 18px',fontWeight:700,cursor:'pointer',fontSize:14,whiteSpace:'nowrap' as const }
 
- {errMsg && (
- <div style={{ background: '#fef9c3', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: '#92400e', marginBottom: 12 }}>
- {errMsg}
- </div>
- )}
+  return (
+    <div>
+      {/* Mode selector */}
+      <div style={{display:'flex',gap:8,marginBottom:16}}>
+        <button onClick={()=>{setModeRecherche('id');setResults([]);setErrMsg('')}} style={{
+          flex:1,padding:'10px',borderRadius:9,border:'2px solid',fontWeight:700,fontSize:13,cursor:'pointer',
+          borderColor:modeRecherche==='id'?'#1641C8':'#e2e8f0',
+          background:modeRecherche==='id'?'#eff6ff':'white',
+          color:modeRecherche==='id'?'#1641C8':'#94a3b8'
+        }}>
+          <i className="fa-solid fa-id-card" style={{marginRight:6}}/>
+          Recherche par ID
+        </button>
+        <button onClick={()=>{setModeRecherche('nom');setResults([]);setErrMsg('')}} style={{
+          flex:1,padding:'10px',borderRadius:9,border:'2px solid',fontWeight:700,fontSize:13,cursor:'pointer',
+          borderColor:modeRecherche==='nom'?'#1641C8':'#e2e8f0',
+          background:modeRecherche==='nom'?'#eff6ff':'white',
+          color:modeRecherche==='nom'?'#1641C8':'#94a3b8'
+        }}>
+          <i className="fa-solid fa-user" style={{marginRight:6}}/>
+          Nom + Date naissance
+        </button>
+      </div>
 
- {results.length > 0 && (
- <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
- {results.map((p: any) => (
- <div key={p.id} style={{
- background: 'white', borderRadius: 12, padding: '14px 16px',
- border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 14
- }}>
- <div style={{ flex: 1 }}>
- <div style={{ fontWeight: 800, fontSize: 15, color: '#0f172a' }}>
- {p.nom} {p.prenom}
- <span style={{ fontFamily: 'monospace', fontSize: 12, color: '#1641C8', marginLeft: 10 }}>{p.numero}</span>
- </div>
- <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
- {p.age ? `${p.age} ans · ` : ''}{p.telephone || ''}
- {p.statut_dossier && (
- <span style={{
- marginLeft: 8, padding: '1px 8px', borderRadius: 99,
- background: p.paiement_effectue ? '#f0fdf4' : '#fef9c3',
- color: p.paiement_effectue ? '#16a34a' : '#92400e',
- fontSize: 10, fontWeight: 700
- }}>
- {p.paiement_effectue ? ' Payé' : ' À vérifier'}
- </span>
- )}
- </div>
- </div>
- <button onClick={() => ouvrirDossier(p)} style={{
- background: 'linear-gradient(135deg,#1641C8,#0d9488)', color: 'white',
- border: 'none', borderRadius: 9, padding: '9px 18px',
- fontWeight: 700, cursor: 'pointer', fontSize: 13, whiteSpace: 'nowrap' as const
- }}>
- Ouvrir le dossier
- </button>
- </div>
- ))}
- </div>
- )}
- </div>
- )
+      {modeRecherche === 'id' ? (
+        <div style={{display:'flex',gap:8,marginBottom:8}}>
+          <input value={qId} onChange={e=>setQId(e.target.value)} onKeyDown={e=>e.key==='Enter'&&chercher()}
+            placeholder="#RB-0042 ou numéro de dossier" style={inputStyle} autoFocus/>
+          <button onClick={chercher} disabled={loading} style={btnStyle}>
+            {loading ? '...' : 'Chercher'}
+          </button>
+        </div>
+      ) : (
+        <div style={{marginBottom:8}}>
+          <input value={qNom} onChange={e=>setQNom(e.target.value)}
+            placeholder="Nom complet du patient (ex: Jean PIERRE)" style={{...inputStyle,marginBottom:8}}/>
+          <div style={{display:'flex',gap:8}}>
+            <input type="date" value={qDdn} onChange={e=>setQDdn(e.target.value)} style={{...inputStyle,flex:1}}/>
+            <button onClick={chercher} disabled={loading} style={btnStyle}>
+              {loading ? '...' : 'Chercher'}
+            </button>
+          </div>
+          <div style={{fontSize:11,color:'#94a3b8',marginTop:4}}>
+            Les deux champs sont obligatoires pour cette recherche
+          </div>
+        </div>
+      )}
+
+      {errMsg && <div style={{color:'#dc2626',fontSize:12,marginBottom:8}}>{errMsg}</div>}
+
+      {results.length > 0 && (
+        <div style={{marginTop:10}}>
+          {results.map((p: any) => (
+            <div key={p.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',
+              padding:'10px 14px',background:'#f8fafc',borderRadius:9,marginBottom:6,border:'1px solid #e2e8f0'}}>
+              <div>
+                <div style={{fontWeight:700,fontSize:14}}>{p.prenom} {p.nom}</div>
+                <div style={{fontSize:12,color:'#94a3b8',marginTop:2}}>
+                  {p.numero}
+                  {p.date_naissance && ` · Né(e) le ${new Date(p.date_naissance).toLocaleDateString('fr-FR')}`}
+                  {p.telephone && ` · ${p.telephone}`}
+                </div>
+                <div style={{marginTop:4}}>
+                  <span style={{
+                    background: p.paiement_effectue ? '#f0fdf4' : '#fef2f2',
+                    color: p.paiement_effectue ? '#16a34a' : '#dc2626',
+                    padding:'2px 10px',borderRadius:99,fontSize:11,fontWeight:700
+                  }}>
+                    {p.paiement_effectue ? 'Payé' : 'Non payé'}
+                  </span>
+                </div>
+              </div>
+              <button onClick={() => ouvrirDossier(p)} style={btnStyle}>
+                Ouvrir le dossier
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
 }
 

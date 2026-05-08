@@ -1241,17 +1241,17 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
  {/* Étape 1 — Type */}
  <div style={{display:'grid',gridTemplateColumns:'repeat(5,1fr)',gap:4,marginBottom:10}}>
  {TYPES.map(t => (
- <button key={t.id} type="button" onClick={() => {
- resetSvc(t.id)
- autoSetPraticien(t.id)
- }} style={{
- padding:'6px 3px', borderRadius:7, cursor:'pointer', fontSize:10, fontWeight:600,
- textAlign:'center' as const, lineHeight:1.4,
- border:`2px solid ${ST===t.id?'#1641C8':'#e2e8f0'}`,
- background: ST===t.id?'#eff6ff':'#fafafa',
- color: ST===t.id?'#1641C8':'#64748b',
- }}>{t.icon}<br/>{t.label}</button>
- ))}
+ <button key={t.id} type="button" onClick={() => { resetSvc(t.id); autoSetPraticien(t.id) }} style={{
+  padding:'9px 4px', borderRadius:8, cursor:'pointer', fontSize:10, fontWeight:700,
+  textAlign:'center' as const, lineHeight:1.5, transition:'all 0.15s',
+  border:`2px solid ${ST===t.id?(t as any).color:'#e2e8f0'}`,
+  background: ST===t.id?(t as any).bg:'white',
+  color: ST===t.id?(t as any).color:'#94a3b8',
+ }}>
+ <i className={`fa-solid ${(t as any).icon}`} style={{display:'block',fontSize:16,marginBottom:3}}/>
+ {t.label}
+ </button>
+))}
  </div>
 
  {/* CLINIQUE EXTERNE Branche → Médecin → Prix */}
