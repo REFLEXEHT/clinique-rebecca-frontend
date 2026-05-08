@@ -377,11 +377,13 @@ export default function CaissierPage() {
  ...formNouv,
  service: formNouv.service,
  montant: formNouv.montant,
+ age: formNouv.age ? (parseInt(String(formNouv.age)) || null) : null,
  mode_paiement: paiNvInfo?.mode || formNouv.mode_paiement || 'especes',
  reference: paiNvInfo?.reference || '',
  priorite: formNouv.priorite,
  medecin_nom: (formNouv as any).praticien || '',
  praticien: (formNouv as any).praticien || '',
+ paiementNvInfo: undefined,
  })
  setQueueResult({
           ...r.data,
