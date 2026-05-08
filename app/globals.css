@@ -609,4 +609,139 @@ button { font-family: inherit; }
   .specs-grid { grid-template-columns: 1fr !important; }
 }
 
+
+/* ═══════════════════════════════════════════════════════════
+   PAGES INTERNES — Responsive Mobile (caissier, infirmier, médecin, admin)
+   Utilise des classes ajoutées aux éléments principaux
+═══════════════════════════════════════════════════════════ */
+
+/* Grille caissier — nouveau patient */
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+@media (max-width: 540px) {
+  .form-grid-2 { grid-template-columns: 1fr; }
+}
+
+/* Grille KPI 4 colonnes → 2 → 1 */
+.kpi-grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+@media (max-width: 900px) { .kpi-grid-4 { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 480px) { .kpi-grid-4 { grid-template-columns: repeat(2, 1fr); } }
+
+/* Tabs scrollables */
+.tabs-scroll {
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  border-bottom: 2px solid #f1f5f9;
+  background: white;
+}
+.tabs-scroll::-webkit-scrollbar { display: none; }
+.tab-item {
+  flex-shrink: 0;
+  padding: 11px 14px;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+  border: none;
+  background: none;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -2px;
+  color: #64748b;
+}
+.tab-item.active { color: #1641C8; border-bottom-color: #1641C8; }
+
+/* Grille services caissier */
+.service-btns {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 7px;
+}
+@media (max-width: 600px) { .service-btns { grid-template-columns: repeat(3, 1fr); } }
+@media (max-width: 380px) { .service-btns { grid-template-columns: repeat(2, 1fr); } }
+
+/* Grille paiement */
+.pay-btns {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+}
+@media (max-width: 500px) { .pay-btns { grid-template-columns: repeat(3, 1fr); } }
+
+/* Page interne — padding adaptatif */
+.page-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 20px;
+}
+@media (max-width: 640px) { .page-inner { padding: 12px 10px; } }
+
+/* Grille admin 2 colonnes */
+.admin-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 768px) { .admin-grid-2 { grid-template-columns: 1fr; } }
+
+/* Sidebar admin — cachée sur mobile */
+.admin-sidebar { width: 220px; flex-shrink: 0; }
+@media (max-width: 900px) { .admin-sidebar { display: none; } }
+
+/* Table — scroll horizontal sur mobile */
+.table-responsive { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+
+/* Bouton pleine largeur sur mobile */
+@media (max-width: 480px) {
+  .btn-mobile-full { width: 100% !important; }
+}
+
 @keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Internal app pages — Mobile responsive ─────────────────── */
+
+/* Caissier / Infirmier / Médecin tabs — scroll horizontal */
+@media (max-width: 768px) {
+  /* Navbar interne */
+  [style*="height:58px"] { height: auto !important; min-height: 52px; flex-wrap: wrap; padding: 8px 12px !important; }
+
+  /* Onglets horizontaux scrollables */
+  [style*="borderBottom:'2px solid"][style*="display:'flex'"] {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  /* Grilles 2 colonnes → 1 colonne */
+  [style*="gridTemplateColumns:'1fr 1fr'"] { grid-template-columns: 1fr !important; }
+  [style*="gridTemplateColumns:'1fr 1fr 1fr'"] { grid-template-columns: 1fr 1fr !important; }
+  [style*="gridTemplateColumns:'repeat(4"] { grid-template-columns: repeat(2, 1fr) !important; }
+  [style*="gridTemplateColumns:'repeat(3"] { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Padding pages internes */
+  [style*="maxWidth:1100"][style*="padding:'20px'"] { padding: 12px !important; }
+  [style*="maxWidth:1100"][style*="padding:'24px'"] { padding: 12px !important; }
+}
+
+@media (max-width: 480px) {
+  /* Boutons pleine largeur sur mobile */
+  [style*="gridTemplateColumns:'1fr 1fr'"] { grid-template-columns: 1fr !important; }
+  [style*="gridTemplateColumns:'repeat(2"] { grid-template-columns: 1fr 1fr !important; }
+
+  /* Texte adaptatif */
+  [style*="fontSize:18"] { font-size: 15px !important; }
+  [style*="fontSize:20"] { font-size: 16px !important; }
+  [style*="fontSize:'1.5rem'"] { font-size: 1.2rem !important; }
+  [style*="fontSize:'1.4rem'"] { font-size: 1.1rem !important; }
+
+  /* Service buttons caissier */
+  [style*="gridTemplateColumns:'repeat(5"] { grid-template-columns: repeat(3, 1fr) !important; }
+}

@@ -512,7 +512,7 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
       </div>
 
       {/* Barre taux de change — seule info visible en permanence */}
-      <div style={{background:'white',borderBottom:'1px solid #f1f5f9',padding:'7px 20px',display:'flex',justifyContent:'flex-end',alignItems:'center',gap:12}}>
+      <div style={{background:'white',borderBottom:'1px solid #f1f5f9',padding:'6px 12px',display:'flex',justifyContent:'flex-end',alignItems:'center',gap:8,flexWrap:'wrap'} as React.CSSProperties}>
         <div style={{display:'flex',alignItems:'center',gap:6,background:'#f8fafc',borderRadius:8,padding:'5px 10px',border:'1px solid #e2e8f0'}}>
           <span style={{fontSize:11,color:'#94a3b8'}}>1 USD =</span>
           <input type="number" value={tauxChange} onChange={e=>setTauxChange(parseFloat(e.target.value)||130)}
