@@ -564,7 +564,7 @@ button { font-family: inherit; }
 
 @media (max-width: 768px) {
   .hero-left {
-    padding: 40px 5% 20px;
+    padding: 32px 5% 20px !important;
     text-align: center;
   }
   .hero-desc { max-width: 100%; }
@@ -704,6 +704,37 @@ button { font-family: inherit; }
   .btn-mobile-full { width: 100% !important; }
 }
 
+
+/* Footer mobile */
+@media (max-width: 640px) {
+  footer .footer-grid,
+  footer [style*="gridTemplateColumns"],
+  footer [style*="display:'grid'"] {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 24px !important;
+  }
+}
+@media (max-width: 380px) {
+  footer .footer-grid,
+  footer [style*="gridTemplateColumns"] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Hero buttons mobile */
+@media (max-width: 768px) {
+  .hero-left .hero-buttons,
+  .hero-left [style*="display:'flex'"][style*="gap:12"] {
+    flex-direction: column !important;
+    gap: 10px !important;
+  }
+  .hero-left a[style*="padding:'14px"],
+  .hero-left button[style*="padding:'14px"] {
+    width: 100% !important;
+    text-align: center !important;
+    justify-content: center !important;
+  }
+}
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ── Internal app pages — Mobile responsive ─────────────────── */

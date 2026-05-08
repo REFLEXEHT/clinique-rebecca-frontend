@@ -36,9 +36,9 @@ export default function HomePage() {
       <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
 
       {/* ── HERO SPLIT ────────────────────────────────────────────── */}
-      <section style={{ minHeight:'calc(100vh - 72px)', display:'grid', gridTemplateColumns:'1fr 1fr' }}>
+      <section className="hero-section">
         {/* Gauche */}
-        <div style={{ display:'flex', flexDirection:'column', justifyContent:'center', padding:'80px 60px', background:'white' }}>
+        <div className="hero-left" style={{ display:'flex', flexDirection:'column', justifyContent:'center', background:'white' }}>
           {/* Badge horaires */}
           <div style={{ display:'inline-flex', alignItems:'center', gap:10, background:'#f8fafc', border:'1px solid #e2e8f0', borderRadius:50, padding:'8px 16px', marginBottom:32, alignSelf:'flex-start' }}>
             <div style={{ width:32, height:32, borderRadius:'50%', background:'#eff6ff', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -84,7 +84,7 @@ export default function HomePage() {
             ] as const).map(s => (
               <div key={s.k}>
                 <div style={{ fontWeight:900, fontSize:'1.7rem', color:'#1641C8', lineHeight:1 }}>{s.n}</div>
-                <div style={{ color:'#94a3b8', fontSize:13, marginTop:4, textTransform:'uppercase', letterSpacing:0.5 }}>{t(s.k)}</div>
+                <div className="hero-right" style={{ color:'#94a3b8', fontSize:13, marginTop:4, textTransform:'uppercase', letterSpacing:0.5 }}>{t(s.k)}</div>
               </div>
             ))}
           </div>
