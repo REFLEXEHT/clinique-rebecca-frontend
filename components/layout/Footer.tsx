@@ -15,7 +15,7 @@ const LIENS = [
 ]
 const SOCIAL = [
   { icon: 'fa-brands fa-facebook-f', href: '#', label: 'Facebook' },
-  { icon: 'fa-brands fa-whatsapp', href: 'https://wa.me/50938880000', label: 'WhatsApp' },
+  { icon: 'fa-brands fa-whatsapp', href: 'https://wa.me/50948585757', label: 'WhatsApp' },
   { icon: 'fa-brands fa-instagram', href: '#', label: 'Instagram' },
   { icon: 'fa-brands fa-x-twitter', href: '#', label: 'X (Twitter)' },
   { icon: 'fa-brands fa-linkedin-in', href: '#', label: 'LinkedIn' },

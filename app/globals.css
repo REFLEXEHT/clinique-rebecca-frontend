@@ -278,3 +278,14 @@ h3 { font-size: clamp(1rem, 2.5vw, 1.1rem); font-weight: 700; }
   body { background: white; }
   .card { box-shadow: none; border: 1px solid #ddd; }
 }
+
+/* ── Hero section ── */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 768px) {
+  .hero-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
