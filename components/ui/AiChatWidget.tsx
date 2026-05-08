@@ -31,7 +31,7 @@ export default function AiChatWidget() {
     } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
-        content: 'Désolée, une difficulté technique est survenue. Appelez-nous au +509 3888-0000.',
+        content: 'Désolée, une difficulté technique est survenue. Appelez-nous au +509 4858-5757.',
       }])
     } finally {
       setLoading(false)

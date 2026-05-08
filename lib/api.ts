@@ -130,7 +130,7 @@ export const aiApi = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         messages,
-        model: options?.model || 'claude-sonnet-4-20250514',
+        model: options?.model || 'claude-sonnet-4-6',
         max_tokens: options?.max_tokens || 800,
         ...(options?.system ? { system: options.system } : {}),
       }),
