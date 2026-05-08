@@ -68,7 +68,7 @@ function openPrint(html: string, width = 820, height = 1050) {
 function clinicHeader(titre: string, refDoc?: string) {
   return `
 <div class="header">
-  <div class="clinic-name">${CLINIQUE.logo} ${CLINIQUE.nom}</div>
+  <div class="clinic-name">${CLINIQUE.nom}</div>
   <div class="clinic-sub">${CLINIQUE.adresse} · ${CLINIQUE.tel} · ${CLINIQUE.email}</div>
   <div class="doc-title">${titre}</div>
   ${refDoc ? `<div class="doc-ref">${refDoc}</div>` : ''}
