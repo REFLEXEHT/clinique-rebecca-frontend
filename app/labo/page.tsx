@@ -173,9 +173,9 @@ export default function LaboPage() {
  const [maSignature, setMaSignature] = useState<string | null>(null)
  const [showSigPad, setShowSigPad] = useState(false)
  const [alertes,   setAlertes]   = useState<any[]>([])
- const [statsJour, setStatsJour] = useState<any>(null)
- const [statsSem,  setStatsSem]  = useState<any>(null)
- const [queueLabo, setQueueLabo] = useState<any[]>([])
+  const [statsJour, setStatsJour] = useState<any>({examens_jour:0, examens_critique:0, patients_jour:0})
+  const [statsSem,  setStatsSem]  = useState<any>({examens_semaine:0, patients_semaine:0, taux_critique:0})
+  const [queueLabo, setQueueLabo] = useState<any[]>([])
  const [submitting,setSubmitting]= useState(false)
  const [editId, setEditId] = useState<number|null>(null)
  const [searchEx, setSearchEx] = useState('')
@@ -301,332 +301,12 @@ export default function LaboPage() {
  {/* Onglets */}
  <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',display:'flex',gap:4}}>
  {[
-     {k:'stats',     label:'Tableau de bord'},
+ {k:'stats',     label:'Tableau de bord'},
      {k:'queue',     label:`File d'attente (${queueLabo.length})`},
      {k:'saisie',    label:'Saisir résultat'},
      {k:'historique',label:'Historique'},
      {k:'alertes',   label:`Alertes${alertes.length>0?` (${alertes.length})`:''}`},
-    ].map(t => (
-     <button key={t.k} onClick={()=>setOnglet(t.k as any)} style={{
-      padding:'13px 16px',border:'none',background:'transparent',cursor:'pointer',
-      fontWeight:600,fontSize:13,color:onglet===t.k?'#16a34a':'#64748b',
-      borderBottom:onglet===t.k?'2px solid #16a34a':'2px solid transparent',
-     }}>{t.label}</button>
-    ))}
-    </div>t'
-import React, { useRef } from 'react'
-import { useState, useEffect } from 'react'
-import { useAuth } from '@/context/AuthContext'
-import { useRouter } from 'next/navigation'
-import { api } from '@/lib/api'
-import toast from 'react-hot-toast'
-import { LogOut, Search, AlertTriangle, CheckCircle, Clock, Edit, FlaskConical, Printer } from 'lucide-react'
-import SignaturePad from '@/components/ui/SignaturePad'
-import { imprimerResultatLabo } from '@/lib/print'
-
-// 188 examens complets 
-const TOUS_EXAMENS = [
- // Hématologie
- "Hémogramme complet (NFS)","Numération globulaire","Formule sanguine","Hématocrite",
- "Hémoglobine","Réticulocytes","Plaquettes","TS (Temps de saignement)","TC (Temps de coagulation)",
- "PT/INR","aPTT","D-Dimères","Fibrinogène","Groupe sanguin ABO","Rhésus (facteur Rh)",
- "RAI (Recherche Agglutinines Irrégulières)","Coombs direct","Coombs indirect",
- "Hémoglobine S (Sickling)","Électrophorèse de l\'hémoglobine",
- // Biochimie — Glycémie & Diabète
- "Glycémie à jeun","Glycémie post-prandiale","HBA1C (Hémoglobine glyquée)",
- "Insuline à jeun","Peptide C","Test de tolérance au glucose (HGPO)",
- // Biochimie — Fonction rénale
- "Urée sanguine","Créatinine sérique","Clairance créatinine","Acide urique",
- "Microalbuminurie","Protéinurie des 24h","Albumine urinaire","Créatinine urinaire",
- // Biochimie — Fonction hépatique
- "SGOT (AST)","SGPT (ALT)","Gamma GT (GGT)","Phosphatases alcalines (PAL)",
- "Bilirubine totale","Bilirubine directe","Bilirubine indirecte","Albumine sérique",
- "Protéines totales","LDH",
- // Lipides & Cardio
- "Cholestérol total","HDL cholestérol","LDL cholestérol","VLDL","Triglycérides",
- "Troponine I","Troponine T ultra-sensible","CK-MB","BNP","NT-proBNP","Myoglobine",
- // Thyroïde
- "TSH","T3 libre","T4 libre","T3 totale","T4 totale",
- "Thyroglobuline","Anti-TPO","Anti-TG",
- // Ions & Minéraux
- "Sodium (Na)","Potassium (K)","Chlorures (Cl)","Bicarbonates","Calcium",
- "Phosphore","Magnésium","Zinc","Cuivre","Fer sérique","Ferritine",
- "Transferrine","Coefficient de saturation en fer",
- // Vitamines
- "Vitamine D (25-OH)","Vitamine B12","Acide folique (B9)","Vitamine B1","Rétinol (Vit A)",
- // Hormones
- "Cortisol (8h)","DHEA-S","Testostérone totale","Testostérone libre",
- "Progestérone","Estradiol (E2)","FSH","LH","Prolactine",
- "β-HCG quantitatif","PSA total","PSA libre","AFP","CA-125","CEA","CA-19-9",
- // Sérologie infectieuse
- "HIV 1 et 2","Hépatite B (AgHBs)","Anticorps HBs","Anti-HBc",
- "Hépatite C (Ac anti-VHC)","Charge virale VIH","CD4","CD8","Ratio CD4/CD8",
- "VDRL","RPR","TPHA","FTA-ABS",
- "Widal O","Widal H","Widal AO","Widal BH",
- "Monotest","H. Pylori (antigène sanguin)","Malaria (Goutte épaisse)",
- "Dengue (NS1 + Ac)","Toxoplasmose IgG","Toxoplasmose IgM",
- "Rubéole IgG","Rubéole IgM","CMV IgG","CMV IgM",
- "Herpès I IgG","Herpès I IgM","Herpès II IgG","Herpès II IgM",
- "TORCH complet (5 agents)","Chikungunya","Leishmaniose",
- // Immunologie
- "CRP","CRP ultra-sensible","Interleukine 6 (IL-6)",
- "Procalcitonine (PCT)","RA-Latex (Facteur rhumatoïde)","ASO",
- "Anticorps anti-nucléaires (ANA)","Anti-ADN natif","Complément C3","Complément C4",
- "Électrophorèse des protéines","IgG","IgA","IgM",
- // Hormones rénales & autres
- "Rénine","Aldostérone","Érythropoïétine (EPO)","Parathormone (PTH)",
- // Urine
- "ECBU (Examen cytobactériologique)","Bandelette urinaire","Sédiment urinaire",
- "Protéinurie","Leucocytes urinaires","Nitrites urinaires",
- "Glucose urinaire","Corps cétoniques","Bilirubine urinaire",
- // Selles & Parasitologie
- "Parasitologie des selles","Coproculture",
- "Recherche amibes","Oxyures","Ascaris","Ankylostomes","Tænia",
- "Antigène H. Pylori (selles)","Sang occulte dans les selles",
- // Microbiologie
- "Frottis vaginal","Frottis urétral","Crachats BAAR (Tuberculose)",
- "Crachats bactériologie","Hémoculture","Culture pus","Culture plaie",
- "Antibiogramme","Antifongique — test sensibilité",
- "Prélèvement gorge","Prélèvement nasal",
- // Médicaments & Toxicologie
- "Digoxine","Phénobarbital","Acide valproïque",
- "Lithium","Cyclosporine","Tacrolimus","Vancomycine",
- "Dépistage drogues urinaires","Alcoolémie",
- // Gaz du sang & Spéciaux
- "Gaz du sang artériel","Amylase","Lipase","Cholinestérase",
- "Test de falciformation (Emmel)","Coombs néonatal",
-]
-
-// Valeurs critiques → alerte automatique
-const SEUILS_CRITIQUES: {exam: string, check: (v: number) => boolean, msg: string}[] = [
- {exam:'glycem', check: v => v > 600 || v < 40, msg:'Glycémie critique'},
- {exam:'potassium', check: v => v > 6.5 || v < 2.5, msg:'Kaliémie critique'},
- {exam:'sodium', check: v => v > 160 || v < 120, msg:'Natrémie critique'},
- {exam:'hemoglobin', check: v => v < 5, msg:'Anémie sévère'},
- {exam:'plaquett', check: v => v < 20000, msg:'Thrombopénie sévère'},
- {exam:'creatinin', check: v => v > 884, msg:'Insuffisance rénale sévère'},
- {exam:'troponin', check: v => v > 0.04, msg:'Troponine élevée — urgence cardiaque'},
- {exam:'ph', check: v => v < 7.2 || v > 7.6, msg:'pH artériel critique'},
- {exam:'pao2', check: v => v < 60, msg:'Hypoxémie sévère'},
- {exam:'bilirub', check: v => v > 200, msg:'Hyperbilirubinémie sévère'},
-]
-
-function detecterValeurCritique(examen: string, resultats: string) {
- const examLower = examen.toLowerCase()
- const nums = resultats.match(/\d+\.?\d*/g)?.map(Number) || []
- for (const seuil of SEUILS_CRITIQUES) {
- if (examLower.includes(seuil.exam)) {
- for (const val of nums) {
- if (seuil.check(val)) return seuil.msg
- }
- }
- }
- return null
-}
-
-
-// Searchable exam selector 
-function ExamenSearchable({ value, onChange, examens }: { value: string; onChange: (v: string) => void; examens: string[] }) {
- const [search, setSearch] = useState('')
- const [open, setOpen] = useState(false)
- const ref = React.useRef<HTMLDivElement>(null)
-
- const filtered = search.length > 1
- ? examens.filter(e => e.toLowerCase().includes(search.toLowerCase())).slice(0, 20)
- : examens.slice(0, 30)
-
- useEffect(() => {
- const handler = (e: MouseEvent) => {
- if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
- }
- document.addEventListener('mousedown', handler)
- return () => document.removeEventListener('mousedown', handler)
- }, [])
-
- return (
- <div ref={ref} style={{ position: 'relative' }}>
- <input
- value={value || search}
- onChange={e => { setSearch(e.target.value); onChange(''); setOpen(true) }}
- onFocus={() => setOpen(true)}
- placeholder="Taper pour rechercher (ex: Glycémie, HIV, TSH...)"
- style={{ width: '100%', padding: '11px 14px', borderRadius: 10, border: '1px solid #d1d5db', fontSize: 14, boxSizing: 'border-box' as const }}
- />
- {open && filtered.length > 0 && !value && (
- <div style={{
- position: 'absolute', top: 'calc(100% + 4px)', left: 0, right: 0, zIndex: 200,
- background: 'white', borderRadius: 10, border: '1px solid #e2e8f0',
- boxShadow: '0 8px 24px rgba(0,0,0,0.1)', maxHeight: 260, overflowY: 'auto'
- }}>
- {filtered.map(ex => (
- <button key={ex} type="button" onClick={() => { onChange(ex); setSearch(''); setOpen(false) }}
- style={{ width: '100%', padding: '9px 14px', border: 'none', background: 'white', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: '#374151', borderBottom: '1px solid #f8fafc' }}
- onMouseEnter={e => (e.currentTarget.style.background = '#eff6ff')}
- onMouseLeave={e => (e.currentTarget.style.background = 'white')}>
- {ex}
- </button>
- ))}
- {search.length > 1 && (
- <button type="button" onClick={() => { onChange(search); setOpen(false) }}
- style={{ width: '100%', padding: '9px 14px', border: 'none', background: '#f8fafc', cursor: 'pointer', textAlign: 'left', fontSize: 13, color: '#1641C8', fontWeight: 600 }}>
- Utiliser "{search}" (examen personnalisé)
- </button>
- )}
- </div>
- )}
- </div>
- )
-}
-
-export default function LaboPage() {
- const { user, isAuthenticated, loading, logout } = useAuth()
- const router = useRouter()
- const [onglet, setOnglet] = useState<'saisie'|'historique'|'alertes'|'stats'|'queue'>('stats')
- const [searchPat, setSearchPat] = useState('')
- const [patient, setPatient] = useState<any>(null)
- const [resultats, setResultats] = useState<any[]>([])
- const [maSignature, setMaSignature] = useState<string | null>(null)
- const [showSigPad, setShowSigPad] = useState(false)
- const [alertes,   setAlertes]   = useState<any[]>([]) const [submitting,setSubmitting]= useState(false)
- const [editId, setEditId] = useState<number|null>(null)
- const [searchEx, setSearchEx] = useState('')
- const [form, setForm] = useState({
- type_examen: '', resultats: '', notes: '',
- date_examen: new Date().toISOString().split('T')[0],
- medecin_prescripteur: ''
- })
-
- useEffect(() => {
- if (!loading && (!isAuthenticated || !['labo','admin'].includes(user?.role||'')))
- router.push('/login')
- }, [isAuthenticated, user, loading, router])
-
- useEffect(() => {
- if (!isAuthenticated) return
- // Charger la signature du technicien
- api.get('/medecin/ma-signature').then(r => {
- if (r.data?.signature) setMaSignature(r.data.signature)
- }).catch(() => {})
-    // Stats et queue labo
-    api.get('/labo/stats-jour').then(r => setStatsJour(r.data || {})).catch(() => {})
-    api.get('/labo/stats-semaine').then(r => setStatsSem(r.data || {})).catch(() => {})
-    api.get('/infirmier/queue').then(r => {
-      // Filtrer uniquement les patients labo
-      const all = r.data?.patients || r.data || []
-      setQueueLabo(all.filter((p:any) => 
-        (p.service||'').toLowerCase().includes('labo') || 
-        (p.specialite||'').toLowerCase().includes('labo')
-      ))
-    }).catch(() => {})
- api.get('/labo/resultats-recents?limit=50')
- .then(r => {
- const all = r.data || []
- setResultats(all)
- setAlertes(all.filter((x: any) => x.valeur_critique))
- }).catch(()=>{})
- }, [isAuthenticated])
-
- const chercherPatient = async () => {
- const id = searchPat.trim().toUpperCase()
- if (!id) return
- try {
- const r = await api.get(`/patients/par-numero/${id}`)
- setPatient(r.data)
- const res = await api.get(`/labo/resultats/${r.data.id}`)
- setResultats(res.data || [])
- } catch { toast.error('Patient introuvable — vérifiez l\'ID') }
- }
-
- const soumettre = async () => {
- if (!patient || !form.type_examen || !form.resultats) {
- toast.error('Patient, examen et résultats requis'); return
- }
- setSubmitting(true)
- try {
- const alerteCritique = detecterValeurCritique(form.type_examen, form.resultats)
-
- const payload = {
- patient_id: String(patient.id),
- patient_nom: patient.nom,
- type_examen: form.type_examen,
- resultats: form.resultats,
- notes: form.notes,
- date_examen: form.date_examen,
- medecin_prescripteur: form.medecin_prescripteur,
- status: 'disponible',
- valeur_critique: !!alerteCritique,
- }
-
- let res
- if (editId) {
- res = await api.put(`/labo/resultats/${editId}`, payload)
- toast.success('Résultat modifié ')
- } else {
- res = await api.post('/labo/resultats', payload)
- toast.success('Résultat enregistré — patient notifié ')
- }
-
- if (alerteCritique) {
- toast.error(` ${alerteCritique} — Médecin prescripteur alerté automatiquement`, {duration: 10000})
- if (res?.data?.id) {
- await api.post(`/labo/alerte-critique/${res.data.id}`, {
- examen: form.type_examen,
- valeur: form.resultats,
- medecin_email: form.medecin_prescripteur,
- }).catch(()=>{})
- }
- setAlertes(prev => [...prev, {
- examen: form.type_examen, valeur: form.resultats,
- patient: patient.nom, message: alerteCritique
- }])
- }
-
- setForm({type_examen:'', resultats:'', notes:'', date_examen: new Date().toISOString().split('T')[0], medecin_prescripteur:''})
- setEditId(null)
- const updated = await api.get(`/labo/resultats/${patient.id}`)
- setResultats(updated.data || [])
- } catch (e: any) {
- toast.error(e?.response?.data?.detail || 'Erreur lors de l\'enregistrement')
- } finally { setSubmitting(false) }
- }
-
- const examsFiltres = TOUS_EXAMENS.filter(e =>
- !searchEx || e.toLowerCase().includes(searchEx.toLowerCase())
- )
-
- const canEdit = (r: any) => {
- const created = new Date(r.created_at || r.date_examen).getTime()
- return Date.now() - created < 24 * 3600 * 1000
- }
-
- if (loading) return <div style={{minHeight:'100vh',display:'flex',alignItems:'center',justifyContent:'center'}}><div style={{width:40,height:40,borderRadius:'50%',border:'3px solid #16a34a',borderTopColor:'transparent',animation:'spin 1s linear infinite'}}/></div>
-
- return (
- <div style={{minHeight:'100vh',background:'#f8fafc'}}>
- {/* Navbar */}
- <div style={{background:'linear-gradient(135deg,#0f1e3d,#16a34a)',height:58,display:'flex',alignItems:'center',padding:'0 24px',gap:14}}>
- <div style={{width:36,height:36,borderRadius:10,background:'rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}></div>
- <div>
- <div style={{color:'white',fontWeight:800,fontSize:14}}>{user?.nom}</div>
- <div style={{color:'rgba(255,255,255,0.6)',fontSize:11}}>Technicien de Laboratoire</div>
- </div>
- {alertes.length > 0 && (
- <div style={{background:'#dc2626',color:'white',borderRadius:50,padding:'4px 14px',fontSize:12,fontWeight:700,display:'flex',alignItems:'center',gap:6,cursor:'pointer'}} onClick={()=>setOnglet('alertes')}>
- <AlertTriangle size={12}/> {alertes.length} alerte{alertes.length>1?'s':''}
- </div>
- )}
- <button onClick={()=>{logout();router.push('/')}} style={{marginLeft:'auto',background:'none',border:'none',color:'rgba(255,255,255,0.5)',cursor:'pointer',fontSize:12,display:'flex',alignItems:'center',gap:4}}>
- <LogOut size={13}/> Déconnexion
- </button>
- </div>
-
- {/* Onglets */}
- <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 24px',display:'flex',gap:4}}>
- {[
- {k:'saisie', label:' Saisir résultat'},
- {k:'historique', label:' Historique'},
- {k:'alertes', label:` Alertes${alertes.length>0?` (${alertes.length})`:''}`},
- ].map(t => (
+     ].map(t => (
  <button key={t.k} onClick={()=>setOnglet(t.k as any)} style={{
  padding:'13px 16px',border:'none',background:'transparent',cursor:'pointer',
  fontWeight:600,fontSize:13,color:onglet===t.k?'#16a34a':'#64748b',
@@ -638,72 +318,82 @@ export default function LaboPage() {
  <div style={{maxWidth:1000,margin:'0 auto',padding:'24px 20px'}}>
 
  {/* SAISIE */}
- {onglet==='stats' && (
-  <div>
-    <h2 style={{fontWeight:900,fontSize:'1.2rem',color:'#0f172a',marginBottom:16}}>Tableau de bord — Laboratoire</h2>
-    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14,marginBottom:24}}>
-      {[
-        {label:"Examens aujourd'hui",  val: statsJour?.examens_jour    || 0, color:'#16a34a', bg:'#f0fdf4'},
-        {label:'Patients du jour',      val: statsJour?.patients_jour   || 0, color:'#1641C8', bg:'#eff6ff'},
-        {label:'Valeurs critiques',     val: statsJour?.examens_critique|| 0, color:'#dc2626', bg:'#fef2f2'},
-      ].map(s => (
-        <div key={s.label} style={{background:s.bg,borderRadius:14,padding:18,textAlign:'center',border:`1px solid ${s.color}22`}}>
-          <div style={{fontWeight:900,fontSize:'1.8rem',color:s.color}}>{s.val}</div>
-          <div style={{fontSize:12,color:'#64748b',marginTop:4}}>{s.label}</div>
-        </div>
-      ))}
-    </div>
-    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14}}>
-      {[
-        {label:'Examens cette semaine', val: statsSem?.examens_semaine  || 0, color:'#0d9488', bg:'#f0fdfa'},
-        {label:'Patients cette semaine',val: statsSem?.patients_semaine || 0, color:'#7c3aed', bg:'#f5f3ff'},
-        {label:'Taux critique (%)',     val: `${statsSem?.taux_critique || 0}%`, color:'#d97706', bg:'#fefce8'},
-      ].map(s => (
-        <div key={s.label} style={{background:s.bg,borderRadius:14,padding:18,textAlign:'center',border:`1px solid ${s.color}22`}}>
-          <div style={{fontWeight:900,fontSize:'1.8rem',color:s.color}}>{s.val}</div>
-          <div style={{fontSize:12,color:'#64748b',marginTop:4}}>{s.label}</div>
-        </div>
-      ))}
-    </div>
-    <div style={{marginTop:24,background:'white',borderRadius:14,padding:18,border:'1px solid #e2e8f0'}}>
-      <div style={{fontWeight:700,fontSize:13,marginBottom:12,color:'#374151'}}>Alertes critiques du jour</div>
-      {alertes.length===0 ? (
-        <div style={{color:'#94a3b8',fontSize:13,textAlign:'center',padding:'20px 0'}}>Aucune valeur critique aujourd&apos;hui</div>
-      ) : alertes.slice(0,5).map((a:any,i:number) => (
-        <div key={i} style={{padding:'8px 12px',background:'#fef2f2',borderRadius:8,marginBottom:6,fontSize:13}}>
-          <strong>{a.patient_nom}</strong> — {a.libelle} : <span style={{color:'#dc2626',fontWeight:700}}>{a.valeur_observee}</span>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
-
-{onglet==='queue' && (
-  <div>
-    <h2 style={{fontWeight:900,fontSize:'1.2rem',color:'#0f172a',marginBottom:16}}>File d&apos;attente — Laboratoire</h2>
-    {queueLabo.length===0 ? (
-      <div style={{textAlign:'center',padding:40,color:'#94a3b8'}}>
-        <i className="fa-solid fa-flask-vial" style={{fontSize:40,display:'block',marginBottom:12,opacity:0.3}}/>
-        Aucun patient en attente pour le laboratoire
-      </div>
-    ) : queueLabo.map((p:any,i:number) => (
-      <div key={i} style={{background:'white',borderRadius:12,padding:14,border:'1px solid #e2e8f0',marginBottom:8,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+       {/* STATS */}
+      {onglet==='stats' && (
         <div>
-          <div style={{fontWeight:700,fontSize:14}}>{p.patient_nom}</div>
-          <div style={{fontSize:12,color:'#94a3b8',marginTop:2}}>#{p.patient_numero} · {p.service} · Ticket {p.ticket}</div>
+          <h2 style={{fontWeight:900,fontSize:'1.2rem',color:'#0f172a',marginBottom:16}}>Tableau de bord — Laboratoire</h2>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14,marginBottom:20}}>
+            <div style={{background:'#f0fdf4',borderRadius:14,padding:18,textAlign:'center',border:'1px solid #bbf7d0'}}>
+              <div style={{fontWeight:900,fontSize:'1.8rem',color:'#16a34a'}}>{statsJour?.examens_jour||0}</div>
+              <div style={{fontSize:12,color:'#64748b',marginTop:4}}>Examens aujourd&apos;hui</div>
+            </div>
+            <div style={{background:'#eff6ff',borderRadius:14,padding:18,textAlign:'center',border:'1px solid #bfdbfe'}}>
+              <div style={{fontWeight:900,fontSize:'1.8rem',color:'#1641C8'}}>{statsJour?.patients_jour||0}</div>
+              <div style={{fontSize:12,color:'#64748b',marginTop:4}}>Patients du jour</div>
+            </div>
+            <div style={{background:'#fef2f2',borderRadius:14,padding:18,textAlign:'center',border:'1px solid #fecaca'}}>
+              <div style={{fontWeight:900,fontSize:'1.8rem',color:'#dc2626'}}>{statsJour?.examens_critique||0}</div>
+              <div style={{fontSize:12,color:'#64748b',marginTop:4}}>Valeurs critiques</div>
+            </div>
+          </div>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:14,marginBottom:20}}>
+            <div style={{background:'#f0fdfa',borderRadius:14,padding:18,textAlign:'center',border:'1px solid #99f6e4'}}>
+              <div style={{fontWeight:900,fontSize:'1.8rem',color:'#0d9488'}}>{statsSem?.examens_semaine||0}</div>
+              <div style={{fontSize:12,color:'#64748b',marginTop:4}}>Examens cette semaine</div>
+            </div>
+            <div style={{background:'#f5f3ff',borderRadius:14,padding:18,textAlign:'center',border:'1px solid #ddd6fe'}}>
+              <div style={{fontWeight:900,fontSize:'1.8rem',color:'#7c3aed'}}>{statsSem?.patients_semaine||0}</div>
+              <div style={{fontSize:12,color:'#64748b',marginTop:4}}>Patients cette semaine</div>
+            </div>
+            <div style={{background:'#fefce8',borderRadius:14,padding:18,textAlign:'center',border:'1px solid #fef08a'}}>
+              <div style={{fontWeight:900,fontSize:'1.8rem',color:'#d97706'}}>{statsSem?.taux_critique||0}%</div>
+              <div style={{fontSize:12,color:'#64748b',marginTop:4}}>Taux critique</div>
+            </div>
+          </div>
+          <div style={{background:'white',borderRadius:14,padding:16,border:'1px solid #e2e8f0'}}>
+            <div style={{fontWeight:700,fontSize:13,marginBottom:10,color:'#374151'}}>Alertes critiques du jour</div>
+            {alertes.length===0
+              ? <div style={{color:'#94a3b8',fontSize:13,textAlign:'center',padding:'16px 0'}}>Aucune valeur critique aujourd&apos;hui</div>
+              : alertes.slice(0,5).map((a:any,i:number) => (
+                <div key={i} style={{padding:'7px 10px',background:'#fef2f2',borderRadius:8,marginBottom:6,fontSize:13}}>
+                  <strong>{a.patient_nom}</strong> — {a.libelle} : <span style={{color:'#dc2626',fontWeight:700}}>{a.valeur_observee}</span>
+                </div>
+              ))
+            }
+          </div>
         </div>
-        <div style={{display:'flex',gap:8,alignItems:'center'}}>
-          <span style={{background:p.paiement_effectue?'#f0fdf4':'#fef2f2',color:p.paiement_effectue?'#16a34a':'#dc2626',padding:'2px 10px',borderRadius:99,fontSize:11,fontWeight:700}}>
-            {p.paiement_effectue?'Payé':'Non payé'}
-          </span>
-          <button onClick={()=>setSearchPat(p.patient_numero)} style={{background:'#1641C8',color:'white',border:'none',borderRadius:8,padding:'6px 12px',fontSize:12,fontWeight:700,cursor:'pointer'}}>
-            Saisir résultat
-          </button>
+      )}
+
+      {/* QUEUE */}
+      {onglet==='queue' && (
+        <div>
+          <h2 style={{fontWeight:900,fontSize:'1.2rem',color:'#0f172a',marginBottom:16}}>File d&apos;attente — Laboratoire</h2>
+          {queueLabo.length===0
+            ? (
+              <div style={{textAlign:'center',padding:40,color:'#94a3b8'}}>
+                <i className="fa-solid fa-flask-vial" style={{fontSize:40,display:'block',marginBottom:12,opacity:0.3}}/>
+                <div>Aucun patient en attente pour le laboratoire</div>
+              </div>
+            )
+            : queueLabo.map((p:any,i:number) => (
+              <div key={i} style={{background:'white',borderRadius:12,padding:14,border:'1px solid #e2e8f0',marginBottom:8,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                <div>
+                  <div style={{fontWeight:700,fontSize:14}}>{p.patient_nom}</div>
+                  <div style={{fontSize:12,color:'#94a3b8',marginTop:2}}>#{p.patient_numero} · {p.service} · Ticket {p.ticket}</div>
+                </div>
+                <div style={{display:'flex',gap:8,alignItems:'center'}}>
+                  <span style={{background:p.paiement_effectue?'#f0fdf4':'#fef2f2',color:p.paiement_effectue?'#16a34a':'#dc2626',padding:'2px 10px',borderRadius:99,fontSize:11,fontWeight:700}}>
+                    {p.paiement_effectue?'Payé':'Non payé'}
+                  </span>
+                  <button onClick={()=>setSearchPat(p.patient_numero)} style={{background:'#1641C8',color:'white',border:'none',borderRadius:8,padding:'6px 12px',fontSize:12,fontWeight:700,cursor:'pointer'}}>
+                    Saisir résultat
+                  </button>
+                </div>
+              </div>
+            ))
+          }
         </div>
-      </div>
-    ))}
-  </div>
-)}
+      )}
 
 {onglet==='saisie' && (
  <div style={{display:'grid',gridTemplateColumns:'1fr 1.5fr',gap:20}}>
@@ -1014,5 +704,4 @@ export default function LaboPage() {
  </div>
  </div>
  )
-}
 }
