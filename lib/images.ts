@@ -2,8 +2,8 @@
 // Placez vos images dans /public/ et référencez-les ici
 // OU remplacez par les chaînes base64 depuis /tmp/logo_b64.txt et /tmp/reception_b64.txt
 
-export const LOGO_SRC = '/logo.png'         // Mettre logo dans /public/logo.png
-export const LOGO_DARK_SRC = '/logo.png'    // Même logo (blanc sur fond sombre via CSS filter)
+export const LOGO_SRC = '/logo.png' // Mettre logo dans /public/logo.png
+export const LOGO_DARK_SRC = '/logo.png' // Même logo (blanc sur fond sombre via CSS filter)
 export const RECEPTION_SRC = '/reception.jpg' // Photo réception dans /public/reception.jpg
 
 // Fallback SVG logo si l'image ne charge pas
@@ -11,10 +11,10 @@ export const LOGO_FALLBACK_SVG = `data:image/svg+xml,%3Csvg xmlns='http://www.w3
 
 // Couleurs de la charte graphique
 export const BRAND = {
-  blue: '#1641C8',
-  blue2: '#0f2fa3',
-  blueLight: 'rgba(22,65,200,0.09)',
-  green: '#22c55e',
-  green2: '#16a34a',
-  navy: '#0f172a',
+ blue: '#1641C8',
+ blue2: '#0f2fa3',
+ blueLight: 'rgba(22,65,200,0.09)',
+ green: '#22c55e',
+ green2: '#16a34a',
+ navy: '#0f172a',
 }

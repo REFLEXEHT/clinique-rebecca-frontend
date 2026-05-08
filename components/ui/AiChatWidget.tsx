@@ -6,119 +6,119 @@ import { ChatMessage } from '@/types'
 import { Send, X, MessageCircle } from 'lucide-react'
 
 export default function AiChatWidget() {
-  const [open, setOpen] = useState(false)
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    { role: 'assistant', content: "Bonjour ! Je suis Rebecca, l'assistante de la Clinique. Comment puis-je vous aider ?" },
-  ])
-  const [input, setInput] = useState('')
-  const [loading, setLoading] = useState(false)
-  const bottomRef = useRef<HTMLDivElement>(null)
+ const [open, setOpen] = useState(false)
+ const [messages, setMessages] = useState<ChatMessage[]>([
+ { role: 'assistant', content: "Bonjour ! Je suis Rebecca, l'assistante de la Clinique. Comment puis-je vous aider ?" },
+ ])
+ const [input, setInput] = useState('')
+ const [loading, setLoading] = useState(false)
+ const bottomRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages, open])
+ useEffect(() => {
+ if (open) bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+ }, [messages, open])
 
-  const send = async () => {
-    const text = input.trim()
-    if (!text || loading) return
-    setMessages(prev => [...prev, { role: 'user', content: text }])
-    setInput('')
-    setLoading(true)
-    try {
-      const hist = messages.map(m => ({ role: m.role, content: m.content }))
-      const { data } = await chatApi.send(text, hist)
-      setMessages(prev => [...prev, { role: 'assistant', content: data.response }])
-    } catch {
-      setMessages(prev => [...prev, {
-        role: 'assistant',
-        content: 'Désolée, une difficulté technique est survenue. Appelez-nous au +509 4858-5757.',
-      }])
-    } finally {
-      setLoading(false)
-    }
-  }
+ const send = async () => {
+ const text = input.trim()
+ if (!text || loading) return
+ setMessages(prev => [...prev, { role: 'user', content: text }])
+ setInput('')
+ setLoading(true)
+ try {
+ const hist = messages.map(m => ({ role: m.role, content: m.content }))
+ const { data } = await chatApi.send(text, hist)
+ setMessages(prev => [...prev, { role: 'assistant', content: data.response }])
+ } catch {
+ setMessages(prev => [...prev, {
+ role: 'assistant',
+ content: 'Désolée, une difficulté technique est survenue. Appelez-nous au +509 4858-5757.',
+ }])
+ } finally {
+ setLoading(false)
+ }
+ }
 
-  return (
-    <div className="ai-chat-widget">
-      {open && (
-        <div className="ai-chat-window mb-3">
-          {/* Header */}
-          <div className="bg-[#1641C8] px-4 py-3 flex items-center gap-3">
-            <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center text-white">
-              <i className="fa-solid fa-hospital-user text-sm" />
-            </div>
-            <div className="flex-1">
-              <h4 className="text-white font-extrabold text-[13.5px]">Rebecca — Assistante</h4>
-              <div className="flex items-center gap-1.5">
-                <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-blink" />
-                <span className="text-white/65 text-[11px]">En ligne · Clinique de la Rebecca</span>
-              </div>
-            </div>
-            <button
-              onClick={() => setOpen(false)}
-              className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all border-none cursor-pointer"
-            >
-              <X size={15} />
-            </button>
-          </div>
+ return (
+ <div className="ai-chat-widget">
+ {open && (
+ <div className="ai-chat-window mb-3">
+ {/* Header */}
+ <div className="bg-[#1641C8] px-4 py-3 flex items-center gap-3">
+ <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center text-white">
+ <i className="fa-solid fa-hospital-user text-sm" />
+ </div>
+ <div className="flex-1">
+ <h4 className="text-white font-extrabold text-[13.5px]">Rebecca — Assistante</h4>
+ <div className="flex items-center gap-1.5">
+ <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-blink" />
+ <span className="text-white/65 text-[11px]">En ligne · Clinique de la Rebecca</span>
+ </div>
+ </div>
+ <button
+ onClick={() => setOpen(false)}
+ className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-white hover:bg-white/20 transition-all border-none cursor-pointer"
+ >
+ <X size={15} />
+ </button>
+ </div>
 
-          {/* Messages */}
-          <div className="p-4 flex flex-col gap-3 h-72 overflow-y-auto bg-slate-50">
-            {messages.map((msg, i) => (
-              <div key={i} className={`flex flex-col max-w-[85%] ${msg.role === 'user' ? 'self-end items-end' : 'self-start items-start'}`}>
-                <div className={`px-3.5 py-2.5 text-[13px] leading-relaxed rounded-2xl
-                  ${msg.role === 'user'
-                    ? 'bg-[#1641C8] text-white rounded-tr-sm'
-                    : 'bg-white border border-slate-200 text-slate-800 rounded-tl-sm shadow-sm'
-                  }`}>
-                  {msg.content}
-                </div>
-              </div>
-            ))}
-            {loading && (
-              <div className="self-start">
-                <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl rounded-tl-sm flex gap-1.5 shadow-sm">
-                  {[0, 150, 300].map(d => (
-                    <div key={d} className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
-                      style={{ animationDelay: `${d}ms` }} />
-                  ))}
-                </div>
-              </div>
-            )}
-            <div ref={bottomRef} />
-          </div>
+ {/* Messages */}
+ <div className="p-4 flex flex-col gap-3 h-72 overflow-y-auto bg-slate-50">
+ {messages.map((msg, i) => (
+ <div key={i} className={`flex flex-col max-w-[85%] ${msg.role === 'user' ? 'self-end items-end' : 'self-start items-start'}`}>
+ <div className={`px-3.5 py-2.5 text-[13px] leading-relaxed rounded-2xl
+ ${msg.role === 'user'
+ ? 'bg-[#1641C8] text-white rounded-tr-sm'
+ : 'bg-white border border-slate-200 text-slate-800 rounded-tl-sm shadow-sm'
+ }`}>
+ {msg.content}
+ </div>
+ </div>
+ ))}
+ {loading && (
+ <div className="self-start">
+ <div className="bg-white border border-slate-200 px-4 py-3 rounded-2xl rounded-tl-sm flex gap-1.5 shadow-sm">
+ {[0, 150, 300].map(d => (
+ <div key={d} className="w-2 h-2 bg-slate-400 rounded-full animate-bounce"
+ style={{ animationDelay: `${d}ms` }} />
+ ))}
+ </div>
+ </div>
+ )}
+ <div ref={bottomRef} />
+ </div>
 
-          {/* Input */}
-          <div className="flex gap-2 p-3 border-t border-slate-100 bg-white">
-            <input
-              value={input}
-              onChange={e => setInput(e.target.value)}
-              onKeyPress={e => e.key === 'Enter' && send()}
-              placeholder="Posez votre question..."
-              className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-full
-                text-sm outline-none focus:border-[#1641C8] focus:bg-white transition-all"
-            />
-            <button onClick={send} disabled={loading || !input.trim()}
-              className="w-9 h-9 bg-[#1641C8] rounded-full flex items-center justify-center
-                text-white transition-all hover:bg-[#0f2fa3] disabled:opacity-40
-                disabled:cursor-not-allowed border-none cursor-pointer flex-shrink-0">
-              <Send size={14} />
-            </button>
-          </div>
-        </div>
-      )}
+ {/* Input */}
+ <div className="flex gap-2 p-3 border-t border-slate-100 bg-white">
+ <input
+ value={input}
+ onChange={e => setInput(e.target.value)}
+ onKeyPress={e => e.key === 'Enter' && send()}
+ placeholder="Posez votre question..."
+ className="flex-1 px-3 py-2 bg-slate-50 border border-slate-200 rounded-full
+ text-sm outline-none focus:border-[#1641C8] focus:bg-white transition-all"
+ />
+ <button onClick={send} disabled={loading || !input.trim()}
+ className="w-9 h-9 bg-[#1641C8] rounded-full flex items-center justify-center
+ text-white transition-all hover:bg-[#0f2fa3] disabled:opacity-40
+ disabled:cursor-not-allowed border-none cursor-pointer flex-shrink-0">
+ <Send size={14} />
+ </button>
+ </div>
+ </div>
+ )}
 
-      {/* Toggle button */}
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="ai-chat-toggle"
-        title="Parler à l'assistante"
-      >
-        {open
-          ? <X size={22} />
-          : <MessageCircle size={22} />
-        }
-      </button>
-    </div>
-  )
+ {/* Toggle button */}
+ <button
+ onClick={() => setOpen(v => !v)}
+ className="ai-chat-toggle"
+ title="Parler à l'assistante"
+ >
+ {open
+ ? <X size={22} />
+ : <MessageCircle size={22} />
+ }
+ </button>
+ </div>
+ )
 }
