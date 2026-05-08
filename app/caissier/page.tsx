@@ -6,7 +6,7 @@ import { api, aiApi } from '@/lib/api'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import PaiementFlow, { type PaiementInfo } from '@/components/ui/PaiementFlow'
-import { imprimerRecuEnregistrement, imprimerRecuPaiement, imprimerFactureOfficielle, imprimerRapportComptable } from '@/lib/print'
+import { imprimerRecuEnregistrement, imprimerRecuPaiement, imprimerFactureOfficielle, imprimerRapportComptable, imprimerFeuilleAuto } from '@/lib/print'
 import { LogOut, Printer, Search, Plus, TrendingUp, ArrowDownCircle, Eye } from 'lucide-react'
 
 const SERVICES_TARIFS = [
@@ -383,17 +383,24 @@ export default function CaissierPage() {
  medecin_nom: (formNouv as any).praticien || '',
  praticien: (formNouv as any).praticien || '',
  })
- setQueueResult(r.data)
+ setQueueResult({
+          ...r.data,
+          feuille_type: r.data.feuille?.type || 'consultation',
+          feuille_dest: r.data.feuille?.service_dest || 'infirmier',
+        })
  toast.success(` Patient ${r.data.patient?.numero} — Ticket #${r.data.ticket} envoyé à l'infirmière`)
  // Imprimer la facture automatiquement (appel direct dans le même tick)
  imprimerRecuEnregistrement({
  ...r.data,
  patient: {
  ...r.data.patient,
- // Assurer que le nom complet est affiché (prenom + nom)
  nom: `${formNouv.prenom} ${r.data.patient?.nom || formNouv.nom}`.trim(),
  }
  })
+ // Imprimer la feuille adaptée au service après 1.5s (laisser le reçu se fermer)
+ if (r.data?.feuille) {
+ setTimeout(() => imprimerFeuilleAuto(r.data.feuille), 1500)
+ }
  setFormNouv({ nom:'', prenom:'', age:'', adresse:'', telephone:'', email:'',
  contact_urgence:'', type_visite:'premiere', service: SERVICES_TARIFS[0].nom,
  montant: SERVICES_TARIFS[0].prix, mode_paiement:'especes', priorite:'normal' })

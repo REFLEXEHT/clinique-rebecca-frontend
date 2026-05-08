@@ -782,3 +782,322 @@ ${data.totalLabel ? `
 
  openPrint(html, 420, 700)
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+//  FEUILLES AUTOMATIQUES — générées dès la sortie de caisse
+// ═══════════════════════════════════════════════════════════════════════
+
+export interface FeuilleCaisse {
+  type:             'consultation' | 'labo' | 'specialise'
+  service_dest:     string
+  ticket:           string
+  patient_id:       number
+  patient_numero:   string
+  patient_nom:      string
+  patient_age?:     number | null
+  patient_tel:      string
+  service:          string
+  service_label:    string
+  praticien:        string
+  date_visite:      string
+  montant_paye:     number
+  mode_paiement:    string
+  paiement_complet: boolean
+  rdv_id:           number
+  is_premiere_visite: boolean
+}
+
+const feuilleDateHeure = (iso: string) => {
+  const d = new Date(iso)
+  return d.toLocaleDateString('fr-FR', { weekday:'long', day:'2-digit', month:'long', year:'numeric' })
+    + ' à ' + d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })
+}
+
+const badgePaiement = (complet: boolean, montant: number) =>
+  complet
+    ? `<span style="background:#dcfce7;color:#166534;padding:3px 14px;border-radius:99px;font-weight:800;font-size:12px">PAIEMENT CONFIRME — ${montant.toLocaleString('fr')} HTG</span>`
+    : `<span style="background:#fef2f2;color:#991b1b;padding:3px 14px;border-radius:99px;font-weight:800;font-size:12px">PAIEMENT PARTIEL — ${montant.toLocaleString('fr')} HTG</span>`
+
+const entetePatient = (f: FeuilleCaisse) => `
+<table style="width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12px">
+  <tr style="background:#f1f5f9">
+    <td style="padding:6px 10px;width:50%"><strong>Patient :</strong> ${f.patient_nom}</td>
+    <td style="padding:6px 10px"><strong>Dossier :</strong> <span style="font-family:monospace;font-weight:900;color:#1641C8">${f.patient_numero}</span></td>
+  </tr>
+  <tr>
+    <td style="padding:6px 10px;border-top:1px solid #e2e8f0"><strong>Ticket :</strong> <span style="font-family:monospace;font-weight:800">#${f.ticket}</span></td>
+    <td style="padding:6px 10px;border-top:1px solid #e2e8f0"><strong>Date :</strong> ${feuilleDateHeure(f.date_visite)}</td>
+  </tr>
+  <tr style="background:#f1f5f9">
+    <td style="padding:6px 10px"><strong>Age :</strong> ${f.patient_age ? f.patient_age + ' ans' : 'N/D'}</td>
+    <td style="padding:6px 10px"><strong>Tel :</strong> ${f.patient_tel || 'N/D'}</td>
+  </tr>
+  <tr>
+    <td colspan="2" style="padding:8px 10px;border-top:1px solid #e2e8f0;text-align:center">
+      ${badgePaiement(f.paiement_complet, f.montant_paye)}
+    </td>
+  </tr>
+</table>`
+
+const ligneSignature = (titre: string) => `
+<div style="margin-top:8px;display:flex;align-items:flex-end;gap:8px">
+  <span style="font-size:11px;color:#64748b;white-space:nowrap">${titre} :</span>
+  <div style="flex:1;border-bottom:1px solid #94a3b8"></div>
+</div>`
+
+// ── 1. FEUILLE DE CONSULTATION (Clinique externe → Médecin) ─────────────
+export function imprimerFeuilleConsultation(f: FeuilleCaisse) {
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+  body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:24px;color:#1e293b}
+  .header{text-align:center;border-bottom:2px solid #1641C8;padding-bottom:12px;margin-bottom:16px}
+  .clinic-name{font-size:16px;font-weight:900;color:#1641C8;letter-spacing:1px}
+  .clinic-sub{font-size:11px;color:#64748b;margin-top:2px}
+  .doc-title{font-size:14px;font-weight:900;color:#0f172a;margin:10px 0 0;text-transform:uppercase;letter-spacing:1px}
+  .section{border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:12px}
+  .section-title{font-size:11px;font-weight:800;color:#1641C8;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;border-bottom:1px solid #e2e8f0;padding-bottom:4px}
+  .field-row{display:flex;gap:8px;margin-bottom:6px}
+  .field{flex:1}
+  .field-label{font-size:10px;color:#94a3b8;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+  .field-value{font-size:12px;font-weight:600;color:#0f172a;border-bottom:1px solid #e2e8f0;padding:4px 0;min-height:22px}
+  .field-area{border:1px solid #e2e8f0;border-radius:6px;padding:6px 8px;min-height:40px;font-size:12px;margin-top:4px}
+  .premiere{background:#fef9c3;border:1px solid #fcd34d;border-radius:6px;padding:6px 12px;font-size:11px;font-weight:700;color:#92400e;text-align:center;margin-bottom:10px}
+  @media print{body{padding:10px}.no-print{display:none}}
+</style>
+</head><body>
+<div class="header">
+  <div class="clinic-name">${CLINIQUE.nom}</div>
+  <div class="clinic-sub">${CLINIQUE.adresse} &nbsp;|&nbsp; <a href="${CLINIQUE.tel_call}">${CLINIQUE.tel}</a></div>
+  <div class="doc-title">Feuille de Consultation Medicale</div>
+</div>
+
+${f.is_premiere_visite ? '<div class="premiere">NOUVEAU PATIENT — Premiere visite</div>' : ''}
+
+${entetePatient(f)}
+
+${f.praticien ? `<div class="section">
+  <div class="section-title">Praticien</div>
+  <div style="font-size:13px;font-weight:800;color:#0f172a">${f.praticien}</div>
+  <div style="font-size:11px;color:#64748b">${f.service_label}</div>
+</div>` : ''}
+
+<div class="section">
+  <div class="section-title">Motif de consultation</div>
+  <div class="field-area"></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Antecedents / Allergies</div>
+  <div class="field-area" style="min-height:28px"></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Signes vitaux (saisis par infirmier)</div>
+  <div class="field-row">
+    <div class="field"><div class="field-label">Tension</div><div class="field-value"></div></div>
+    <div class="field"><div class="field-label">Pouls</div><div class="field-value"></div></div>
+    <div class="field"><div class="field-label">Temperature</div><div class="field-value"></div></div>
+    <div class="field"><div class="field-label">Poids</div><div class="field-value"></div></div>
+    <div class="field"><div class="field-label">SpO2</div><div class="field-value"></div></div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">Examen clinique / Diagnostic</div>
+  <div class="field-area" style="min-height:55px"></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Prescriptions / Ordonnances</div>
+  <div class="field-area" style="min-height:55px"></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Examens complementaires demandes</div>
+  <div class="field-area" style="min-height:36px"></div>
+</div>
+
+<div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:24px">
+  ${ligneSignature('Infirmier(ere)')}
+  ${ligneSignature('Medecin')}
+</div>
+
+<div style="margin-top:16px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:8px">
+  Clinique de la Rebecca &nbsp;·&nbsp; Document confidentiel &nbsp;·&nbsp; Dossier ${f.patient_numero} &nbsp;·&nbsp; Ticket #${f.ticket}
+</div>
+
+<button onclick="window.print()" class="no-print" style="position:fixed;bottom:20px;right:20px;background:#1641C8;color:white;border:none;border-radius:10px;padding:10px 20px;font-weight:700;cursor:pointer;font-size:14px">Imprimer</button>
+</body></html>`
+  openPrint(html, 820, 1100)
+}
+
+// ── 2. FEUILLE D'EXAMEN LABO ────────────────────────────────────────────
+export function imprimerFeuilleLabo(f: FeuilleCaisse) {
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+  body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:24px;color:#1e293b}
+  .header{text-align:center;border-bottom:2px solid #7c3aed;padding-bottom:12px;margin-bottom:16px}
+  .clinic-name{font-size:16px;font-weight:900;color:#7c3aed;letter-spacing:1px}
+  .clinic-sub{font-size:11px;color:#64748b;margin-top:2px}
+  .doc-title{font-size:14px;font-weight:900;color:#0f172a;margin:10px 0 0;text-transform:uppercase;letter-spacing:1px}
+  .warning{background:#fef2f2;border:2px solid #fca5a5;border-radius:8px;padding:8px 14px;text-align:center;margin-bottom:12px;font-weight:800;font-size:12px;color:#dc2626}
+  .section{border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:12px}
+  .section-title{font-size:11px;font-weight:800;color:#7c3aed;text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;border-bottom:1px solid #e2e8f0;padding-bottom:4px}
+  .examen-table{width:100%;border-collapse:collapse;font-size:12px}
+  .examen-table th{background:#f5f3ff;padding:6px 10px;text-align:left;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.4px;color:#7c3aed}
+  .examen-table td{padding:8px 10px;border-bottom:1px solid #f1f5f9}
+  .examen-table tr:last-child td{border-bottom:none}
+  @media print{body{padding:10px}.no-print{display:none}}
+</style>
+</head><body>
+<div class="header">
+  <div class="clinic-name">${CLINIQUE.nom}</div>
+  <div class="clinic-sub">${CLINIQUE.adresse} &nbsp;|&nbsp; <a href="${CLINIQUE.tel_call}">${CLINIQUE.tel}</a></div>
+  <div class="doc-title">Bon d'Examen de Laboratoire</div>
+</div>
+
+<div class="warning">CONDITION : Resultats remis uniquement apres paiement complet</div>
+
+${entetePatient(f)}
+
+<div class="section">
+  <div class="section-title">Medecin prescripteur</div>
+  <div style="font-size:13px;font-weight:700">${f.praticien || 'Non specifie'}</div>
+</div>
+
+<div class="section">
+  <div class="section-title">Examens demandes</div>
+  <table class="examen-table">
+    <thead><tr>
+      <th style="width:40%">Type d'examen</th>
+      <th style="width:30%">Valeur observee</th>
+      <th style="width:15%">Valeur normale</th>
+      <th style="width:15%">Critique</th>
+    </tr></thead>
+    <tbody>
+      ${[1,2,3,4,5,6].map(() => `<tr>
+        <td style="border-bottom:1px dashed #e2e8f0"></td>
+        <td style="border-bottom:1px dashed #e2e8f0"></td>
+        <td style="border-bottom:1px dashed #e2e8f0"></td>
+        <td style="border-bottom:1px dashed #e2e8f0"></td>
+      </tr>`).join('')}
+    </tbody>
+  </table>
+</div>
+
+<div class="section">
+  <div class="section-title">Observations / Notes technicien</div>
+  <div style="border:1px solid #e2e8f0;border-radius:6px;padding:6px 8px;min-height:40px"></div>
+</div>
+
+<div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:32px">
+  <div>
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:6px">Signature technicien :</div>
+    <div style="border-bottom:1px solid #94a3b8;height:32px"></div>
+  </div>
+  <div>
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:6px">Date et heure :</div>
+    <div style="border-bottom:1px solid #94a3b8;height:32px"></div>
+  </div>
+</div>
+
+<div style="margin-top:14px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:8px">
+  Clinique de la Rebecca &nbsp;·&nbsp; Laboratoire &nbsp;·&nbsp; Dossier ${f.patient_numero} &nbsp;·&nbsp; Ticket #${f.ticket}
+</div>
+
+<button onclick="window.print()" class="no-print" style="position:fixed;bottom:20px;right:20px;background:#7c3aed;color:white;border:none;border-radius:10px;padding:10px 20px;font-weight:700;cursor:pointer;font-size:14px">Imprimer</button>
+</body></html>`
+  openPrint(html, 820, 1050)
+}
+
+// ── 3. FEUILLE SERVICE SPECIALISE (dentiste, physio, optométrie…) ──────
+export function imprimerFeuilleSpecialise(f: FeuilleCaisse) {
+  const COULEURS: Record<string, {color:string, accent:string}> = {
+    dentisterie: { color:'#0d9488', accent:'#f0fdfa' },
+    physio:      { color:'#d97706', accent:'#fffbeb' },
+    optometrie:  { color:'#dc2626', accent:'#fef2f2' },
+    maternite:   { color:'#db2777', accent:'#fdf2f8' },
+    sop:         { color:'#475569', accent:'#f1f5f9' },
+    observation: { color:'#64748b', accent:'#f8fafc' },
+  }
+  const svcKey = Object.keys(COULEURS).find(k => f.service_dest.includes(k)) || 'observation'
+  const { color, accent } = COULEURS[svcKey]
+
+  // Champs spécifiques par service
+  const CHAMPS: Record<string, string[]> = {
+    dentisterie: ['Dent(s) concernee(s)', 'Type d\'acte (extraction/plombage/detartrage/autre)', 'Anesthesie utilisee', 'Materiel utilise', 'Prochaine RDV recommandee', 'Observations'],
+    physio:      ['Zone traitee', 'Type de therapie', 'Nombre de seances prescrites', 'Exercices prescrits', 'Evolution / Progression', 'Observations'],
+    optometrie:  ['Acuite visuelle OD', 'Acuite visuelle OG', 'Correction prescrite (OD)', 'Correction prescrite (OG)', 'Pathologie detectee', 'Observations'],
+    maternite:   ['Semaines de grossesse', 'Presentation foetale', 'BCF (battements/min)', 'Tension arterielle', 'Prescription / Suivi', 'Observations'],
+    default:     ['Motif de consultation', 'Examen clinique', 'Traitement effectue', 'Prescription / Suivi', 'Prochaine RDV', 'Observations'],
+  }
+  const champs = CHAMPS[svcKey] || CHAMPS.default
+
+  const html = `<!DOCTYPE html><html><head><meta charset="utf-8">
+<style>
+  body{font-family:'Segoe UI',Arial,sans-serif;margin:0;padding:24px;color:#1e293b}
+  .header{text-align:center;border-bottom:3px solid ${color};padding-bottom:12px;margin-bottom:16px}
+  .clinic-name{font-size:16px;font-weight:900;color:${color};letter-spacing:1px}
+  .clinic-sub{font-size:11px;color:#64748b;margin-top:2px}
+  .doc-title{font-size:14px;font-weight:900;color:#0f172a;margin:10px 0 0;text-transform:uppercase;letter-spacing:1px}
+  .service-badge{background:${accent};border:2px solid ${color};border-radius:8px;padding:6px 16px;display:inline-block;font-weight:900;font-size:13px;color:${color};margin-bottom:12px}
+  .section{border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px;margin-bottom:10px}
+  .section-title{font-size:11px;font-weight:800;color:${color};text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;border-bottom:1px solid #e2e8f0;padding-bottom:4px}
+  .field-label{font-size:10px;color:#94a3b8;font-weight:700;margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
+  .field-area{border:1px solid #e2e8f0;border-radius:6px;padding:5px 8px;min-height:28px;margin-bottom:8px;font-size:12px}
+  @media print{body{padding:10px}.no-print{display:none}}
+</style>
+</head><body>
+<div class="header">
+  <div class="clinic-name">${CLINIQUE.nom}</div>
+  <div class="clinic-sub">${CLINIQUE.adresse} &nbsp;|&nbsp; <a href="${CLINIQUE.tel_call}">${CLINIQUE.tel}</a></div>
+  <div class="doc-title">Feuille de Consultation — ${f.service_label}</div>
+</div>
+
+<div style="text-align:center;margin-bottom:12px">
+  <div class="service-badge">${f.service_label.toUpperCase()}</div>
+</div>
+
+${entetePatient(f)}
+
+${f.praticien ? `<div class="section">
+  <div class="section-title">Praticien</div>
+  <div style="font-size:13px;font-weight:800;color:#0f172a">${f.praticien}</div>
+</div>` : ''}
+
+<div class="section">
+  <div class="section-title">Informations cliniques</div>
+  ${champs.map(c => `
+  <div class="field-label">${c}</div>
+  <div class="field-area"></div>`).join('')}
+</div>
+
+<div style="margin-top:14px;display:grid;grid-template-columns:1fr 1fr;gap:24px">
+  <div>
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:6px">Signature praticien :</div>
+    <div style="border-bottom:1px solid #94a3b8;height:36px"></div>
+  </div>
+  <div>
+    <div style="font-size:10px;color:#94a3b8;margin-bottom:6px">Date et heure :</div>
+    <div style="border-bottom:1px solid #94a3b8;height:36px"></div>
+  </div>
+</div>
+
+<div style="margin-top:12px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:8px">
+  Clinique de la Rebecca &nbsp;·&nbsp; ${f.service_label} &nbsp;·&nbsp; Dossier ${f.patient_numero} &nbsp;·&nbsp; Ticket #${f.ticket}
+</div>
+
+<button onclick="window.print()" class="no-print" style="position:fixed;bottom:20px;right:20px;background:${color};color:white;border:none;border-radius:10px;padding:10px 20px;font-weight:700;cursor:pointer;font-size:14px">Imprimer</button>
+</body></html>`
+  openPrint(html, 820, 1050)
+}
+
+// ── DISPATCHER PRINCIPAL ────────────────────────────────────────────────
+export function imprimerFeuilleAuto(feuille: FeuilleCaisse) {
+  switch (feuille.type) {
+    case 'consultation': return imprimerFeuilleConsultation(feuille)
+    case 'labo':         return imprimerFeuilleLabo(feuille)
+    case 'specialise':   return imprimerFeuilleSpecialise(feuille)
+    default:             return imprimerFeuilleConsultation(feuille)
+  }
+}
