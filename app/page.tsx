@@ -36,7 +36,7 @@ export default function HomePage() {
       <RdvModal open={rdvOpen} onClose={() => setRdvOpen(false)} />
 
       {/* ── HERO SPLIT ────────────────────────────────────────────── */}
-      <section className="hero-grid" style={{ minHeight:'calc(100vh - 56px)' }}>
+      <section style={{ minHeight:'calc(100vh - 72px)', display:'grid', gridTemplateColumns:'1fr 1fr' }}>
         {/* Gauche */}
         <div style={{ display:'flex', flexDirection:'column', justifyContent:'center', padding:'80px 60px', background:'white' }}>
           {/* Badge horaires */}
