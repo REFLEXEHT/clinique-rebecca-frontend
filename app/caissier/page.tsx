@@ -396,7 +396,10 @@ export default function CaissierPage() {
  ...r.data,
  patient: {
  ...r.data.patient,
- nom: `${formNouv.prenom} ${r.data.patient?.nom || formNouv.nom}`.trim(),
+ // Afficher prenom + nom sans duplication
+ nom: r.data.patient?.prenom
+  ? `${r.data.patient.prenom} ${r.data.patient.nom}`.trim()
+  : `${formNouv.prenom} ${r.data.patient?.nom || formNouv.nom}`.trim(),
  }
  })
  // Imprimer la feuille adaptée au service après 1.5s (laisser le reçu se fermer)
