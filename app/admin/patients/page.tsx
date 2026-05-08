@@ -1,10 +1,12 @@
 'use client'
 // app/admin/patients/page.tsx
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { patientsApi } from '@/lib/api'
 import { Patient } from '@/types'
 
 export default function AdminPatients() {
+ const router = useRouter()
  const [patients, setPatients] = useState<Patient[]>([])
  const [search, setSearch] = useState('')
  const [loading, setLoading] = useState(true)
@@ -87,8 +89,7 @@ export default function AdminPatients() {
  <td className="text-[12.5px] text-slate-500">{p.email || '—'}</td>
  <td className="text-[12px] text-slate-400">{fmtDate(p.created_at)}</td>
  <td>
- <button className="text-[12px] text-[#1641C8] hover:underline font-semibold
- bg-transparent border-none cursor-pointer">
+ <button onClick={() => router.push(`/admin/patients/${p.id}`)} className="text-[12px] text-[#1641C8] hover:underline font-semibold bg-transparent border-none cursor-pointer">
  Voir dossier
  </button>
  </td>

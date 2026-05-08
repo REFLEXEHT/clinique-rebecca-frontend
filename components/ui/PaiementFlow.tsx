@@ -34,11 +34,11 @@ interface Props {
 }
 
 const MODES = [
- { id: 'especes' as ModePaiement, icon: '', label: 'Espèces' },
- { id: 'moncash' as ModePaiement, icon: '', label: 'MonCash' },
- { id: 'natcash' as ModePaiement, icon: '', label: 'NatCash' },
- { id: 'carte' as ModePaiement, icon: '', label: 'Carte' },
- { id: 'zelle' as ModePaiement, icon: '', label: 'Zelle' },
+ { id: 'especes' as ModePaiement, label: 'Espèces', color: '#16a34a', bg: '#f0fdf4', faIcon: 'fa-money-bill-wave' },
+ { id: 'moncash' as ModePaiement, label: 'MonCash', color: '#dc2626', bg: '#fef2f2', faIcon: 'fa-mobile-screen' },
+ { id: 'natcash' as ModePaiement, label: 'NatCash', color: '#1d4ed8', bg: '#eff6ff', faIcon: 'fa-mobile-alt' },
+ { id: 'carte'   as ModePaiement, label: 'Carte',   color: '#7c3aed', bg: '#f5f3ff', faIcon: 'fa-credit-card' },
+ { id: 'zelle'   as ModePaiement, label: 'Zelle',   color: '#0369a1', bg: '#f0f9ff', faIcon: 'fa-dollar-sign' },
 ]
 
 const inp: any = (extra?: any) => ({
@@ -144,15 +144,16 @@ export default function PaiementFlow({
  <div style={{ display: 'grid', gridTemplateColumns: `repeat(${modes.length}, 1fr)`, gap: 5, marginBottom: 12 }}>
  {modes.map(m => (
  <button key={m.id} type="button" onClick={() => changeMode(m.id)} style={{
- padding: compact ? '6px 3px' : '8px 4px', borderRadius: 8, cursor: 'pointer',
- border: `2px solid ${mode === m.id ? '#d97706' : '#e2e8f0'}`,
- background: mode === m.id ? '#fff7ed' : '#fafafa',
- color: mode === m.id ? '#d97706' : '#64748b',
- fontWeight: 600, fontSize: 10, textAlign: 'center' as const, lineHeight: 1.4
- }}>
- <div style={{ fontSize: compact ? 14 : 16 }}>{m.icon}</div>
- {m.label}
- </button>
+   padding: compact ? '8px 3px' : '10px 4px', borderRadius: 8, cursor: 'pointer',
+   border: `2px solid ${mode === m.id ? (m as any).color : '#e2e8f0'}`,
+   background: mode === m.id ? (m as any).bg : 'white',
+   color: mode === m.id ? (m as any).color : '#94a3b8',
+   fontWeight: 700, fontSize: 10, textAlign: 'center' as const, lineHeight: 1.5,
+   transition: 'all 0.15s'
+  }}>
+  <i className={`fa-solid ${(m as any).faIcon}`} style={{ display:'block', fontSize: 15, marginBottom: 2 }} />
+  {m.label}
+  </button>
  ))}
  </div>
 
