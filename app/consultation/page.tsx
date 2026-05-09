@@ -66,7 +66,7 @@ export default function ConsultationPage() {
  patient_nom: data.nom,
  patient_telephone: data.telephone,
  patient_email: data.email,
- date_rdv: new Date(data.date_rdv).toISOString(),
+ date_rdv: data.date_rdv.includes('T') ? new Date(data.date_rdv).toISOString() : new Date(data.date_rdv).toISOString(),
  statut: data.type_rdv === 'video' ? 'paiement_requis' : 'en_attente',
  })
  setSuccess(true)
@@ -212,7 +212,7 @@ export default function ConsultationPage() {
 
  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:14 }}>
  <div>
- <label style={{ fontWeight:600, fontSize:13, color:'#374151', display:'block', marginBottom:6 }}>{t('date')} *</label>
+ <label style={{ fontWeight:600, fontSize:13, color:'#374151', display:'block', marginBottom:6 }}>Date et heure du RDV *</label>
  <input {...register('date_rdv', { required: true })} type="date"
  min={new Date().toISOString().split('T')[0]} style={errors.date_rdv ? inpErr : inp} />
  {errors.date_rdv && <div style={{ color:'#ef4444', fontSize:11, marginTop:4 }}>{t('required')}</div>}

@@ -146,7 +146,7 @@ function ModalDocument({ doc, onClose, onPrint }: any) {
 export default function CaissierPage() {
  const { user, isAuthenticated, loading, logout } = useAuth()
  const router = useRouter()
- const [onglet, setOnglet] = useState<'paiement'|'documents'|'depenses'|'nouveau'|'rapport'|'registre'>('paiement')
+ const [onglet, setOnglet] = useState<'paiement'|'documents'|'depenses'|'nouveau'|'rapport'|'registre'|'rdv'>('nouveau')
  const [periodeDepense, setPeriodeDepense] = useState<'jour'|'mois'>('jour')
  const [rapportUnlocked, setRapportUnlocked] = useState(false)
  const [rapportPwd, setRapportPwd] = useState('')
@@ -202,6 +202,7 @@ export default function CaissierPage() {
  if (!isAuthenticated) return
  api.get('/registre-rdv?jours=30').then(r => setRegistre(r.data?.rdvs||[])).catch(()=>{})
  api.get('/labo/tarifs').then(r => setTarifsLabo(r.data || [])).catch(() => {})
+    api.get('/rdv/demandes').then(r => setDemandesRdv(r.data?.demandes || [])).catch(() => {})
  api.get('/caissier/taux-change').then(r => setTauxChange(r.data?.taux_htg || 130)).catch(() => {})
  api.get('/specialistes').then(r => setSpecialistes(r.data || [])).catch(() => {})
  api.get('/tarifs-medecins').then(r => setTarifs(r.data || [])).catch(() => {})
@@ -317,6 +318,7 @@ export default function CaissierPage() {
  const [tarifsDentiste, setTarifsDentiste] = useState<any[]>([])
  const [stocksPharmacie, setStocksPharmacie] = useState<any[]>([])
  const [previewNumero, setPreviewNumero] = useState<string>('')
+  const [demandesRdv, setDemandesRdv]   = useState<any[]>([])
 
   // Charger le prochain numéro — retry toutes les 2s jusqu'à succès
   useEffect(() => {
@@ -509,10 +511,11 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
  <div style={{background:'white',borderBottom:'1px solid #e2e8f0',padding:'0 20px',display:'flex',gap:2,overflowX:'auto'}}>
  {[
  {k:'paiement', label:' Paiement'},
- {k:'documents', label:' Documents patient'},
+ {k:'rdv', label:' RDV'},
+ {k:'documents', label:' Documents'},
  {k:'depenses', label:' Décaissements'},
  {k:'nouveau', label:' Nouveau patient'},
- {k:'rapport', label:' Rapport comptable IA'},
+ {k:'rapport', label:' Rapport IA'},
  ].map(t=>(
  <button key={t.k} onClick={()=>setOnglet(t.k as any)} style={{
  padding:'12px 14px',border:'none',background:'transparent',cursor:'pointer',
@@ -537,7 +540,63 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
  <div style={{maxWidth:1100,margin:'0 auto',padding:'20px'}}>
 
  {/* PAIEMENT */}
- {onglet==='paiement' && (
+ {onglet==='rdv' && (
+ <div style={{maxWidth:900,margin:'0 auto'}}>
+  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
+   <h2 style={{fontWeight:900,fontSize:'1.2rem',color:'#0f172a',margin:0}}>Demandes de rendez-vous</h2>
+   <button onClick={()=>api.get('/rdv/demandes').then((r:any)=>setDemandesRdv(r.data?.demandes||[])).catch(()=>{})}
+    style={{background:'#eff6ff',border:'1px solid #93c5fd',borderRadius:8,padding:'7px 14px',color:'#1641C8',cursor:'pointer',fontWeight:700,fontSize:12}}>
+    Actualiser
+   </button>
+  </div>
+  {demandesRdv.length === 0
+   ? <div style={{textAlign:'center',padding:48,color:'#94a3b8',background:'white',borderRadius:12,border:'1px solid #e2e8f0'}}>
+      <i className="fa-solid fa-calendar-check" style={{fontSize:40,display:'block',marginBottom:12,opacity:0.3}}/>
+      Aucune demande en attente
+     </div>
+   : demandesRdv.map((d:any) => (
+    <div key={d.id} style={{background:'white',borderRadius:12,padding:16,border:'1px solid #e2e8f0',marginBottom:10}}>
+     <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
+      <div>
+       <div style={{fontWeight:800,fontSize:15}}>{d.patient_nom}</div>
+       <div style={{fontSize:12,color:'#94a3b8',marginTop:2}}>{d.patient_numero} · {d.patient_telephone}</div>
+       <div style={{marginTop:6,display:'flex',gap:6}}>
+        <span style={{background:'#f0f9ff',color:'#0369a1',padding:'2px 10px',borderRadius:99,fontSize:11,fontWeight:700}}>{d.service}</span>
+        <span style={{background:d.statut==='en_attente'?'#fff7ed':'d.statut==="paiement_requis"?"#eff6ff":"#f0fdf4',color:d.statut==='en_attente'?'#d97706':'d.statut==="paiement_requis"?"#1641C8":"#16a34a',padding:'2px 10px',borderRadius:99,fontSize:11,fontWeight:700}}>
+         {d.statut==='en_attente'?'En attente':d.statut==='paiement_requis'?'Paiement requis':'Proposé'}
+        </span>
+       </div>
+      </div>
+      <div style={{textAlign:'right',fontSize:12,color:'#64748b'}}>
+       <div style={{fontWeight:700,color:'#0f172a'}}>
+        {d.date_rdv_demandee?new Date(d.date_rdv_demandee).toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'—'}
+       </div>
+      </div>
+     </div>
+     {d.motif && <div style={{fontSize:12,color:'#64748b',marginBottom:8,fontStyle:'italic'}}>Motif: {d.motif}</div>}
+     <div style={{display:'flex',gap:8,flexWrap:'wrap' as const}}>
+      <button onClick={async()=>{try{await api.post(`/rdv/${d.id}/confirmer`,{action:'confirmer'});toast.success('Confirmé');api.get('/rdv/demandes').then((r:any)=>setDemandesRdv(r.data?.demandes||[])).catch(()=>{})}catch(e:any){toast.error(e.response?.data?.detail||'Erreur')}}}
+       style={{flex:1,padding:'8px',borderRadius:8,border:'none',background:'#16a34a',color:'white',fontWeight:700,cursor:'pointer',fontSize:12}}>
+       Confirmer RDV
+      </button>
+      {d.statut==='paiement_requis' && (
+       <button onClick={async()=>{const mode=window.prompt('Mode paiement:','especes');if(!mode)return;try{const r=await api.post(`/rdv/${d.id}/payer-et-envoyer`,{mode_paiement:mode});toast.success(`Ticket #${r.data.ticket} → Queue infirmier`);api.get('/rdv/demandes').then((rr:any)=>setDemandesRdv(rr.data?.demandes||[])).catch(()=>{})}catch(e:any){toast.error(e.response?.data?.detail||'Erreur')}}}
+        style={{flex:1,padding:'8px',borderRadius:8,border:'none',background:'#1641C8',color:'white',fontWeight:700,cursor:'pointer',fontSize:12}}>
+        Paiement reçu → Queue
+       </button>
+      )}
+      <button onClick={async()=>{if(!window.confirm('Annuler?'))return;try{await api.post(`/rdv/${d.id}/confirmer`,{action:'annuler'});toast.success('Annulé');api.get('/rdv/demandes').then((r:any)=>setDemandesRdv(r.data?.demandes||[])).catch(()=>{})}catch(e:any){toast.error(e.response?.data?.detail||'Erreur')}}}
+       style={{padding:'8px 12px',borderRadius:8,border:'1.5px solid #fecaca',background:'white',color:'#dc2626',fontWeight:700,cursor:'pointer',fontSize:12}}>
+       Annuler
+      </button>
+     </div>
+    </div>
+   ))
+  }
+ </div>
+)}
+
+{onglet==='paiement' && (
  <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
  {/* Gauche: formulaire */}
  <div>

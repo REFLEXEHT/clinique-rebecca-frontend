@@ -23,8 +23,9 @@ export default function InfirmierDashboard() {
  const [submitting, setSubmitting] = useState(false)
  // Search by patient ID
  const [searchId, setSearchId] = useState('')
- const [onglet, setOnglet] = useState<'queue'|'attente'|'alertes'|'recherche'|'paiement'>('queue')
+ const [onglet, setOnglet] = useState<'queue'|'attente'|'alertes'|'recherche'|'paiement'|'avenir'>('queue')
  const [queue, setQueue] = useState<any[]>([])
+ const [rdvAvenir, setRdvAvenir] = useState<any[]>([])
  const [alertesPrescriptions, setAlertesPrescriptions] = useState<any[]>([])
  const [selectedRdv, setSelectedRdv] = useState<any>(null)
  const [svRdv, setSvRdv] = useState({tension:'',pouls:'',temperature:'',poids:'',spo2:''})
@@ -39,6 +40,7 @@ export default function InfirmierDashboard() {
  if (!isAuthenticated) return
  api.get('/infirmier/dossiers-en-attente').then(r => setDossiers(r.data || [])).catch(() => {})
  api.get('/infirmier/queue').then(r => setQueue(r.data?.patients || [])).catch(() => {})
+      api.get('/rdv/a-venir').then(r => setRdvAvenir(r.data?.rdvs || [])).catch(() => {})
  api.get('/infirmier/alertes-prescriptions').then(r => setAlertesPrescriptions(r.data?.alertes || [])).catch(() => {})
  // Rafraîchir la queue toutes les 30 secondes
  const interval = setInterval(() => {
@@ -129,6 +131,7 @@ export default function InfirmierDashboard() {
  <div style={{ display:'flex', background:'#f1f5f9', borderRadius:10, padding:3, gap:2 }}>
  {([
  {k:'queue' as const, label:`Queue (${queue.length})`, icon:''},
+ {k:'avenir' as const, label:`RDV à venir (${rdvAvenir.length})`, icon:''},
  {k:'attente' as const, label:'Dossiers', icon:''},
  {k:'alertes' as const, label:`Alertes (${alertesPrescriptions.length})`, icon:''},
  {k:'recherche' as const, label:'Recherche', icon:''},
@@ -299,7 +302,39 @@ export default function InfirmierDashboard() {
  )}
 
  {/* ONGLET FILE D'ATTENTE + SIGNES VITAUX */}
- {onglet === 'attente' && (
+ {onglet==='avenir' && (
+ <div>
+  <h2 style={{fontWeight:900,fontSize:'1.2rem',color:'#0f172a',marginBottom:16}}>Rendez-vous à venir</h2>
+  <div style={{fontSize:12,color:'#64748b',marginBottom:12}}>
+   Ces RDV sont confirmés. Ils passeront automatiquement dans la queue du jour à leur date/heure.
+  </div>
+  {rdvAvenir.length===0
+   ? <div style={{textAlign:'center',padding:40,color:'#94a3b8',background:'white',borderRadius:12,border:'1px solid #e2e8f0'}}>
+      <i className="fa-solid fa-calendar" style={{fontSize:36,display:'block',marginBottom:10,opacity:0.3}}/>
+      Aucun rendez-vous à venir confirmé
+     </div>
+   : rdvAvenir.map((r:any) => (
+    <div key={r.id} style={{background:'white',borderRadius:12,padding:14,border:'1px solid #e2e8f0',marginBottom:8,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+     <div>
+      <div style={{fontWeight:700,fontSize:14}}>{r.patient_nom}</div>
+      <div style={{fontSize:12,color:'#94a3b8',marginTop:2}}>{r.patient_numero} · {r.service}</div>
+      {r.medecin_nom && <div style={{fontSize:12,color:'#7c3aed',marginTop:1}}>{r.medecin_nom}</div>}
+     </div>
+     <div style={{textAlign:'right'}}>
+      <div style={{fontWeight:800,color:'#1641C8',fontSize:13}}>
+       {new Date(r.date_rdv).toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
+      </div>
+      <span style={{background:'#eff6ff',color:'#1641C8',padding:'2px 10px',borderRadius:99,fontSize:10,fontWeight:700}}>
+       {r.statut==='paiement_requis'?'Paymt requis':'Confirmé'}
+      </span>
+     </div>
+    </div>
+   ))
+  }
+ </div>
+)}
+
+{onglet === 'attente' && (
  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:20 }}>
  {/* Liste dossiers en attente */}
  <div style={{ background:'white', borderRadius:18, padding:20, border:'1px solid #e2e8f0' }}>
