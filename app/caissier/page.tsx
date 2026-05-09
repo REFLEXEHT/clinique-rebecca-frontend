@@ -2057,6 +2057,4 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
  <ModalDocument doc={modalDoc} onClose={()=>setModalDoc(null)} onPrint={()=>window.print()} />
  </div>
  )
-  </>
-)
 }

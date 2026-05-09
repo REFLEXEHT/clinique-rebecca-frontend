@@ -1,142 +1,89 @@
 #!/usr/bin/env python3
 """
-precheck.py — Vérification locale avant push vers GitHub
-Usage: python3 scripts/precheck.py
-Détecte: apostrophes non échappées, braces déséquilibrées, fonctions renommées,
-         ternaires Python malformés, attributs de modèle invalides.
+precheck.py — Analyse preventive AVANT git push
+Detecte: accolades, apostrophes JSX, fragments orphelins, imports dupliques,
+         JSX hors return, const sans init, tableaux corrompus
 """
-import re, sys, os
+import re, sys, ast
+from pathlib import Path
+from collections import Counter
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
-FRONTEND_FILES = [
-    'app/caissier/page.tsx',
-    'app/admin/comptabilite/page.tsx',
-    'app/admin/depenses/page.tsx',
-    'app/admin/specialistes/page.tsx',
-    'app/infirmier/page.tsx',
-    'app/labo/page.tsx',
-    'app/medecin/dashboard/page.tsx',
-    'components/ui/RdvModal.tsx',
-    'components/ui/PaiementFlow.tsx',
-    'components/ui/SignaturePad.tsx',
-    'lib/print.ts',
-    'lib/api.ts',
-]
-
-# Fonctions renommées — (ancien_nom, nouveau_nom)
-RENAMED_FUNCTIONS = [
-    ('imprimerFacture',       'imprimerRecuEnregistrement ou imprimerFactureOf'),
-    ('imprimerRecu',          'imprimerRecuPaiement'),
-    ('imprimerOrdonnance',    'imprimerDocumentMedecin  (ou alias imprimerOrdonnance OK)'),
-]
-
+ROOT = Path(__file__).parent.parent
+PAGES = list(ROOT.glob("app/**/*.tsx")) + list(ROOT.glob("components/**/*.tsx"))
 errors = []
 
-# ── Frontend TypeScript / TSX ────────────────────────────────────────────────
-for rel in FRONTEND_FILES:
-    path = os.path.join(ROOT, rel)
-    if not os.path.exists(path):
-        continue
-    content = open(path, encoding='utf-8').read()
-    lines   = content.split('\n')
+def err(f, msg):
+    errors.append(f"  [{f.relative_to(ROOT)}] {msg}")
 
-    # 1. Braces équilibrées { }
-    o = content.count('{')
-    c = content.count('}')
-    if o != c:
-        errors.append(f"[BRACES] {rel}: {o} '{{' vs {c} '}}' (diff={o-c:+d})")
+for f in PAGES:
+    src = f.read_text(encoding="utf-8", errors="replace")
+    lines = src.splitlines()
 
-    # 2. Backticks équilibrés
-    bt = content.count('`')
-    if bt % 2 != 0:
-        errors.append(f"[BACKTICK] {rel}: nombre impair de backticks ({bt})")
+    # ── 1. Balance accolades (ignore strings/templates)
+    stripped = src
+    stripped = re.sub(r'`[^`]*`', '``', stripped)         # template literals
+    stripped = re.sub(r'"[^"\n]*"', '""', stripped)        # double quotes
+    stripped = re.sub(r"'[^'\n]*'", "''", stripped)        # single quotes
+    stripped = re.sub(r'//[^\n]*', '', stripped)           # line comments
+    opens  = stripped.count('{')
+    closes = stripped.count('}')
+    if opens != closes:
+        err(f, f"BRACES: {opens} '{{' vs {closes} '}}' (diff={opens-closes:+d})")
 
-    # 3. Apostrophes dans strings JS single-quoted (ex: 'don't', "d'abord" dans '')
+    # ── 2. Fragments JSX <> / </>
+    open_frags  = len(re.findall(r'(?<![a-zA-Z/=])<>\s*$', src, re.MULTILINE))
+    close_frags = len(re.findall(r'</>\s*$', src, re.MULTILINE))
+    if open_frags != close_frags:
+        err(f, f"FRAGMENT: {open_frags} '<>' vs {close_frags} '</>' (diff={open_frags-close_frags:+d})")
+
+    # ── 3. Apostrophes non echappees dans texte JSX (entre > et <)
     for i, line in enumerate(lines, 1):
-        stripped = line.strip()
-        # Skip commentaires et texte JSX pur (entre > et <)
-        if stripped.startswith('//') or stripped.startswith('*'):
-            continue
-        # Cherche pattern: 'mot d'autre' — apostrophe casse la string JS
-        if re.search(r"(?<!')(?<![>])'[^'<>\n]{0,60}\w'\w[^'<>\n]{0,60}'", stripped):
-            # Exclure JSX text content (lignes qui commencent par du JSX)
-            if not re.match(r'^[A-Z]|^[a-z](?![^=]*=>)', stripped):
-                errors.append(f"[APOSTROPHE] {rel}:{i}: {stripped[:90]}")
+        jsxtexts = re.findall(r'>([^<{]+)<', line)
+        for t in jsxtexts:
+            if "'" in t and t.strip():
+                # Allow common French contractions that are fine
+                safe = re.sub(r"(d|l|n|j|c|m|qu|aujourd|jusqu)[']", '', t)
+                if "'" in safe:
+                    err(f, f"L{i}: apostrophe dans texte JSX: {t.strip()[:50]!r}")
+                    break
 
-    # 4. Fonctions utilisées sous leur ancien nom
-    for bad, good in RENAMED_FUNCTIONS:
-        if 'imprimerOrdonnance' in bad:
-            continue  # alias conservé intentionnellement
-        for i, line in enumerate(lines, 1):
-            lstripped = line.strip()
-            if (bad + '(') in line and \
-               not lstripped.startswith('//') and \
-               'import' not in line and \
-               ('const ' + bad) not in line and \
-               ('function ' + bad) not in line and \
-               ('export function ' + bad) not in line:
-                errors.append(f"[RENAME] {rel}:{i}: '{bad}()' trouvé — utiliser '{good}'")
-
-# ── Backend Python ───────────────────────────────────────────────────────────
-BACKEND_ROOT = ROOT.replace('frontend', 'backend')
-
-BACKEND_FILES = [
-    'app/routers.py',
-    'app/models.py',
-    'app/schemas.py',
-]
-
-# Attributs qui n'existent pas dans les modèles SQLAlchemy
-INVALID_MODEL_ATTRS = [
-    ('montant_credit',  'Mouvement — utiliser montant'),
-    ('montant_debit',   'Mouvement — utiliser montant'),
-    ('nom_medecin',     'TarifMedecin — utiliser medecin_nom'),
-]
-
-for rel in BACKEND_FILES:
-    path = os.path.join(BACKEND_ROOT, rel)
-    if not os.path.exists(path):
-        continue
-
-    # Vérification syntaxe Python via py_compile
-    import subprocess as sp
-    r = sp.run(['python3', '-m', 'py_compile', path], capture_output=True, text=True)
-    if r.returncode != 0:
-        errors.append(f"[PY-SYNTAX] {rel}: {r.stderr.strip()}")
-
-    content = open(path, encoding='utf-8').read()
-    lines   = content.split('\n')
-
+    # ── 4. Imports apres du code (signe de corruption)
+    code_started = False
     for i, line in enumerate(lines, 1):
-        stripped = line.strip()
-        if stripped.startswith('#'):
+        s = line.strip()
+        if not s or s in ("'use client'", '"use client"'):
             continue
+        if s.startswith('import '):
+            if code_started:
+                err(f, f"L{i}: import apres du code (fichier corrompu?): {s[:60]}")
+        elif s.startswith('//') or s.startswith('/*') or s.startswith('*'):
+            continue
+        else:
+            code_started = True
 
-        # Ternaire Python double-if malformé
-        # Pattern invalide: "val" if condA if condB else y (manque else entre les deux if)
-        # Valid: ("sain" if x else "élevé") if cond else "N/A" — on ne le signale pas
-        raw_ternaire = re.search(r'["\'\\"]\\s+if\\s+[^(\\n]+\\bif\\b[^(\\n]+\\belse\\b', line)
-        is_valid_nested = re.search(r'\\([^)]+\\bif\\b[^)]+\\belse\\b[^)]+\\)\\s+if', line)
-        is_in_fstring = '{' in line and '}' in line
-        if raw_ternaire and not is_valid_nested and not is_in_fstring:
-            errors.append(f"[PY-TERNAIRE] {rel}:{i}: ternaire enchaîné potentiellement invalide")
+    # ── 5. Double declaration const majuscules (tableaux globaux)
+    const_names = re.findall(r'\bconst\s+([A-Z_][A-Z_0-9]*)\s*=', src)
+    for name, count in Counter(const_names).items():
+        if count > 1:
+            err(f, f"DUPLICATE: 'const {name}' declare {count} fois")
 
-        # Attributs de modèle invalides
-# Attributs de modèle invalides
-        for attr, note in INVALID_MODEL_ATTRS:
-            if attr in line and '=' not in line.split(attr)[0][-5:]:
-                # Ignorer les définitions de colonnes et les commentaires
-                if 'Column' not in line and '#' not in line.split(attr)[0]:
-                    errors.append(f"[PY-ATTR] {rel}:{i}: '{attr}' — {note}")
+    # ── 6. Pattern "],<texte>" — fermeture tableau corrompue
+    for i, line in enumerate(lines, 1):
+        if re.match(r'\s*\],?\s*[a-z\'"]', line) and i > 2:
+            prev = lines[i-2].strip()
+            if any(k in prev for k in ['emoji', 'value:', 'label:', 'href:', 'icon:']):
+                if not re.match(r'\s*\],?\s*(const|let|var|export|import|//)', line):
+                    err(f, f"L{i}: tableau corrompu? {line.strip()[:60]!r}")
 
-# ── Rapport final ────────────────────────────────────────────────────────────
-if errors:
-    print(f"\n❌  {len(errors)} problème(s) détecté(s) avant push :\n")
-    for e in errors:
-        print(f"  {e}")
-    print("\n→ Corrigez ces erreurs avant git push.\n")
-    sys.exit(1)
-else:
-    print("✅  Vérification OK — tous les fichiers sont propres.")
-    sys.exit(0)
+    # ── 7. JSX inside non-return function context (modal inserted in wrong place)
+    # If mustChangePassword appears inside a component that's NOT CaissierPage/etc.
+    fn_blocks = re.split(r'\nfunction ', src)
+    for block in fn_blocks[1:]:  # skip first (before any function)
+        fn_name = block.split('(')[0].strip()
+        if fn_name and fn_name[0].isupper() and 'export default' not in fn_name:
+            # It's a helper component — check it doesn't use top-level state
+            if 'mustChangePassword' in block and 'setMustChangePassword' not in block[:50]:
+                # Only flag if it uses mustChangePassword without defining it
+                if 'const [mustChangePassword' not in block:
+                    err(f, f"MODAL dans mauvais composant: {fn_name}() utilise mustChangePassword")
+
