@@ -152,8 +152,8 @@ export default function PraticienDirectPage() {
       rdv_id: rdv?.id || 0,
       is_premiere_visite: false,
     }
-    if (service === 'dentisterie' || service === 'dentiste') imprimerFeuilleDentisterie(f)
-    else if (service === 'optometrie' || service === 'optom') imprimerFeuilleOptometrie(f)
+    if (['dentisterie','dentiste'].includes(service as string)) imprimerFeuilleDentisterie(f)
+    else if (['optometrie','optom'].includes(service as string)) imprimerFeuilleOptometrie(f)
     else toast('Feuille physiothérapie en cours de préparation')
   }
 
