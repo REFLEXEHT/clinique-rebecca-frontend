@@ -1106,7 +1106,6 @@ function AccesDossierDirect({ onOuvrirDossier }: { onOuvrirDossier: (dossier: an
         </div>
       )}
     </div>
-  </>
 )
 }
 

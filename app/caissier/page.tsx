@@ -2059,6 +2059,4 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
  )
   </>
 )
-  </>
-)
 }

@@ -14,19 +14,6 @@ const ROLES_PERSONNEL = [
  { value:'physio',     label:'Physiothérapeute', emoji:'' },
  { value:'optometrie', label:'Optométriste',     emoji:'' },
  { value:'admin',      label:'Administrateur',   emoji:'' },
-],
-import { useEffect, useState } from 'react'
-import { api } from '@/lib/api'
-import toast from 'react-hot-toast'
-import { UserPlus, Users, Eye, EyeOff } from 'lucide-react'
-
-const ROLES_PERSONNEL = [
- { value:'medecin', label:'Médecin', emoji:'' },
- { value:'caissier', label:'Caissier(ère)', emoji:'' },
- { value:'labo', label:'Laboratoire', emoji:'' },
- { value:'infirmier', label:'Infirmier(ère)', emoji:'' },
- { value:'pharmacie', label:'Pharmacie', emoji:'' },
- { value:'admin', label:'Administrateur', emoji:'️' },
 ]
 
 interface User { id: number; nom: string; email: string; role: string; is_active: boolean; created_at: string }
