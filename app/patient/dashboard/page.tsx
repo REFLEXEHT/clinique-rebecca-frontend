@@ -435,11 +435,27 @@ function RdvCard({ rdv, compact = false }: { rdv: any; compact?: boolean }) {
  </a>
  )}
  {rdv.statut === 'paiement_requis' && (
- <div style={{ background: '#f5f3ff', borderRadius: 8, padding: '10px 14px', marginTop: 8, fontSize: 12, color: '#7c3aed' }}>
- Un paiement est requis avant confirmation. Contactez-nous : (509) 4858-5757
- </div>
- )}
- {rdv.autre_moment_propose && (
+      <div style={{ background: '#f5f3ff', border: '1px solid #ddd6fe', borderRadius: 10, padding: 14, marginTop: 10 }}>
+       <div style={{ fontWeight: 700, color: '#7c3aed', fontSize: 13, marginBottom: 10 }}>Paiement requis pour confirmer votre rendez-vous</div>
+       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, marginBottom: 8 }}>
+        {[{m:'moncash',c:'#dc2626'},{m:'natcash',c:'#1d4ed8'},{m:'zelle',c:'#0369a1'},{m:'carte',c:'#7c3aed'}].map(({m,c}) => (
+         <button key={m} onClick={async()=>{
+          const ref=window.prompt(`Reference ${m.toUpperCase()}:`)
+          if(!ref) return
+          try{
+           const {api:_api}=await import('@/lib/api')
+           await _api.post(`/rdv/${rdv.id}/payer-distance`,{mode_paiement:m,reference:ref})
+           alert('Paiement enregistre ! Votre RDV est confirme.')
+           window.location.reload()
+          }catch(e:any){alert(e.response?.data?.detail||'Erreur')}
+         }} style={{padding:'8px 14px',borderRadius:8,border:'none',background:c,color:'white',fontWeight:700,cursor:'pointer',fontSize:12}}>
+          Payer via {m}
+         </button>
+        ))}
+       </div>
+       <div style={{fontSize:11,color:'#94a3b8'}}>Ou payez en personne a la caisse le jour de votre rendez-vous</div>
+      </div>
+     )} {rdv.autre_moment_propose && (
  <div style={{ background: '#fffbeb', borderRadius: 8, padding: '10px 14px', marginTop: 8, fontSize: 12, color: '#92400e' }}>
  Nouveau créneau proposé : <strong>{rdv.autre_moment_propose}</strong>
  {rdv.autre_moment_message && <div style={{ marginTop: 4 }}>{rdv.autre_moment_message}</div>}

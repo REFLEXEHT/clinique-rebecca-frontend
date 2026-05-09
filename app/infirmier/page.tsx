@@ -304,32 +304,47 @@ export default function InfirmierDashboard() {
  {/* ONGLET FILE D'ATTENTE + SIGNES VITAUX */}
  {onglet==='avenir' && (
  <div>
-  <h2 style={{fontWeight:900,fontSize:'1.2rem',color:'#0f172a',marginBottom:16}}>Rendez-vous à venir</h2>
-  <div style={{fontSize:12,color:'#64748b',marginBottom:12}}>
-   Ces RDV sont confirmés. Ils passeront automatiquement dans la queue du jour à leur date/heure.
+  <h2 style={{fontWeight:900,fontSize:'1.2rem',color:'#0f172a',marginBottom:8}}>Rendez-vous à venir</h2>
+  <div style={{fontSize:12,color:'#64748b',marginBottom:16,background:'#f0f9ff',border:'1px solid #bae6fd',borderRadius:8,padding:'8px 12px'}}>
+   <i className="fa-solid fa-info-circle" style={{marginRight:6,color:'#0369a1'}}/>
+   Ces RDV sont confirmés. La caisse signale la présence du patient le jour J pour les envoyer dans la queue signes vitaux.
+   <br/><span style={{color:'#16a34a',fontWeight:700}}>Vert = déjà payé à distance</span> · <span style={{color:'#d97706',fontWeight:700}}>Orange = paiement requis en caisse</span>
   </div>
   {rdvAvenir.length===0
    ? <div style={{textAlign:'center',padding:40,color:'#94a3b8',background:'white',borderRadius:12,border:'1px solid #e2e8f0'}}>
       <i className="fa-solid fa-calendar" style={{fontSize:36,display:'block',marginBottom:10,opacity:0.3}}/>
-      Aucun rendez-vous à venir confirmé
+      Aucun rendez-vous à venir
      </div>
-   : rdvAvenir.map((r:any) => (
-    <div key={r.id} style={{background:'white',borderRadius:12,padding:14,border:'1px solid #e2e8f0',marginBottom:8,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
-     <div>
-      <div style={{fontWeight:700,fontSize:14}}>{r.patient_nom}</div>
-      <div style={{fontSize:12,color:'#94a3b8',marginTop:2}}>{r.patient_numero} · {r.service}</div>
-      {r.medecin_nom && <div style={{fontSize:12,color:'#7c3aed',marginTop:1}}>{r.medecin_nom}</div>}
-     </div>
-     <div style={{textAlign:'right'}}>
-      <div style={{fontWeight:800,color:'#1641C8',fontSize:13}}>
-       {new Date(r.date_rdv).toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'})}
+   : rdvAvenir.map((r:any) => {
+    const statut = r.statut?.split('.')?.pop() || r.statut
+    const isPaye = statut === 'paiement_effectue'
+    return (
+     <div key={r.id} style={{background:'white',borderRadius:12,padding:14,border:`1px solid ${isPaye?'#86efac':'#fde68a'}`,marginBottom:8,display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+      <div>
+       <div style={{fontWeight:700,fontSize:14}}>{r.patient_nom}</div>
+       <div style={{fontSize:12,color:'#94a3b8',marginTop:2}}>{r.patient_numero} · {r.service}</div>
+       {r.medecin_nom && <div style={{fontSize:12,color:'#7c3aed',marginTop:1}}>{r.medecin_nom}</div>}
+       <div style={{marginTop:6}}>
+        <span style={{
+         background:isPaye?'#f0fdf4':'#fff7ed',
+         color:isPaye?'#16a34a':'#d97706',
+         padding:'2px 10px',borderRadius:99,fontSize:11,fontWeight:700
+        }}>
+         {isPaye?'Payé à distance':'Paiement requis à la caisse'}
+        </span>
+       </div>
       </div>
-      <span style={{background:'#eff6ff',color:'#1641C8',padding:'2px 10px',borderRadius:99,fontSize:10,fontWeight:700}}>
-       {r.statut==='paiement_requis'?'Paymt requis':'Confirmé'}
-      </span>
+      <div style={{textAlign:'right'}}>
+       <div style={{fontWeight:800,color:'#1641C8',fontSize:13}}>
+        {new Date(r.date_rdv).toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'long',hour:'2-digit',minute:'2-digit'})}
+       </div>
+       <div style={{fontSize:11,color:'#94a3b8',marginTop:2}}>
+        La caisse signale la présence
+       </div>
+      </div>
      </div>
-    </div>
-   ))
+    )
+   })
   }
  </div>
 )}

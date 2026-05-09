@@ -543,10 +543,10 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
  {onglet==='rdv' && (
  <div style={{maxWidth:900,margin:'0 auto'}}>
   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
-   <h2 style={{fontWeight:900,fontSize:'1.2rem',color:'#0f172a',margin:0}}>Demandes de rendez-vous</h2>
+   <h2 style={{fontWeight:900,fontSize:'1.2rem',color:'#0f172a',margin:0}}>Gestion des rendez-vous</h2>
    <button onClick={()=>api.get('/rdv/demandes').then((r:any)=>setDemandesRdv(r.data?.demandes||[])).catch(()=>{})}
     style={{background:'#eff6ff',border:'1px solid #93c5fd',borderRadius:8,padding:'7px 14px',color:'#1641C8',cursor:'pointer',fontWeight:700,fontSize:12}}>
-    Actualiser
+    <i className="fa-solid fa-rotate-right" style={{marginRight:5}}/>Actualiser
    </button>
   </div>
   {demandesRdv.length === 0
@@ -554,45 +554,115 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
       <i className="fa-solid fa-calendar-check" style={{fontSize:40,display:'block',marginBottom:12,opacity:0.3}}/>
       Aucune demande en attente
      </div>
-   : demandesRdv.map((d:any) => (
-    <div key={d.id} style={{background:'white',borderRadius:12,padding:16,border:'1px solid #e2e8f0',marginBottom:10}}>
-     <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
-      <div>
-       <div style={{fontWeight:800,fontSize:15}}>{d.patient_nom}</div>
-       <div style={{fontSize:12,color:'#94a3b8',marginTop:2}}>{d.patient_numero} · {d.patient_telephone}</div>
-       <div style={{marginTop:6,display:'flex',gap:6}}>
-        <span style={{background:'#f0f9ff',color:'#0369a1',padding:'2px 10px',borderRadius:99,fontSize:11,fontWeight:700}}>{d.service}</span>
-        <span style={{background:d.statut==='en_attente'?'#fff7ed':'d.statut==="paiement_requis"?"#eff6ff":"#f0fdf4',color:d.statut==='en_attente'?'#d97706':'d.statut==="paiement_requis"?"#1641C8":"#16a34a',padding:'2px 10px',borderRadius:99,fontSize:11,fontWeight:700}}>
-         {d.statut==='en_attente'?'En attente':d.statut==='paiement_requis'?'Paiement requis':'Proposé'}
-        </span>
+   : demandesRdv.map((d:any) => {
+      const statut = d.statut?.split('.')?.pop() || d.statut
+      const isPaye = statut === 'paiement_effectue'
+      const isPaymtReq = statut === 'paiement_requis'
+      const dateRdv = d.date_rdv_demandee ? new Date(d.date_rdv_demandee) : null
+      const estAujourdhui = dateRdv ? dateRdv.toDateString() === new Date().toDateString() : false
+      return (
+       <div key={d.id} style={{background:'white',borderRadius:12,padding:16,border:`1px solid ${isPaye?'#86efac':isPaymtReq?'#fde68a':'#e2e8f0'}`,marginBottom:10}}>
+        {/* Header */}
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',marginBottom:8}}>
+         <div>
+          <div style={{fontWeight:800,fontSize:15}}>{d.patient_nom}</div>
+          <div style={{fontSize:12,color:'#94a3b8',marginTop:2}}>{d.patient_numero} · {d.patient_telephone}</div>
+          <div style={{marginTop:6,display:'flex',gap:6,flexWrap:'wrap' as const}}>
+           <span style={{background:'#f0f9ff',color:'#0369a1',padding:'2px 10px',borderRadius:99,fontSize:11,fontWeight:700}}>{d.service}</span>
+           {d.medecin_nom && <span style={{background:'#f5f3ff',color:'#7c3aed',padding:'2px 10px',borderRadius:99,fontSize:11,fontWeight:700}}>{d.medecin_nom}</span>}
+           <span style={{
+            background:isPaye?'#f0fdf4':isPaymtReq?'#fff7ed':'#eff6ff',
+            color:isPaye?'#16a34a':isPaymtReq?'#d97706':'#1641C8',
+            padding:'2px 10px',borderRadius:99,fontSize:11,fontWeight:700
+           }}>
+            {isPaye?'Payé':isPaymtReq?'Paiement requis':statut==='en_attente'?'En attente':'Autre date proposée'}
+           </span>
+           {estAujourdhui && <span style={{background:'#fef2f2',color:'#dc2626',padding:'2px 10px',borderRadius:99,fontSize:11,fontWeight:700}}>AUJOURD&apos;HUI</span>}
+          </div>
+         </div>
+         <div style={{textAlign:'right',fontSize:12,color:'#64748b'}}>
+          <div style={{fontWeight:700,color:'#0f172a',fontSize:13}}>
+           {dateRdv ? dateRdv.toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—'}
+          </div>
+          <div>Demandé {new Date(d.created_at).toLocaleDateString('fr-FR')}</div>
+         </div>
+        </div>
+        {d.motif && <div style={{fontSize:12,color:'#64748b',marginBottom:8,fontStyle:'italic'}}>Motif: {d.motif}</div>}
+
+        {/* Actions selon statut */}
+        <div style={{display:'flex',gap:8,flexWrap:'wrap' as const}}>
+
+         {/* Confirmer (si en attente) */}
+         {(statut==='en_attente'||statut==='propose_autre_moment') && (
+          <button onClick={async()=>{
+           try{
+            await api.post(`/rdv/${d.id}/confirmer`,{action:'confirmer'})
+            toast.success('RDV confirmé — patient peut payer')
+            api.get('/rdv/demandes').then((r:any)=>setDemandesRdv(r.data?.demandes||[])).catch(()=>{})
+           }catch(e:any){toast.error(e.response?.data?.detail||'Erreur')}
+          }} style={{flex:1,padding:'8px',borderRadius:8,border:'none',background:'#16a34a',color:'white',fontWeight:700,cursor:'pointer',fontSize:12}}>
+           Confirmer le RDV
+          </button>
+         )}
+
+         {/* Signaler présence (payé à distance) — bouton principal si déjà payé */}
+         {isPaye && (
+          <button onClick={async()=>{
+           try{
+            const r = await api.post(`/rdv/${d.id}/signaler-presence`,{mode_paiement:'presence'})
+            toast.success(`Ticket #${r.data.ticket} — envoyé en queue signes vitaux`)
+            api.get('/rdv/demandes').then((rr:any)=>setDemandesRdv(rr.data?.demandes||[])).catch(()=>{})
+           }catch(e:any){toast.error(e.response?.data?.detail||'Erreur')}
+          }} style={{flex:2,padding:'9px',borderRadius:8,border:'none',background:'#1641C8',color:'white',fontWeight:900,cursor:'pointer',fontSize:13}}>
+           <i className="fa-solid fa-user-check" style={{marginRight:6}}/>Signaler présence → Queue signes vitaux
+          </button>
+         )}
+
+         {/* Paiement en caisse (si paiement requis mais pas encore payé) */}
+         {isPaymtReq && (
+          <button onClick={async()=>{
+           const mode=window.prompt('Mode paiement (especes/moncash/natcash/carte/zelle):','especes')
+           if(!mode) return
+           try{
+            const r = await api.post(`/rdv/${d.id}/signaler-presence`,{mode_paiement:mode})
+            toast.success(`Ticket #${r.data.ticket} → Queue infirmier`)
+            api.get('/rdv/demandes').then((rr:any)=>setDemandesRdv(rr.data?.demandes||[])).catch(()=>{})
+           }catch(e:any){toast.error(e.response?.data?.detail||'Erreur')}
+          }} style={{flex:1,padding:'8px',borderRadius:8,border:'none',background:'#1641C8',color:'white',fontWeight:700,cursor:'pointer',fontSize:12}}>
+           Encaisser + Envoyer queue
+          </button>
+         )}
+
+         {/* Proposer autre date */}
+         {statut==='en_attente' && (
+          <button onClick={async()=>{
+           const date=window.prompt('Proposer une autre date (AAAA-MM-JJ HH:MM):')
+           if(!date) return
+           try{
+            await api.post(`/rdv/${d.id}/confirmer`,{action:'proposer_autre_date',nouvelle_date:date})
+            toast.success('Autre date proposée au patient')
+            api.get('/rdv/demandes').then((r:any)=>setDemandesRdv(r.data?.demandes||[])).catch(()=>{})
+           }catch(e:any){toast.error(e.response?.data?.detail||'Erreur')}
+          }} style={{padding:'8px 12px',borderRadius:8,border:'1.5px solid #d97706',background:'white',color:'#d97706',fontWeight:700,cursor:'pointer',fontSize:12}}>
+           Autre date
+          </button>
+         )}
+
+         {/* Annuler */}
+         <button onClick={async()=>{
+          if(!window.confirm('Annuler ce rendez-vous ?')) return
+          try{
+           await api.post(`/rdv/${d.id}/confirmer`,{action:'annuler'})
+           toast.success('RDV annulé')
+           api.get('/rdv/demandes').then((r:any)=>setDemandesRdv(r.data?.demandes||[])).catch(()=>{})
+          }catch(e:any){toast.error(e.response?.data?.detail||'Erreur')}
+         }} style={{padding:'8px 12px',borderRadius:8,border:'1.5px solid #fecaca',background:'white',color:'#dc2626',fontWeight:700,cursor:'pointer',fontSize:12}}>
+          Annuler
+         </button>
+        </div>
        </div>
-      </div>
-      <div style={{textAlign:'right',fontSize:12,color:'#64748b'}}>
-       <div style={{fontWeight:700,color:'#0f172a'}}>
-        {d.date_rdv_demandee?new Date(d.date_rdv_demandee).toLocaleDateString('fr-FR',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'—'}
-       </div>
-      </div>
-     </div>
-     {d.motif && <div style={{fontSize:12,color:'#64748b',marginBottom:8,fontStyle:'italic'}}>Motif: {d.motif}</div>}
-     <div style={{display:'flex',gap:8,flexWrap:'wrap' as const}}>
-      <button onClick={async()=>{try{await api.post(`/rdv/${d.id}/confirmer`,{action:'confirmer'});toast.success('Confirmé');api.get('/rdv/demandes').then((r:any)=>setDemandesRdv(r.data?.demandes||[])).catch(()=>{})}catch(e:any){toast.error(e.response?.data?.detail||'Erreur')}}}
-       style={{flex:1,padding:'8px',borderRadius:8,border:'none',background:'#16a34a',color:'white',fontWeight:700,cursor:'pointer',fontSize:12}}>
-       Confirmer RDV
-      </button>
-      {d.statut==='paiement_requis' && (
-       <button onClick={async()=>{const mode=window.prompt('Mode paiement:','especes');if(!mode)return;try{const r=await api.post(`/rdv/${d.id}/payer-et-envoyer`,{mode_paiement:mode});toast.success(`Ticket #${r.data.ticket} → Queue infirmier`);api.get('/rdv/demandes').then((rr:any)=>setDemandesRdv(rr.data?.demandes||[])).catch(()=>{})}catch(e:any){toast.error(e.response?.data?.detail||'Erreur')}}}
-        style={{flex:1,padding:'8px',borderRadius:8,border:'none',background:'#1641C8',color:'white',fontWeight:700,cursor:'pointer',fontSize:12}}>
-        Paiement reçu → Queue
-       </button>
-      )}
-      <button onClick={async()=>{if(!window.confirm('Annuler?'))return;try{await api.post(`/rdv/${d.id}/confirmer`,{action:'annuler'});toast.success('Annulé');api.get('/rdv/demandes').then((r:any)=>setDemandesRdv(r.data?.demandes||[])).catch(()=>{})}catch(e:any){toast.error(e.response?.data?.detail||'Erreur')}}}
-       style={{padding:'8px 12px',borderRadius:8,border:'1.5px solid #fecaca',background:'white',color:'#dc2626',fontWeight:700,cursor:'pointer',fontSize:12}}>
-       Annuler
-      </button>
-     </div>
-    </div>
-   ))
-  }
+      )
+   })}
  </div>
 )}
 
