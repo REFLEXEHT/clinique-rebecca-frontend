@@ -188,15 +188,26 @@ export default function AdminUtilisateurs() {
  </span>
  </td>
  <td style={{ padding:'11px 16px' }}>
+ <div style={{display:'flex',gap:6,flexWrap:'wrap' as const}}>
  {u.role !== 'admin' && (
- <button onClick={() => toggleActive(u)} style={{
- background: u.is_active ? '#fef2f2' : '#f0fdf4',
- color: u.is_active ? '#dc2626' : '#16a34a',
- border:'none', borderRadius:8, padding:'6px 12px', fontWeight:700, cursor:'pointer', fontSize:12
- }}>
- {u.is_active ? 'Suspendre' : 'Réactiver'}
- </button>
+  <button onClick={() => toggleActive(u)} style={{
+  background: u.is_active ? '#fef2f2' : '#f0fdf4',
+  color: u.is_active ? '#dc2626' : '#16a34a',
+  border:'none', borderRadius:8, padding:'6px 12px', fontWeight:700, cursor:'pointer', fontSize:12
+  }}>
+  {u.is_active ? 'Suspendre' : 'Réactiver'}
+  </button>
  )}
+ <button onClick={async()=>{
+  if(!confirm(`Réinitialiser le mot de passe de ${u.nom} ?`)) return
+  try{
+   const r=await api.post(`/admin/reset-password/${u.id}`,{})
+   alert(`Mot de passe temporaire:\n${r.data.temp_password}\n\nL'utilisateur devra le changer à sa prochaine connexion.`)
+  }catch(e:any){alert(e.response?.data?.detail||'Erreur')}
+ }} style={{background:'#eff6ff',color:'#1641C8',border:'1px solid #bfdbfe',borderRadius:8,padding:'6px 12px',fontWeight:700,cursor:'pointer',fontSize:12}}>
+  Reset MDP
+ </button>
+ </div>
  </td>
  </tr>
  ))}
