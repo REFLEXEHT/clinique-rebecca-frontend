@@ -12,19 +12,29 @@ import { Eye, EyeOff, ChevronDown, ArrowLeft } from 'lucide-react'
 type FormData = { email: string; password: string }
 
 const DASHBOARDS: Record<string,string> = {
- admin:'/admin/dashboard', medecin:'/medecin/dashboard',
- patient:'/patient/dashboard', caissier:'/caissier',
- labo:'/labo', pharmacie:'/pharmacie', infirmier:'/infirmier',
+  admin:      '/admin/dashboard',
+  medecin:    '/medecin/dashboard',
+  patient:    '/patient/dashboard',
+  caissier:   '/caissier',
+  labo:       '/labo',
+  pharmacie:  '/pharmacie',
+  infirmier:  '/infirmier',
+  dentiste:   '/praticien',
+  physio:     '/praticien',
+  optometrie: '/praticien',
 }
 
 const ROLES_DATA = [
- { value:'patient', icon:'', domaine: null },
- { value:'medecin', icon:'', domaine:'@cliniquerebecca.ht' },
- { value:'admin', icon:'️', domaine:'@cliniquerebecca.ht' },
- { value:'caissier', icon:'', domaine:'@cliniquerebecca.ht' },
- { value:'labo', icon:'', domaine:'@cliniquerebecca.ht' },
- { value:'infirmier', icon:'', domaine:'@cliniquerebecca.ht' },
- { value:'pharmacie', icon:'', domaine:'@cliniquerebecca.ht' },
+  { value:'patient',    icon:'', domaine: null },
+  { value:'medecin',   icon:'', domaine:'@cliniquerebecca.ht' },
+  { value:'admin',     icon:'', domaine:'@cliniquerebecca.ht' },
+  { value:'caissier',  icon:'', domaine:'@cliniquerebecca.ht' },
+  { value:'labo',      icon:'', domaine:'@cliniquerebecca.ht' },
+  { value:'infirmier', icon:'', domaine:'@cliniquerebecca.ht' },
+  { value:'pharmacie', icon:'', domaine:'@cliniquerebecca.ht' },
+  { value:'dentiste',  icon:'', domaine:'@cliniquerebecca.ht' },
+  { value:'physio',    icon:'', domaine:'@cliniquerebecca.ht' },
+  { value:'optometrie',icon:'', domaine:'@cliniquerebecca.ht' },
 ]
 
 const ROLE_LABELS: Record<string, Record<string,string>> = {

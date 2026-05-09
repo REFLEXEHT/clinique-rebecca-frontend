@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import Navbar from '@/components/layout/Navbar'
 import Footer from '@/components/layout/Footer'
@@ -22,6 +23,21 @@ const SERVICES_KEYS = [
 ]
 
 export default function HomePage() {
+  const router = useRouter()
+
+  useEffect(() => {
+    const user = (() => { try { return JSON.parse(localStorage.getItem('rb_user') || 'null') } catch { return null } })()
+    const token = localStorage.getItem('rb_token')
+    if (!user || !token) return
+    const STAFF: Record<string, string> = {
+      admin:'/admin/dashboard', medecin:'/medecin/dashboard',
+      caissier:'/caissier', labo:'/labo', infirmier:'/infirmier',
+      pharmacie:'/pharmacie', dentiste:'/praticien', physio:'/praticien', optometrie:'/praticien',
+    }
+    const dest = STAFF[user.role]
+    if (dest) router.replace(dest)
+  }, [router])
+
  const { t } = useLang()
  const [rdvOpen, setRdvOpen] = useState(false)
  const [horaires, setHoraires] = useState<any[]>([])
