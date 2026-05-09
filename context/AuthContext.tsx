@@ -33,7 +33,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  const u = localStorage.getItem('rb_user')
  if (t && u) {
  setToken(t)
- setUser(JSON.parse(u))
+ const parsed = JSON.parse(u)
+ setUser(parsed)
+ if (parsed?.must_change_password) setMustChangePassword(true)
  }
  } catch {}
  setLoading(false)
