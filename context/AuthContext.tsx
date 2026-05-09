@@ -58,6 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
  <AuthContext.Provider value={{
  user, token,
  isAuthenticated: !!user && !!token,
+ mustChangePassword, setMustChangePassword,
  role: user?.role ?? null,
  login, logout, loading,
  }}>
