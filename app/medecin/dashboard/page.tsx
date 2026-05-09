@@ -231,10 +231,6 @@ export default function MedecinDashboard() {
  }
 
  if (loading) return (
-  <>
-  {mustChangePassword && (
-    <ChangePasswordModal isFirstLogin={true} onClose={()=>setMustChangePassword(false)} />
-  )}
   <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
  <div style={{ textAlign: 'center' }}>
  <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: 32, color: '#1641C8', marginBottom: 12, display: 'block' }} />

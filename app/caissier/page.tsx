@@ -67,13 +67,6 @@ const CATEGORIES_DEPENSES = [
 function ModalDocument({ doc, onClose, onPrint }: any) {
  if (!doc) return null
  return (
-  <>
-  {mustChangePassword && (
-    <ChangePasswordModal isFirstLogin={true} onClose={() => setMustChangePassword(false)} />
-  )}
-  {showChangePwd && (
-    <ChangePasswordModal isFirstLogin={false} onClose={() => setShowChangePwd(false)} />
-  )}
   <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,0.6)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:20}}>
  <div style={{background:'white',borderRadius:18,width:'100%',maxWidth:680,maxHeight:'90vh',overflowY:'auto'}}>
  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'16px 24px',borderBottom:'1px solid #e2e8f0'}}>
