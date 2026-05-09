@@ -12,17 +12,20 @@ interface AuthContextType {
  login: (token: string, user: User) => void
  logout: () => void
  loading: boolean
+ mustChangePassword: boolean
+ setMustChangePassword: (v: boolean) => void
 }
 
 const AuthContext = createContext<AuthContextType>({
  user: null, token: null, isAuthenticated: false, role: null,
- login: () => {}, logout: () => {}, loading: true,
+ login: () => {}, logout: () => {}, loading: true, mustChangePassword: false, setMustChangePassword: () => {},
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
  const [user, setUser] = useState<User | null>(null)
  const [token, setToken] = useState<string | null>(null)
  const [loading, setLoading] = useState(true)
+ const [mustChangePassword, setMustChangePassword] = useState(false)
 
  useEffect(() => {
  try {

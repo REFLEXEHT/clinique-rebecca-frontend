@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import ChangePasswordModal from '@/components/ui/ChangePasswordModal'
 import { useRouter } from 'next/navigation'
 import { api } from '@/lib/api'
 import { useAuth } from '@/context/AuthContext'
@@ -12,7 +13,7 @@ const SERVICE_CONFIG: Record<string, {label:string,color:string,bg:string,icon:s
 }
 
 export default function PraticienDirectPage() {
-  const { user, isAuthenticated, loading } = useAuth()
+  const { user, isAuthenticated, loading , mustChangePassword, setMustChangePassword } = useAuth()
   const router = useRouter()
   const [queue, setQueue] = useState<any[]>([])
   const [loadingQueue, setLoadingQueue] = useState(true)
@@ -76,7 +77,11 @@ export default function PraticienDirectPage() {
   if (loading) return <div style={{display:'flex',alignItems:'center',justifyContent:'center',minHeight:'100vh'}}><div className="spinner"/></div>
 
   return (
-    <div style={{minHeight:'100vh',background:'#f8fafc'}}>
+  <>
+  {mustChangePassword && (
+    <ChangePasswordModal isFirstLogin={true} onClose={()=>setMustChangePassword(false)} />
+  )}
+  <div style={{minHeight:'100vh',background:'#f8fafc'}}>
       {/* Navbar */}
       <div style={{background:`linear-gradient(135deg,#0f1e3d,${cfg.color})`,height:56,display:'flex',alignItems:'center',padding:'0 20px',gap:12}}>
         <div style={{width:34,height:34,borderRadius:10,background:'rgba(255,255,255,0.15)',display:'flex',alignItems:'center',justifyContent:'center'}}>
@@ -219,5 +224,5 @@ export default function PraticienDirectPage() {
         )}
       </div>
     </div>
-  )
-}
+  </>
+)

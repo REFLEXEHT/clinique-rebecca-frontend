@@ -1,5 +1,6 @@
 'use client'
 import React, { useRef } from 'react'
+import ChangePasswordModal from '@/components/ui/ChangePasswordModal'
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
@@ -164,7 +165,7 @@ function ExamenSearchable({ value, onChange, examens }: { value: string; onChang
 }
 
 export default function LaboPage() {
- const { user, isAuthenticated, loading, logout } = useAuth()
+ const { user, isAuthenticated, loading, logout , mustChangePassword, setMustChangePassword } = useAuth()
  const router = useRouter()
  const [onglet, setOnglet] = useState<'saisie'|'historique'|'alertes'|'stats'|'queue'>('stats')
  const [searchPat, setSearchPat] = useState('')

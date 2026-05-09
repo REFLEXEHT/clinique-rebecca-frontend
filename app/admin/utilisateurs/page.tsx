@@ -5,6 +5,22 @@ import toast from 'react-hot-toast'
 import { UserPlus, Users, Eye, EyeOff } from 'lucide-react'
 
 const ROLES_PERSONNEL = [
+ { value:'medecin',    label:'Médecin',         emoji:'' },
+ { value:'caissier',   label:'Caissier(ère)',    emoji:'' },
+ { value:'labo',       label:'Laboratoire',      emoji:'' },
+ { value:'infirmier',  label:'Infirmier(ère)',   emoji:'' },
+ { value:'pharmacie',  label:'Pharmacie',        emoji:'' },
+ { value:'dentiste',   label:'Dentiste',         emoji:'' },
+ { value:'physio',     label:'Physiothérapeute', emoji:'' },
+ { value:'optometrie', label:'Optométriste',     emoji:'' },
+ { value:'admin',      label:'Administrateur',   emoji:'' },
+],se client'
+import { useEffect, useState } from 'react'
+import { api } from '@/lib/api'
+import toast from 'react-hot-toast'
+import { UserPlus, Users, Eye, EyeOff } from 'lucide-react'
+
+const ROLES_PERSONNEL = [
  { value:'medecin', label:'Médecin', emoji:'' },
  { value:'caissier', label:'Caissier(ère)', emoji:'' },
  { value:'labo', label:'Laboratoire', emoji:'' },

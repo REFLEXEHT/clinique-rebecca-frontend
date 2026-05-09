@@ -1,5 +1,6 @@
 'use client'
 import toast from 'react-hot-toast'
+import ChangePasswordModal from '@/components/ui/ChangePasswordModal'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
@@ -14,7 +15,7 @@ interface Dossier {
 }
 
 export default function InfirmierDashboard() {
- const { user, isAuthenticated, loading, logout } = useAuth()
+ const { user, isAuthenticated, loading, logout , mustChangePassword, setMustChangePassword } = useAuth()
  const router = useRouter()
  const [dossiers, setDossiers] = useState<Dossier[]>([])
  const [selected, setSelected] = useState<Dossier | null>(null)

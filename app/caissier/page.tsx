@@ -6,6 +6,7 @@ import { api, aiApi } from '@/lib/api'
 import Link from 'next/link'
 import toast from 'react-hot-toast'
 import PaiementFlow, { type PaiementInfo } from '@/components/ui/PaiementFlow'
+import ChangePasswordModal from '@/components/ui/ChangePasswordModal'
 import { imprimerRecuEnregistrement, imprimerRecuPaiement, imprimerFactureOfficielle, imprimerRapportComptable, imprimerFeuilleAuto, imprimerFicheDecaissement } from '@/lib/print'
 import { LogOut, Printer, Search, Plus, TrendingUp, ArrowDownCircle, Eye } from 'lucide-react'
 
@@ -2055,4 +2056,6 @@ Génère un rapport comptable structuré avec: résumé financier, recettes par 
  <ModalDocument doc={modalDoc} onClose={()=>setModalDoc(null)} onPrint={()=>window.print()} />
  </div>
  )
+  </>
+)
 }

@@ -1,5 +1,6 @@
 'use client'
 import React from 'react'
+import ChangePasswordModal from '@/components/ui/ChangePasswordModal'
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/context/AuthContext'
 import { useRouter } from 'next/navigation'
@@ -230,7 +231,11 @@ export default function MedecinDashboard() {
  }
 
  if (loading) return (
- <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
+  <>
+  {mustChangePassword && (
+    <ChangePasswordModal isFirstLogin={true} onClose={()=>setMustChangePassword(false)} />
+  )}
+  <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
  <div style={{ textAlign: 'center' }}>
  <i className="fa-solid fa-spinner fa-spin" style={{ fontSize: 32, color: '#1641C8', marginBottom: 12, display: 'block' }} />
  <p style={{ color: '#64748b' }}>Chargement…</p>
@@ -1105,6 +1110,8 @@ function AccesDossierDirect({ onOuvrirDossier }: { onOuvrirDossier: (dossier: an
         </div>
       )}
     </div>
-  )
+  </>
+)
 }
+
 
