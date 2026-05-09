@@ -164,10 +164,19 @@ export default function AdminUtilisateurs() {
  <tr key={u.id} style={{ borderBottom:'1px solid #f8fafc' }}>
  <td style={{ padding:'11px 16px', fontWeight:700, color:'#0f172a' }}>{u.nom}</td>
  <td style={{ padding:'11px 16px', fontFamily:'monospace', fontSize:12, color:'#64748b' }}>{u.email}</td>
- <td style={{ padding:'11px 16px' }}>
- <span style={{ background:`${ROLE_COLORS[u.role] || '#64748b'}15`, color:ROLE_COLORS[u.role] || '#64748b', borderRadius:50, padding:'3px 10px', fontSize:11, fontWeight:700 }}>
- {ROLES_PERSONNEL.find(r=>r.value===u.role)?.emoji || ''} {u.role}
- </span>
+ <td style={{ padding:'8px 16px' }}>
+ <select value={u.role} onChange={async(e)=>{
+  const nr=e.target.value
+  if(!confirm(`Changer le rôle de ${u.nom} → ${nr} ?`)) return
+  try{
+   await api.patch(`/admin/utilisateurs/${u.id}/role`,{role:nr})
+   toast.success('Rôle mis à jour')
+   load()
+  }catch(err:any){toast.error(err.response?.data?.detail||'Erreur')}
+ }} style={{padding:'5px 8px',borderRadius:8,border:'1.5px solid #e2e8f0',fontSize:12,fontWeight:700,
+   color:ROLE_COLORS[u.role]||'#64748b',background:`${ROLE_COLORS[u.role]||'#64748b'}12`,cursor:'pointer'}}>
+  {ROLES_PERSONNEL.map(r=><option key={r.value} value={r.value}>{r.label}</option>)}
+ </select>
  </td>
  <td style={{ padding:'11px 16px' }}>
  <span style={{ background:u.is_active ? '#f0fdf4' : '#fef2f2', color:u.is_active ? '#16a34a' : '#dc2626', borderRadius:50, padding:'3px 10px', fontSize:11, fontWeight:700 }}>
